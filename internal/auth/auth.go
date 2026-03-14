@@ -93,7 +93,7 @@ func New(cfg Config, i18n *i18n.I18n, rd *redis.Client, logger *logf.Logger) (*A
 		EnableAutoCreate: true,
 		SessionIDLength:  64,
 		Cookie: simplesessions.CookieOptions{
-			Name:       "libredesk_session",
+			Name:       "canalgov_session",
 			IsHTTPOnly: true,
 			IsSecure:   cfg.SecureCookies,
 			MaxAge:     time.Hour * 9,

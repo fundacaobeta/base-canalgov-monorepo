@@ -5,14 +5,14 @@
     </template>
 
     <template #help>
-      <p>Configure single sign-on with one or more OpenID Connect providers.</p>
+      <p>Configure o login único com um ou mais provedores OpenID Connect.</p>
       <a
         href="https://docs.libredesk.io/configuration/sso"
         target="_blank"
         rel="noopener noreferrer"
         class="link-style"
       >
-        <p>Learn more</p>
+        <p>Saiba mais</p>
       </a>
     </template>
   </AdminPageWithHelp>

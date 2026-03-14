@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/abhinavxd/libredesk/internal/envelope"
-	"github.com/abhinavxd/libredesk/internal/inbox"
+	inboxpkg "github.com/abhinavxd/libredesk/internal/inbox"
 	"github.com/abhinavxd/libredesk/internal/inbox/channel/email/oauth"
 	imodels "github.com/abhinavxd/libredesk/internal/inbox/models"
 	"github.com/valyala/fasthttp"
@@ -61,6 +61,9 @@ func handleCreateInbox(r *fastglue.Request) error {
 	if err := trimInboxFields(&inbox); err != nil {
 		return r.SendErrorEnvelope(fasthttp.StatusBadRequest, app.i18n.Ts("globals.messages.errorParsing", "name", "config"), err.Error(), envelope.InputError)
 	}
+	if inbox.Channel != inboxpkg.ChannelEmail && len(inbox.Config) == 0 {
+		inbox.Config = []byte(`{}`)
+	}
 
 	createdInbox, err := app.inbox.Create(inbox)
 	if err != nil {
@@ -103,6 +106,9 @@ func handleUpdateInbox(r *fastglue.Request) error {
 	// Trim whitespace from inbox fields and config.
 	if err := trimInboxFields(&inbox); err != nil {
 		return r.SendErrorEnvelope(fasthttp.StatusBadRequest, app.i18n.Ts("globals.messages.errorParsing", "name", "config"), err.Error(), envelope.InputError)
+	}
+	if inbox.Channel != inboxpkg.ChannelEmail && len(inbox.Config) == 0 {
+		inbox.Config = []byte(`{}`)
 	}
 
 	if err := validateInbox(app, inbox); err != nil {
@@ -174,13 +180,6 @@ func handleDeleteInbox(r *fastglue.Request) error {
 
 // validateInbox validates the inbox
 func validateInbox(app *App, inb imodels.Inbox) error {
-	// Validate from address.
-	if _, err := mail.ParseAddress(inb.From); err != nil {
-		return envelope.NewError(envelope.InputError, app.i18n.Ts("globals.messages.invalidFromAddress"), nil)
-	}
-	if len(inb.Config) == 0 {
-		return envelope.NewError(envelope.InputError, app.i18n.Ts("globals.messages.empty", "name", "config"), nil)
-	}
 	if inb.Name == "" {
 		return envelope.NewError(envelope.InputError, app.i18n.Ts("globals.messages.empty", "name", "name"), nil)
 	}
@@ -189,10 +188,36 @@ func validateInbox(app *App, inb imodels.Inbox) error {
 	}
 
 	// Validate email channel config.
-	if inb.Channel == inbox.ChannelEmail {
+	if inb.Channel == inboxpkg.ChannelEmail {
+		if len(inb.Config) == 0 {
+			return envelope.NewError(envelope.InputError, app.i18n.Ts("globals.messages.empty", "name", "config"), nil)
+		}
+		var cfg imodels.Config
+		if err := json.Unmarshal(inb.Config, &cfg); err != nil {
+			return envelope.NewError(envelope.InputError, app.i18n.Ts("globals.messages.invalid", "name", "config"), nil)
+		}
+		if cfg.ReceiveMode == "managed" {
+			if strings.TrimSpace(cfg.ManagedLocalPart) == "" {
+				return envelope.NewError(envelope.InputError, app.i18n.Ts("globals.messages.empty", "name", "managed_local_part"), nil)
+			}
+			if strings.TrimSpace(cfg.ManagedDomain) == "" {
+				return envelope.NewError(envelope.InputError, app.i18n.Ts("globals.messages.empty", "name", "managed_domain"), nil)
+			}
+			if strings.TrimSpace(inb.From) != "" {
+				if _, err := mail.ParseAddress(inb.From); err != nil {
+					return envelope.NewError(envelope.InputError, app.i18n.Ts("globals.messages.invalidFromAddress"), nil)
+				}
+			}
+			return nil
+		}
+		if _, err := mail.ParseAddress(inb.From); err != nil {
+			return envelope.NewError(envelope.InputError, app.i18n.Ts("globals.messages.invalidFromAddress"), nil)
+		}
 		if err := validateEmailConfig(app, inb.Config); err != nil {
 			return err
 		}
+	} else if len(inb.Config) == 0 {
+		inb.Config = []byte(`{}`)
 	}
 	return nil
 }
@@ -266,7 +291,7 @@ func trimInboxFields(inb *imodels.Inbox) error {
 	inb.From = strings.TrimSpace(inb.From)
 
 	// Trim email config fields if this is an email channel.
-	if inb.Channel == inbox.ChannelEmail && len(inb.Config) > 0 {
+	if inb.Channel == inboxpkg.ChannelEmail && len(inb.Config) > 0 {
 		var cfg imodels.Config
 		if err := json.Unmarshal(inb.Config, &cfg); err != nil {
 			return err

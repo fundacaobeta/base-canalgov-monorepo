@@ -1,6 +1,7 @@
 import { h } from 'vue'
 import dropdown from './dataTableDropdown.vue'
-import { format } from 'date-fns'
+import DateTimeMeta from '@/components/datetime/DateTimeMeta.vue'
+import { translateConversationStatus } from '@/utils/conversationStatus'
 
 export const createColumns = (t) => [
   {
@@ -9,7 +10,7 @@ export const createColumns = (t) => [
       return h('div', { class: 'text-center' }, t('globals.terms.name'))
     },
     cell: function ({ row }) {
-      return h('div', { class: 'text-center' }, row.getValue('name'))
+      return h('div', { class: 'text-center' }, translateConversationStatus(row.getValue('name'), t))
     }
   },
   {
@@ -18,7 +19,7 @@ export const createColumns = (t) => [
       return h('div', { class: 'text-center' }, t('globals.terms.createdAt'))
     },
     cell: function ({ row }) {
-      return h('div', { class: 'text-center' }, format(row.getValue('created_at'), 'PPpp'))
+      return h(DateTimeMeta, { value: row.getValue('created_at'), centered: true, compact: true })
     }
   },
   {

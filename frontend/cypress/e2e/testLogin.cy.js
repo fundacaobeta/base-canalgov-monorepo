@@ -8,9 +8,9 @@ describe('Login Component', () => {
             body: {
                 data: {
                     "app.favicon_url": "http://localhost:9000/favicon.ico",
-                    "app.lang": "en",
+                    "app.lang": "pt-BR",
                     "app.logo_url": "http://localhost:9000/logo.png",
-                    "app.site_name": "Libredesk",
+                    "app.site_name": "CanalGov",
                     "app.sso_providers": [
                         {
                             "client_id": "xx",
@@ -32,18 +32,18 @@ describe('Login Component', () => {
     })
 
     it('should display login form', () => {
-        cy.contains('h3', 'Libredesk').should('be.visible')
-        cy.contains('p', 'Sign in to your account').should('be.visible')
+        cy.contains('h3', 'CanalGov').should('be.visible')
+        cy.contains('p', 'Entrar na sua conta').should('be.visible')
         cy.get('#email').should('be.visible')
         cy.get('#password').should('be.visible')
-        cy.contains('a', 'Forgot password?').should('be.visible')
-        cy.contains('button', 'Sign in').should('be.visible')
+        cy.contains('a', 'Esqueceu a senha?').should('be.visible')
+        cy.contains('button', 'Entrar').should('be.visible')
     })
 
     it('should display OIDC providers when loaded', () => {
         cy.wait('@getOIDCProviders')
         cy.contains('button', 'Google').should('be.visible')
-        cy.contains('div', 'Or continue with').should('be.visible')
+        cy.contains('div', 'Ou continue com').should('be.visible')
     })
 
     it('should show error for invalid login attempt', () => {
@@ -60,7 +60,7 @@ describe('Login Component', () => {
         cy.get('#password').type('WrongPassword')
 
         // Submit form
-        cy.contains('button', 'Sign in').click()
+        cy.contains('button', 'Entrar').click()
 
         // Wait for API call
         cy.wait('@loginFailure')
@@ -87,7 +87,7 @@ describe('Login Component', () => {
         cy.get('#password').type('StrongPass!123')
 
         // Submit form
-        cy.contains('button', 'Sign in').click()
+        cy.contains('button', 'Entrar').click()
 
         // Wait for API call
         cy.wait('@loginSuccess')
@@ -102,10 +102,10 @@ describe('Login Component', () => {
         cy.get('#password').type('password')
 
         // Submit form
-        cy.contains('button', 'Sign in').click()
+        cy.contains('button', 'Entrar').click()
 
         // Check for validation error (matching the error message with a trailing period)
-        cy.contains('Invalid email address').should('be.visible')
+        cy.contains('Endereço de e-mail inválido').should('be.visible')
     })
 
     it('should validate empty password', () => {
@@ -113,10 +113,10 @@ describe('Login Component', () => {
         cy.get('#email').type('valid@example.com')
 
         // Submit form
-        cy.contains('button', 'Sign in').click()
+        cy.contains('button', 'Entrar').click()
 
         // Check for validation error (matching the error message with a trailing period)
-        cy.contains('Password cannot be empty').should('be.visible')
+        cy.contains('Senha não pode ficar vazia').should('be.visible')
     })
 
     it('should show loading state during login', () => {
@@ -141,7 +141,7 @@ describe('Login Component', () => {
         cy.contains('button', 'Sign in').click()
 
         // Check if loading state is shown
-        cy.contains('Logging in...').should('be.visible')
+        cy.contains('Entrando...').should('be.visible')
         cy.get('.animate-spin').should('be.visible')
 
         // Wait for API call to finish

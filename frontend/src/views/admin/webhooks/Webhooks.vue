@@ -5,15 +5,15 @@
     </template>
 
     <template #help>
-      <p>Configure webhooks to receive real-time notifications when events occur in your Libredesk workspace.</p>
-      <p>Webhooks allow you to integrate Libredesk with external services by sending HTTP POST requests when specific events happen.</p>
+      <p>Configure webhooks para receber notificações em tempo real quando eventos ocorrerem no seu ambiente CanalGov.</p>
+      <p>Os webhooks permitem integrar o CanalGov com serviços externos enviando requisições HTTP POST quando eventos específicos acontecerem.</p>
       <a
         href="https://docs.libredesk.io/configuration/webhooks"
         target="_blank"
         rel="noopener noreferrer"
         class="link-style"
       >
-        <p>Learn more</p>
+        <p>Saiba mais</p>
       </a>
     </template>
   </AdminPageWithHelp>

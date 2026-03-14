@@ -36,6 +36,18 @@ func initHandlers(g *fastglue.Fastglue, hub *ws.Hub) {
 	g.PUT("/api/v1/settings/general", perm(handleUpdateGeneralSettings, "general_settings:manage"))
 	g.GET("/api/v1/settings/notifications/email", perm(handleGetEmailNotificationSettings, "notification_settings:manage"))
 	g.PUT("/api/v1/settings/notifications/email", perm(handleUpdateEmailNotificationSettings, "notification_settings:manage"))
+	g.GET("/api/v1/settings/notifications/whatsapp", perm(handleGetWhatsAppNotificationSettings, "notification_settings:manage"))
+	g.PUT("/api/v1/settings/notifications/whatsapp", perm(handleUpdateWhatsAppNotificationSettings, "notification_settings:manage"))
+	g.GET("/api/v1/settings/notifications/telegram", perm(handleGetTelegramNotificationSettings, "notification_settings:manage"))
+	g.PUT("/api/v1/settings/notifications/telegram", perm(handleUpdateTelegramNotificationSettings, "notification_settings:manage"))
+	g.GET("/api/v1/settings/notifications/sms", perm(handleGetSMSNotificationSettings, "notification_settings:manage"))
+	g.PUT("/api/v1/settings/notifications/sms", perm(handleUpdateSMSNotificationSettings, "notification_settings:manage"))
+	g.GET("/api/v1/settings/notifications/push", perm(handleGetPushNotificationSettings, "notification_settings:manage"))
+	g.PUT("/api/v1/settings/notifications/push", perm(handleUpdatePushNotificationSettings, "notification_settings:manage"))
+	g.GET("/api/v1/settings/notifications/official-communications", perm(handleGetOfficialCommunicationsNotificationSettings, "notification_settings:manage"))
+	g.PUT("/api/v1/settings/notifications/official-communications", perm(handleUpdateOfficialCommunicationsNotificationSettings, "notification_settings:manage"))
+	g.GET("/api/v1/settings/mail/domains", perm(handleGetMailDomainsSettings, "general_settings:manage"))
+	g.PUT("/api/v1/settings/mail/domains", perm(handleUpdateMailDomainsSettings, "general_settings:manage"))
 
 	// OpenID connect single sign-on.
 	g.GET("/api/v1/oidc", perm(handleGetAllOIDC, "oidc:manage"))

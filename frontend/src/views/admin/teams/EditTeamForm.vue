@@ -15,16 +15,17 @@ import { EMITTER_EVENTS } from '@/constants/emitterEvents.js'
 import { useEmitter } from '@/composables/useEmitter'
 import { handleHTTPError } from '@/utils/http'
 import { Spinner } from '@/components/ui/spinner'
+import { useI18n } from 'vue-i18n'
 
 const team = ref({})
 const emitter = useEmitter()
 const formLoading = ref(false)
 const isLoading = ref(false)
+const { t } = useI18n()
 
 const breadcrumbLinks = [
-
-  { path: 'team-list', label: 'Teams' },
-  { path: '', label: 'Edit team' }
+  { path: 'team-list', label: 'Equipes' },
+  { path: '', label: 'Editar equipe' }
 ]
 
 const props = defineProps({
@@ -43,12 +44,12 @@ const updateTeam = async (payload) => {
     formLoading.value = true
     await api.updateTeam(team.value.id, payload)
     emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      title: 'Success',
-      description: "Updated successfully"
+      title: t('globals.terms.success'),
+      description: t('globals.messages.teamUpdated')
     })
   } catch (error) {
     emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      title: 'Error',
+      title: t('globals.terms.error'),
       variant: 'destructive',
       description: handleHTTPError(error).message
     })
@@ -64,7 +65,7 @@ onMounted(async () => {
     team.value = resp.data.data
   } catch (error) {
     emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      title: 'Error',
+      title: t('globals.terms.error'),
       variant: 'destructive',
       description: handleHTTPError(error).message
     })

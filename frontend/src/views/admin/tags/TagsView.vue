@@ -45,7 +45,7 @@
       </template>
 
       <template #help>
-        <p>Tags help you categorize your conversations. Create or edit tags here.</p>
+        <p>{{ t('admin.tags.help') }}</p>
       </template>
     </AdminPageWithHelp>
   </div>

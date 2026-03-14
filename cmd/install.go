@@ -24,7 +24,10 @@ func install(ctx context.Context, db *sqlx.DB, fs stuffbin.FileSystem, idempoten
 	}
 
 	// Make sure the system user password is strong enough.
-	password := os.Getenv("LIBREDESK_SYSTEM_USER_PASSWORD")
+	password := os.Getenv("CANALGOV_SYSTEM_USER_PASSWORD")
+	if password == "" {
+		password = os.Getenv("LIBREDESK_SYSTEM_USER_PASSWORD")
+	}
 	if password != "" && !user.IsStrongPassword(password) && !schemaInstalled {
 		log.Fatalf("system user password is not strong, %s", user.PasswordHint)
 	}

@@ -1,9 +1,9 @@
 node_modules
 config.toml
 config.toml.*
-libredesk.bin
-libredesk
-libredesk.exe
+canalgov.bin
+canalgov
+canalgov.exe
 uploads
 .env
 dist/

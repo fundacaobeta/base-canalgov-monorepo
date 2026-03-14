@@ -4,7 +4,7 @@
       <router-view></router-view>
     </template>
     <template #help>
-      <p>Create shared views visible to all agents or specific teams.</p>
+      <p>Crie visões compartilhadas visíveis para todos os agentes ou para equipes específicas.</p>
     </template>
   </AdminPageWithHelp>
 </template>

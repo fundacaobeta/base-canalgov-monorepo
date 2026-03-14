@@ -1,20 +1,51 @@
 <template>
   <form @submit.prevent="onSubmit" class="space-y-6">
+    <div v-if="isResponseTemplate" class="rounded-2xl border border-border/70 bg-muted/20 p-4">
+      <div class="space-y-1">
+        <h3 class="text-base font-medium">Modelo de resposta</h3>
+        <p class="text-sm text-muted-foreground">
+          Use este modelo no composer de resposta. Ele pode ser global ou associado a uma equipe específica.
+        </p>
+      </div>
+    </div>
+
     <FormField v-slot="{ componentField }" name="name">
       <FormItem v-auto-animate>
-        <FormLabel>{{ $t('globals.terms.name') }}</FormLabel>
+        <FormLabel>{{ isResponseTemplate ? 'Nome do modelo' : $t('globals.terms.name') }}</FormLabel>
         <FormControl>
-          <Input
-            type="text"
-            v-bind="componentField"
-            :disabled="!isOutgoingTemplate"
-          />
+          <Input type="text" v-bind="componentField" />
         </FormControl>
         <FormMessage />
       </FormItem>
     </FormField>
 
-    <FormField v-slot="{ componentField }" name="subject" v-if="!isOutgoingTemplate">
+    <FormField v-slot="{ componentField, handleChange }" name="team_id" v-if="isResponseTemplate">
+      <FormItem>
+        <FormLabel>Equipe</FormLabel>
+        <FormControl>
+          <Select
+            :model-value="componentField.modelValue == null ? 'global' : String(componentField.modelValue)"
+            @update:model-value="(value) => handleChange(value === 'global' ? null : Number(value))"
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Modelo global" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="global">Global</SelectItem>
+              <SelectItem v-for="team in teamOptions" :key="team.value" :value="team.value">
+                {{ team.label }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </FormControl>
+        <FormDescription>
+          Se escolher uma equipe, o modelo aparece primeiro para conversas encaminhadas a ela.
+        </FormDescription>
+        <FormMessage />
+      </FormItem>
+    </FormField>
+
+    <FormField v-slot="{ componentField }" name="subject" v-if="showSubjectField">
       <FormItem>
         <FormLabel>{{ $t('globals.terms.subject') }}</FormLabel>
         <FormControl>
@@ -26,7 +57,7 @@
 
     <FormField v-slot="{ componentField, handleChange }" name="body">
       <FormItem>
-        <FormLabel>{{ $t('globals.terms.body') }}</FormLabel>
+        <FormLabel>{{ isResponseTemplate ? 'Conteúdo da resposta' : $t('globals.terms.body') }}</FormLabel>
         <FormControl>
           <CodeEditor v-model="componentField.modelValue" @update:modelValue="handleChange" />
         </FormControl>
@@ -37,19 +68,22 @@
             })
           }}
         </FormDescription>
+        <FormDescription v-else-if="isResponseTemplate">
+          Escreva o texto-base da resposta. O atendente ainda pode ajustar o conteúdo antes de enviar.
+        </FormDescription>
         <FormMessage />
       </FormItem>
     </FormField>
 
-    <FormField name="is_default" v-slot="{ value, handleChange }" v-if="isOutgoingTemplate">
+    <FormField name="is_default" v-slot="{ value, handleChange }">
       <FormItem>
         <FormControl>
           <div class="flex items-center space-x-2">
             <Checkbox :checked="value" @update:checked="handleChange" />
-            <Label>{{ $t('globals.terms.isDefault') }}</Label>
+            <Label>{{ defaultLabel }}</Label>
           </div>
         </FormControl>
-        <FormDescription>{{ $t('admin.template.onlyOneDefaultOutgoingTemplate') }}</FormDescription>
+        <FormDescription>{{ defaultDescription }}</FormDescription>
         <FormMessage />
       </FormItem>
     </FormField>
@@ -59,7 +93,7 @@
 </template>
 
 <script setup>
-import { watch, computed } from 'vue'
+import { watch, computed, onMounted } from 'vue'
 import { Button } from '@/components/ui/button'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
@@ -78,6 +112,14 @@ import CodeEditor from '@/components/editor/CodeEditor.vue'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { useI18n } from 'vue-i18n'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
+import { useTeamStore } from '@/stores/team'
 
 const props = defineProps({
   initialValues: {
@@ -99,6 +141,7 @@ const props = defineProps({
   }
 })
 const { t } = useI18n()
+const teamStore = useTeamStore()
 
 const submitLabel = computed(() => {
   return props.submitLabel || t('globals.messages.save')
@@ -110,11 +153,32 @@ const form = useForm({
 })
 
 const onSubmit = form.handleSubmit((values) => {
-  props.submitForm(values)
+  props.submitForm({
+    ...values,
+    team_id: values.team_id ? Number(values.team_id) : null
+  })
 })
 
-const isOutgoingTemplate = computed(() => {
-  return props.initialValues?.type === 'email_outgoing'
+const templateType = computed(() => form.values.type || props.initialValues?.type || 'response')
+const isResponseTemplate = computed(() => templateType.value === 'response')
+const isOutgoingTemplate = computed(() => templateType.value === 'email_outgoing')
+const showSubjectField = computed(() => templateType.value === 'email_notification')
+const teamOptions = computed(() => teamStore.options)
+const defaultLabel = computed(() =>
+  isResponseTemplate.value ? 'Usar como padrão nas respostas' : t('globals.terms.isDefault')
+)
+const defaultDescription = computed(() => {
+  if (isResponseTemplate.value) {
+    return 'Se for global, vale para todo o sistema. Se estiver vinculada a uma equipe, vira o padrão daquela equipe.'
+  }
+  if (isOutgoingTemplate.value) {
+    return t('admin.template.onlyOneDefaultOutgoingTemplate')
+  }
+  return 'Marque apenas quando este modelo deve ser priorizado dentro do seu tipo.'
+})
+
+onMounted(() => {
+  teamStore.fetchTeams()
 })
 
 // Watch for changes in initialValues and update the form.

@@ -19,11 +19,8 @@
     </template>
 
     <template #help>
-      <p>Create automation rules to streamline your support workflow.</p>
-      <p>
-        Set actions to be performed when a conversation matches the rule criteria when it is created
-        or updated or run rules hourly.
-      </p>
+      <p>{{ $t('admin.automation.help') }}</p>
+      <p>{{ $t('admin.automation.help2') }}</p>
     </template>
   </AdminPageWithHelp>
 </template>

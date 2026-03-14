@@ -18,9 +18,7 @@
     <div class="flex flex-col">
       <p class="font-medium">{{ $t('globals.terms.initiatedAt') }}</p>
       <Skeleton v-if="conversationStore.conversation.loading" class="w-32 h-4" />
-      <p v-if="conversation.created_at">
-        {{ format(conversation.created_at, 'PPpp') }}
-      </p>
+      <DateTimeMeta v-if="conversation.created_at" :value="conversation.created_at" />
       <p v-else>-</p>
     </div>
 
@@ -36,9 +34,7 @@
       </div>
       <Skeleton v-if="conversationStore.conversation.loading" class="w-32 h-4" />
       <div v-else>
-        <p v-if="conversation.first_reply_at">
-          {{ format(conversation.first_reply_at, 'PPpp') }}
-        </p>
+        <DateTimeMeta v-if="conversation.first_reply_at" :value="conversation.first_reply_at" />
         <p v-else>-</p>
       </div>
     </div>
@@ -55,9 +51,7 @@
       </div>
       <Skeleton v-if="conversationStore.conversation.loading" class="w-32 h-4" />
       <div v-else>
-        <p v-if="conversation.resolved_at">
-          {{ format(conversation.resolved_at, 'PPpp') }}
-        </p>
+        <DateTimeMeta v-if="conversation.resolved_at" :value="conversation.resolved_at" />
         <p v-else>-</p>
       </div>
     </div>
@@ -73,18 +67,14 @@
         />
       </div>
       <Skeleton v-if="conversationStore.conversation.loading" class="w-32 h-4" />
-      <p v-if="conversation.last_reply_at">
-        {{ format(conversation.last_reply_at, 'PPpp') }}
-      </p>
+      <DateTimeMeta v-if="conversation.last_reply_at" :value="conversation.last_reply_at" />
       <p v-else>-</p>
     </div>
 
     <div class="flex flex-col" v-if="conversation.closed_at">
       <p class="font-medium">{{ $t('globals.terms.closedAt') }}</p>
       <Skeleton v-if="conversationStore.conversation.loading" class="w-32 h-4" />
-      <p v-else>
-        {{ format(conversation.closed_at, 'PPpp') }}
-      </p>
+      <DateTimeMeta v-else :value="conversation.closed_at" />
     </div>
 
     <div class="flex flex-col" v-if="conversation.sla_policy_name">
@@ -108,7 +98,6 @@
 
 <script setup>
 import { computed } from 'vue'
-import { format } from 'date-fns'
 import SlaBadge from '@/features/sla/SlaBadge.vue'
 import { useConversationStore } from '@/stores/conversation'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -119,6 +108,7 @@ import { useEmitter } from '@/composables/useEmitter'
 import { handleHTTPError } from '@/utils/http'
 import api from '@/api'
 import { useI18n } from 'vue-i18n'
+import DateTimeMeta from '@/components/datetime/DateTimeMeta.vue'
 
 const emitter = useEmitter()
 const { t } = useI18n()
@@ -132,11 +122,6 @@ const updateCustomAttributes = async (attributes) => {
   try {
     conversationStore.current.custom_attributes = attributes
     await api.updateConversationCustomAttribute(conversation.value.uuid, attributes)
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      description: t('globals.messages.updatedSuccessfully', {
-        name: t('globals.terms.attribute')
-      })
-    })
   } catch (error) {
     emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
       variant: 'destructive',

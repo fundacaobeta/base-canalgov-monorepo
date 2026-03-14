@@ -31,9 +31,9 @@ import { EMITTER_EVENTS } from '@/constants/emitterEvents.js'
 import { useEmitter } from '@/composables/useEmitter'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { format } from 'date-fns'
 import { Spinner } from '@/components/ui/spinner'
 import { useInboxStore } from '@/stores/inbox'
+import DateTimeMeta from '@/components/datetime/DateTimeMeta.vue'
 import api from '@/api'
 
 const { t } = useI18n()
@@ -129,7 +129,7 @@ const columns = [
     header: () => h('div', { class: 'text-center' }, t('globals.terms.enabled')),
     cell: ({ row }) => {
       const enabled = row.getValue('enabled')
-      return h('div', { class: 'text-center' }, enabled ? 'Yes' : 'No')
+      return h('div', { class: 'text-center' }, enabled ? t('globals.messages.yes') : t('globals.messages.no'))
     }
   },
   {
@@ -138,7 +138,7 @@ const columns = [
       return h('div', { class: 'text-center' }, t('globals.terms.createdAt'))
     },
     cell: function ({ row }) {
-      return h('div', { class: 'text-center' }, format(row.getValue('created_at'), 'PPpp'))
+      return h(DateTimeMeta, { value: row.getValue('created_at'), centered: true, compact: true })
     }
   },
   {
@@ -147,7 +147,7 @@ const columns = [
       return h('div', { class: 'text-center' }, t('globals.terms.updatedAt'))
     },
     cell: function ({ row }) {
-      return h('div', { class: 'text-center' }, format(row.getValue('updated_at'), 'PPpp'))
+      return h(DateTimeMeta, { value: row.getValue('updated_at'), centered: true, compact: true })
     }
   },
   {

@@ -50,6 +50,7 @@
           v-if="isEditorFullscreen"
           :isFullscreen="true"
           :aiPrompts="aiPrompts"
+          :responseTemplates="responseTemplates"
           :isSending="isSending"
           :isDraftLoading="isDraftLoading"
           :uploadingFiles="uploadingFiles"
@@ -61,6 +62,8 @@
           v-model:bcc="bcc"
           v-model:emailErrors="emailErrors"
           v-model:messageType="messageType"
+          v-model:selectedResponseChannel="selectedResponseChannel"
+          v-model:enabledResponseChannels="enabledResponseChannels"
           v-model:showBcc="showBcc"
           v-model:mentions="mentions"
           @toggleFullscreen="isEditorFullscreen = !isEditorFullscreen"
@@ -83,6 +86,7 @@
         ref="replyBoxContentRef"
         :isFullscreen="false"
         :aiPrompts="aiPrompts"
+        :responseTemplates="responseTemplates"
         :isSending="isSending"
         :isDraftLoading="isDraftLoading"
         :uploadingFiles="uploadingFiles"
@@ -94,6 +98,8 @@
         v-model:bcc="bcc"
         v-model:emailErrors="emailErrors"
         v-model:messageType="messageType"
+        v-model:selectedResponseChannel="selectedResponseChannel"
+        v-model:enabledResponseChannels="enabledResponseChannels"
         v-model:showBcc="showBcc"
         v-model:mentions="mentions"
         @toggleFullscreen="isEditorFullscreen = !isEditorFullscreen"
@@ -182,12 +188,21 @@ const isOpenAIKeyUpdating = ref(false)
 const isEditorFullscreen = ref(false)
 const isSending = ref(false)
 const messageType = useStorage('replyBoxMessageType', 'reply')
+const selectedResponseChannel = useStorage('replyBoxSelectedResponseChannel', 'email')
+const enabledResponseChannels = useStorage('replyBoxEnabledResponseChannels', [
+  'email',
+  'whatsapp',
+  'telegram',
+  'sms',
+  'official_communication'
+])
 const to = ref('')
 const cc = ref('')
 const bcc = ref('')
 const showBcc = ref(false)
 const emailErrors = ref([])
 const aiPrompts = ref([])
+const responseTemplates = ref([])
 const replyBoxContentRef = ref(null)
 const mentions = ref([])
 
@@ -207,6 +222,21 @@ const fetchAiPrompts = async () => {
 }
 
 fetchAiPrompts()
+
+const fetchResponseTemplates = async () => {
+  try {
+    const teamID = conversationStore.current?.assigned_team_id || null
+    const resp = await api.getTemplates('response', teamID ? {
+      team_id: teamID,
+      include_global: true
+    } : {})
+    responseTemplates.value = resp.data.data || []
+  } catch (error) {
+    responseTemplates.value = []
+  }
+}
+
+fetchResponseTemplates()
 
 /**
  * Handles the AI prompt selection event.
@@ -433,5 +463,23 @@ watch(
       replyBoxContentRef.value?.focus()
     }, 100)
   }
+)
+
+watch(
+  () => conversationStore.current?.assigned_team_id,
+  () => {
+    fetchResponseTemplates()
+  },
+  { immediate: false }
+)
+
+watch(
+  enabledResponseChannels,
+  (channels) => {
+    if (!channels.includes('official_communication')) {
+      enabledResponseChannels.value = [...channels, 'official_communication']
+    }
+  },
+  { deep: true, immediate: true }
 )
 </script>

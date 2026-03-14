@@ -16,4 +16,6 @@ type Template struct {
 	Body      string      `db:"body" json:"body"`
 	IsDefault bool        `db:"is_default" json:"is_default"`
 	IsBuiltIn bool        `db:"is_builtin" json:"is_builtin"`
+	TeamID    *int        `db:"team_id" json:"team_id,omitempty"`
+	TeamName  null.String `db:"team_name" json:"team_name"`
 }

@@ -20,8 +20,8 @@ const (
 	headerMessageID               = "Message-ID"
 	headerReferences              = "References"
 	headerInReplyTo               = "In-Reply-To"
-	headerLibredeskLoopPrevention = "X-Libredesk-Loop-Prevention"
-	headerLibredeskConversationID = "X-Libredesk-Conversation-UUID"
+	headerCanalgovLoopPrevention = "X-Canalgov-Loop-Prevention"
+	headerCanalgovConversationID = "X-Canalgov-Conversation-UUID"
 	headerAutoreply               = "X-Autoreply"
 	headerAutoSubmitted           = "Auto-Submitted"
 
@@ -172,13 +172,13 @@ func (e *Email) Send(m models.Message) error {
 		Headers:     textproto.MIMEHeader{},
 	}
 
-	// Set libredesk loop prevention header to from address.
+	// Set CanalGov loop prevention header to from address.
 	emailAddress, err := stringutil.ExtractEmail(m.From)
 	if err != nil {
 		e.lo.Error("Failed to extract email address from the 'From' header", "error", err)
 		return fmt.Errorf("failed to extract email address from 'From' header: %w", err)
 	}
-	email.Headers.Set(headerLibredeskLoopPrevention, emailAddress)
+	email.Headers.Set(headerCanalgovLoopPrevention, emailAddress)
 
 	// Set Reply-To with plus-addressing for conversation matching (if enabled)
 	// e.g., support@company.com → support+conv-{uuid}@company.com
@@ -221,7 +221,7 @@ func (e *Email) Send(m models.Message) error {
 
 	// Set conversation uuid header
 	if m.ConversationUUID != "" {
-		email.Headers.Set(headerLibredeskConversationID, m.ConversationUUID)
+		email.Headers.Set(headerCanalgovConversationID, m.ConversationUUID)
 		e.lo.Debug("Conversation UUID header set", "conversation_uuid", m.ConversationUUID)
 	}
 

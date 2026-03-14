@@ -1,0 +1,1055 @@
+openapi: 3.1.0
+info:
+  title: CanalGov API
+  version: 0.1.0
+  description: >
+    Documentacao inicial da API do CanalGov para os fluxos principais de
+    central de chamados. Esta base ainda nao cobre 100% das rotas do backend.
+servers:
+  - url: http://localhost:9000
+    description: Ambiente local
+tags:
+  - name: Autenticacao
+  - name: Configuracao
+  - name: Conversas
+  - name: Mensagens
+  - name: Contatos
+  - name: Agentes
+  - name: Equipes
+  - name: Inboxes
+  - name: Taxonomias
+  - name: Notificacoes
+paths:
+  /health:
+    get:
+      summary: Verifica a saude da aplicacao
+      operationId: getHealth
+      responses:
+        '200':
+          description: Aplicacao operacional
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericObject'
+  /api/v1/auth/login:
+    post:
+      tags: [Autenticacao]
+      summary: Autentica um agente
+      operationId: loginAgent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Sessao criada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericObject'
+  /api/v1/config:
+    get:
+      tags: [Configuracao]
+      summary: Retorna configuracoes publicas do frontend
+      operationId: getConfig
+      responses:
+        '200':
+          description: Configuracao carregada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericObject'
+  /api/v1/agents/me:
+    get:
+      tags: [Agentes]
+      summary: Retorna o agente autenticado
+      operationId: getCurrentAgent
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Dados do agente atual
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+    put:
+      tags: [Agentes]
+      summary: Atualiza o perfil do agente autenticado
+      operationId: updateCurrentAgent
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAgentRequest'
+      responses:
+        '200':
+          description: Perfil atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+  /api/v1/agents/compact:
+    get:
+      tags: [Agentes]
+      summary: Lista agentes em formato compacto
+      operationId: getAgentsCompact
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Lista compacta de agentes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CompactEntity'
+  /api/v1/teams/compact:
+    get:
+      tags: [Equipes]
+      summary: Lista equipes em formato compacto
+      operationId: getTeamsCompact
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Lista compacta de equipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CompactEntity'
+  /api/v1/inboxes:
+    get:
+      tags: [Inboxes]
+      summary: Lista inboxes
+      operationId: getInboxes
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Lista de inboxes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Inbox'
+  /api/v1/statuses:
+    get:
+      tags: [Taxonomias]
+      summary: Lista status de conversa
+      operationId: getStatuses
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Lista de status
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CompactEntity'
+  /api/v1/priorities:
+    get:
+      tags: [Taxonomias]
+      summary: Lista prioridades
+      operationId: getPriorities
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Lista de prioridades
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CompactEntity'
+  /api/v1/tags:
+    get:
+      tags: [Taxonomias]
+      summary: Lista tags
+      operationId: getTags
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Lista de tags
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CompactEntity'
+    post:
+      tags: [Taxonomias]
+      summary: Cria uma tag
+      operationId: createTag
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NameOnlyRequest'
+      responses:
+        '200':
+          description: Tag criada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompactEntity'
+  /api/v1/contacts:
+    get:
+      tags: [Contatos]
+      summary: Lista contatos
+      operationId: getContacts
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/Order'
+        - $ref: '#/components/parameters/OrderBy'
+      responses:
+        '200':
+          description: Lista paginada de contatos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericObject'
+  /api/v1/contacts/search:
+    get:
+      tags: [Contatos]
+      summary: Busca contatos
+      operationId: searchContacts
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Resultado da busca
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Contact'
+  /api/v1/contacts/{id}:
+    get:
+      tags: [Contatos]
+      summary: Retorna um contato
+      operationId: getContact
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ID'
+      responses:
+        '200':
+          description: Contato encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contact'
+    put:
+      tags: [Contatos]
+      summary: Atualiza um contato
+      operationId: updateContact
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateContactRequest'
+      responses:
+        '200':
+          description: Contato atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contact'
+  /api/v1/contacts/{id}/notes:
+    get:
+      tags: [Contatos]
+      summary: Lista notas de um contato
+      operationId: getContactNotes
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ID'
+      responses:
+        '200':
+          description: Lista de notas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ContactNote'
+    post:
+      tags: [Contatos]
+      summary: Cria nota em um contato
+      operationId: createContactNote
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactNoteRequest'
+      responses:
+        '200':
+          description: Nota criada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactNote'
+  /api/v1/contacts/{id}/notes/{note_id}:
+    delete:
+      tags: [Contatos]
+      summary: Remove nota de um contato
+      operationId: deleteContactNote
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ID'
+        - name: note_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Nota removida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericObject'
+  /api/v1/conversations/all:
+    get:
+      tags: [Conversas]
+      summary: Lista todas as conversas visiveis
+      operationId: getAllConversations
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Lista de conversas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericObject'
+  /api/v1/conversations/unassigned:
+    get:
+      tags: [Conversas]
+      summary: Lista conversas sem agente responsavel
+      operationId: getUnassignedConversations
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Lista de conversas sem atribuicao
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericObject'
+  /api/v1/conversations/assigned:
+    get:
+      tags: [Conversas]
+      summary: Lista conversas atribuidas ao agente
+      operationId: getAssignedConversations
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Lista de conversas atribuidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericObject'
+  /api/v1/conversations/mentioned:
+    get:
+      tags: [Conversas]
+      summary: Lista conversas com mencoes ao agente
+      operationId: getMentionedConversations
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Lista de conversas mencionadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericObject'
+  /api/v1/conversations/search:
+    get:
+      tags: [Conversas]
+      summary: Busca conversas
+      operationId: searchConversations
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Resultado da busca
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Conversation'
+  /api/v1/conversations:
+    post:
+      tags: [Conversas]
+      summary: Cria uma nova conversa
+      operationId: createConversation
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateConversationRequest'
+      responses:
+        '200':
+          description: Conversa criada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+  /api/v1/conversations/{uuid}:
+    get:
+      tags: [Conversas]
+      summary: Retorna uma conversa
+      operationId: getConversation
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UUID'
+      responses:
+        '200':
+          description: Conversa encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+  /api/v1/conversations/{uuid}/participants:
+    get:
+      tags: [Conversas]
+      summary: Lista participantes da conversa
+      operationId: getConversationParticipants
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UUID'
+      responses:
+        '200':
+          description: Participantes carregados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CompactEntity'
+  /api/v1/conversations/{uuid}/assignee/user:
+    put:
+      tags: [Conversas]
+      summary: Define agente responsavel
+      operationId: updateConversationUserAssignee
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+              required: [user_id]
+      responses:
+        '200':
+          description: Atribuicao atualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+  /api/v1/conversations/{uuid}/assignee/team:
+    put:
+      tags: [Conversas]
+      summary: Define equipe responsavel
+      operationId: updateConversationTeamAssignee
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                team_id:
+                  type: integer
+              required: [team_id]
+      responses:
+        '200':
+          description: Equipe atribuida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+  /api/v1/conversations/{uuid}/priority:
+    put:
+      tags: [Conversas]
+      summary: Atualiza prioridade da conversa
+      operationId: updateConversationPriority
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                priority_id:
+                  type: integer
+              required: [priority_id]
+      responses:
+        '200':
+          description: Prioridade atualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+  /api/v1/conversations/{uuid}/status:
+    put:
+      tags: [Conversas]
+      summary: Atualiza status da conversa
+      operationId: updateConversationStatus
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status_id:
+                  type: integer
+              required: [status_id]
+      responses:
+        '200':
+          description: Status atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+  /api/v1/conversations/{uuid}/tags:
+    post:
+      tags: [Conversas]
+      summary: Atualiza tags da conversa
+      operationId: updateConversationTags
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UUID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tag_ids:
+                  type: array
+                  items:
+                    type: integer
+              required: [tag_ids]
+      responses:
+        '200':
+          description: Tags atualizadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+  /api/v1/conversations/{uuid}/messages:
+    get:
+      tags: [Mensagens]
+      summary: Lista mensagens da conversa
+      operationId: getConversationMessages
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UUID'
+      responses:
+        '200':
+          description: Lista de mensagens
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+  /api/v1/conversations/{cuuid}/messages/{uuid}:
+    get:
+      tags: [Mensagens]
+      summary: Retorna uma mensagem da conversa
+      operationId: getConversationMessage
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: cuuid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/UUID'
+      responses:
+        '200':
+          description: Mensagem encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+  /api/v1/conversations/{cuuid}/messages:
+    post:
+      tags: [Mensagens]
+      summary: Envia mensagem para uma conversa
+      operationId: sendConversationMessage
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: cuuid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageRequest'
+      responses:
+        '200':
+          description: Mensagem enviada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+  /api/v1/messages/search:
+    get:
+      tags: [Mensagens]
+      summary: Busca mensagens
+      operationId: searchMessages
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Resultado da busca
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+  /api/v1/notifications:
+    get:
+      tags: [Notificacoes]
+      summary: Lista notificacoes do agente
+      operationId: getNotifications
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Lista de notificacoes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+    delete:
+      tags: [Notificacoes]
+      summary: Remove todas as notificacoes do agente
+      operationId: deleteAllNotifications
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Notificacoes removidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericObject'
+  /api/v1/notifications/stats:
+    get:
+      tags: [Notificacoes]
+      summary: Retorna estatisticas de notificacao
+      operationId: getNotificationStats
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Estatisticas carregadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericObject'
+  /api/v1/notifications/{id}/read:
+    put:
+      tags: [Notificacoes]
+      summary: Marca notificacao como lida
+      operationId: markNotificationAsRead
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ID'
+      responses:
+        '200':
+          description: Notificacao atualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+  /api/v1/notifications/{id}:
+    delete:
+      tags: [Notificacoes]
+      summary: Remove uma notificacao
+      operationId: deleteNotification
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ID'
+      responses:
+        '200':
+          description: Notificacao removida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericObject'
+components:
+  securitySchemes:
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: canalgov_session
+  parameters:
+    ID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    UUID:
+      name: uuid
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+    PageSize:
+      name: page_size
+      in: query
+      schema:
+        type: integer
+        default: 20
+    Order:
+      name: order
+      in: query
+      schema:
+        type: string
+    OrderBy:
+      name: order_by
+      in: query
+      schema:
+        type: string
+  schemas:
+    GenericObject:
+      type: object
+      additionalProperties: true
+    CompactEntity:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+    UpdateAgentRequest:
+      type: object
+      properties:
+        first_name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+        avatar_url:
+          type: string
+          nullable: true
+    Agent:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        availability_status:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+        teams:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompactEntity'
+    Inbox:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        channel:
+          type: string
+        enabled:
+          type: boolean
+        from:
+          type: string
+          nullable: true
+    NameOnlyRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+    Contact:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+          nullable: true
+        first_name:
+          type: string
+        last_name:
+          type: string
+          nullable: true
+        phone_number:
+          type: string
+          nullable: true
+        custom_attributes:
+          type: object
+          additionalProperties: true
+    UpdateContactRequest:
+      type: object
+      properties:
+        first_name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+        phone_number:
+          type: string
+        phone_number_country_code:
+          type: string
+    ContactNoteRequest:
+      type: object
+      required: [note]
+      properties:
+        note:
+          type: string
+    ContactNote:
+      type: object
+      properties:
+        id:
+          type: integer
+        note:
+          type: string
+        user_id:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: integer
+        uuid:
+          type: string
+          format: uuid
+        reference_number:
+          type: string
+        subject:
+          type: string
+          nullable: true
+        status_id:
+          type: integer
+        priority_id:
+          type: integer
+          nullable: true
+        assigned_user_id:
+          type: integer
+          nullable: true
+        assigned_team_id:
+          type: integer
+          nullable: true
+        inbox_id:
+          type: integer
+        contact_id:
+          type: integer
+        last_message:
+          type: string
+          nullable: true
+        last_message_at:
+          type: string
+          format: date-time
+          nullable: true
+        custom_attributes:
+          type: object
+          additionalProperties: true
+    CreateConversationRequest:
+      type: object
+      required: [inbox_id, contact_id]
+      properties:
+        inbox_id:
+          type: integer
+        contact_id:
+          type: integer
+        subject:
+          type: string
+        assigned_user_id:
+          type: integer
+        assigned_team_id:
+          type: integer
+        status_id:
+          type: integer
+        priority_id:
+          type: integer
+        message:
+          type: string
+    Message:
+      type: object
+      properties:
+        id:
+          type: integer
+        uuid:
+          type: string
+          format: uuid
+        type:
+          type: string
+        status:
+          type: string
+        content:
+          type: string
+          nullable: true
+        text_content:
+          type: string
+          nullable: true
+        sender_id:
+          type: integer
+        sender_type:
+          type: string
+        conversation_id:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+    SendMessageRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+        private:
+          type: boolean
+        content_type:
+          type: string
+          enum: [text, html]
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        body:
+          type: string
+          nullable: true
+        is_read:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time

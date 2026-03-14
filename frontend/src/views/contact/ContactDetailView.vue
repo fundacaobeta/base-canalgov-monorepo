@@ -28,7 +28,14 @@
 
             <div class="text-xs text-gray-500">
               {{ $t('globals.terms.createdOn') }}
-              {{ contact.created_at ? format(new Date(contact.created_at), 'PPP') : 'N/A' }}
+              <DateTimeMeta
+                v-if="contact.created_at"
+                :value="contact.created_at"
+                :show-relative="false"
+                inline
+                compact
+              />
+              <span v-else>N/A</span>
             </div>
 
             <div class="w-30 pt-3">
@@ -87,7 +94,6 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { format } from 'date-fns'
 import { useI18n } from 'vue-i18n'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
@@ -112,6 +118,7 @@ import { EMITTER_EVENTS } from '@/constants/emitterEvents'
 import { handleHTTPError } from '@/utils/http'
 import { CustomBreadcrumb } from '@/components/ui/breadcrumb'
 import { Spinner } from '@/components/ui/spinner'
+import DateTimeMeta from '@/components/datetime/DateTimeMeta.vue'
 
 const { t } = useI18n()
 const emitter = useEmitter()

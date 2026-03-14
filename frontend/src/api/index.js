@@ -61,6 +61,24 @@ const searchContacts = (params) => http.get('/api/v1/contacts/search', { params 
 const getEmailNotificationSettings = () => http.get('/api/v1/settings/notifications/email')
 const updateEmailNotificationSettings = (data) =>
   http.put('/api/v1/settings/notifications/email', data)
+const getWhatsAppNotificationSettings = () => http.get('/api/v1/settings/notifications/whatsapp')
+const updateWhatsAppNotificationSettings = (data) =>
+  http.put('/api/v1/settings/notifications/whatsapp', data)
+const getTelegramNotificationSettings = () => http.get('/api/v1/settings/notifications/telegram')
+const updateTelegramNotificationSettings = (data) =>
+  http.put('/api/v1/settings/notifications/telegram', data)
+const getSMSNotificationSettings = () => http.get('/api/v1/settings/notifications/sms')
+const updateSMSNotificationSettings = (data) =>
+  http.put('/api/v1/settings/notifications/sms', data)
+const getPushNotificationSettings = () => http.get('/api/v1/settings/notifications/push')
+const updatePushNotificationSettings = (data) =>
+  http.put('/api/v1/settings/notifications/push', data)
+const getOfficialCommunicationsNotificationSettings = () =>
+  http.get('/api/v1/settings/notifications/official-communications')
+const updateOfficialCommunicationsNotificationSettings = (data) =>
+  http.put('/api/v1/settings/notifications/official-communications', data)
+const getMailDomainsSettings = () => http.get('/api/v1/settings/mail/domains')
+const updateMailDomainsSettings = (data) => http.put('/api/v1/settings/mail/domains', data)
 const getPriorities = () => http.get('/api/v1/priorities')
 const getStatuses = () => http.get('/api/v1/statuses')
 const createStatus = (data) => http.post('/api/v1/statuses', data)
@@ -70,7 +88,9 @@ const createTag = (data) => http.post('/api/v1/tags', data)
 const updateTag = (id, data) => http.put(`/api/v1/tags/${id}`, data)
 const deleteTag = (id) => http.delete(`/api/v1/tags/${id}`)
 const getTemplate = (id) => http.get(`/api/v1/templates/${id}`)
-const getTemplates = (type) => http.get('/api/v1/templates', { params: { type: type } })
+const getTemplates = (type, params = {}) => http.get('/api/v1/templates', {
+  params: { type, ...params }
+})
 const createTemplate = (data) =>
   http.post('/api/v1/templates', data, {
     headers: {
@@ -599,6 +619,18 @@ export default {
   getUsersCompact,
   getEmailNotificationSettings,
   updateEmailNotificationSettings,
+  getWhatsAppNotificationSettings,
+  updateWhatsAppNotificationSettings,
+  getTelegramNotificationSettings,
+  updateTelegramNotificationSettings,
+  getSMSNotificationSettings,
+  updateSMSNotificationSettings,
+  getPushNotificationSettings,
+  updatePushNotificationSettings,
+  getOfficialCommunicationsNotificationSettings,
+  updateOfficialCommunicationsNotificationSettings,
+  getMailDomainsSettings,
+  updateMailDomainsSettings,
   saveDraft,
   getAllDrafts,
   deleteDraft,

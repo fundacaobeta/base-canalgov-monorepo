@@ -478,7 +478,7 @@
                 <SelectItem value="login">Login</SelectItem>
                 <SelectItem value="cram">CRAM</SelectItem>
                 <SelectItem value="plain">Plain</SelectItem>
-                <SelectItem value="none">None</SelectItem>
+                <SelectItem value="none">Nenhum</SelectItem>
               </SelectContent>
             </Select>
           </FormControl>

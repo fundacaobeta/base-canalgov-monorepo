@@ -1,190 +1,208 @@
 <template>
   <form @submit="onSmtpSubmit" class="space-y-6">
-    <!-- Enabled Field -->
-    <FormField name="enabled" v-slot="{ value, handleChange }">
-      <FormItem>
-        <FormControl>
-          <div class="flex items-center space-x-2">
-            <Checkbox :checked="value" @update:checked="handleChange" />
-            <Label>{{ $t('globals.terms.enabled') }}</Label>
-          </div>
-        </FormControl>
-        <FormMessage />
-      </FormItem>
-    </FormField>
+    <div class="box p-5">
+      <FormField name="enabled" v-slot="{ value, handleChange }">
+        <FormItem>
+          <FormControl>
+            <div class="flex items-center space-x-2">
+              <Checkbox :checked="value" @update:checked="handleChange" />
+              <Label>Habilitar notificações por e-mail</Label>
+            </div>
+          </FormControl>
+          <FormDescription>
+            Ative o envio de alertas internos por SMTP para atribuições, SLA e eventos importantes.
+          </FormDescription>
+          <FormMessage />
+        </FormItem>
+      </FormField>
+    </div>
 
-    <!-- SMTP Host Field -->
-    <FormField v-slot="{ componentField }" name="host">
-      <FormItem>
-        <FormLabel>{{ $t('globals.terms.smtpHost') }}</FormLabel>
-        <FormControl>
-          <Input type="text" placeholder="smtp.gmail.com" v-bind="componentField" />
-        </FormControl>
-        <FormMessage />
-      </FormItem>
-    </FormField>
+    <div class="box p-5 space-y-5">
+      <div class="space-y-1">
+        <h3 class="font-medium">Conexão SMTP</h3>
+        <p class="text-sm text-muted-foreground">
+          Dados de autenticação e transporte usados para conexão com o provedor de e-mail.
+        </p>
+      </div>
 
-    <!-- SMTP Port Field -->
-    <FormField v-slot="{ componentField }" name="port">
-      <FormItem>
-        <FormLabel>{{ $t('globals.terms.smtpPort') }}</FormLabel>
-        <FormControl>
-          <Input type="number" placeholder="587" v-bind="componentField" />
-        </FormControl>
-        <FormMessage />
-      </FormItem>
-    </FormField>
+      <div class="grid gap-5 md:grid-cols-2">
+        <FormField v-slot="{ componentField }" name="host">
+          <FormItem>
+            <FormLabel>{{ $t('globals.terms.smtpHost') }}</FormLabel>
+            <FormControl>
+              <Input type="text" placeholder="smtp.gmail.com" v-bind="componentField" />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        </FormField>
 
-    <!-- Username Field -->
-    <FormField v-slot="{ componentField }" name="username">
-      <FormItem>
-        <FormLabel>{{ $t('globals.terms.username') }}</FormLabel>
-        <FormControl>
-          <Input type="text" placeholder="admin@yourcompany.com" v-bind="componentField" />
-        </FormControl>
-        <FormMessage />
-      </FormItem>
-    </FormField>
+        <FormField v-slot="{ componentField }" name="port">
+          <FormItem>
+            <FormLabel>{{ $t('globals.terms.smtpPort') }}</FormLabel>
+            <FormControl>
+              <Input type="number" placeholder="587" v-bind="componentField" />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        </FormField>
 
-    <!-- Password Field -->
-    <FormField v-slot="{ componentField }" name="password">
-      <FormItem>
-        <FormLabel>{{ $t('globals.terms.password') }}</FormLabel>
-        <FormControl>
-          <Input type="password" placeholder="" v-bind="componentField" />
-        </FormControl>
-        <FormMessage />
-      </FormItem>
-    </FormField>
+        <FormField v-slot="{ componentField }" name="username">
+          <FormItem>
+            <FormLabel>{{ $t('globals.terms.username') }}</FormLabel>
+            <FormControl>
+              <Input type="text" placeholder="admin@seu-orgao.gov.br" v-bind="componentField" />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        </FormField>
 
-    <!-- Max Connections Field -->
-    <FormField v-slot="{ componentField }" name="max_conns">
-      <FormItem>
-        <FormLabel>{{ $t('admin.inbox.maxConnections') }}</FormLabel>
-        <FormControl>
-          <Input type="number" placeholder="2" v-bind="componentField" />
-        </FormControl>
-        <FormMessage />
-        <FormDescription>{{ $t('admin.inbox.maxConnections.description') }} </FormDescription>
-      </FormItem>
-    </FormField>
+        <FormField v-slot="{ componentField }" name="password">
+          <FormItem>
+            <FormLabel>{{ $t('globals.terms.password') }}</FormLabel>
+            <FormControl>
+              <Input type="password" v-bind="componentField" />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        </FormField>
 
-    <!-- Idle Timeout Field -->
-    <FormField v-slot="{ componentField }" name="idle_timeout">
-      <FormItem>
-        <FormLabel>{{ $t('admin.inbox.idleTimeout') }}</FormLabel>
-        <FormControl>
-          <Input type="text" placeholder="15s" v-bind="componentField" />
-        </FormControl>
-        <FormMessage />
-        <FormDescription>
-          {{ $t('admin.inbox.idleTimeout.description') }}
-        </FormDescription>
-      </FormItem>
-    </FormField>
+        <FormField v-slot="{ componentField }" name="auth_protocol">
+          <FormItem>
+            <FormLabel>{{ $t('admin.inbox.authProtocol') }}</FormLabel>
+            <FormControl>
+              <Select v-bind="componentField" v-model="componentField.modelValue">
+                <SelectTrigger>
+                  <SelectValue :placeholder="t('admin.inbox.authProtocol.description')" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="plain">Plain</SelectItem>
+                    <SelectItem value="login">Login</SelectItem>
+                    <SelectItem value="cram">CRAM-MD5</SelectItem>
+                    <SelectItem value="none">Nenhum</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        </FormField>
 
-    <!-- Wait Timeout Field -->
-    <FormField v-slot="{ componentField }" name="wait_timeout">
-      <FormItem>
-        <FormLabel>{{ $t('admin.inbox.waitTimeout') }}</FormLabel>
-        <FormControl>
-          <Input type="text" placeholder="5s" v-bind="componentField" />
-        </FormControl>
-        <FormMessage />
-        <FormDescription>
-          {{ $t('admin.inbox.waitTimeout.description') }}
-        </FormDescription>
-      </FormItem>
-    </FormField>
+        <FormField v-slot="{ componentField }" name="tls_type">
+          <FormItem>
+            <FormLabel>TLS</FormLabel>
+            <FormControl>
+              <Select v-bind="componentField" v-model="componentField.modelValue">
+                <SelectTrigger>
+                  <SelectValue :placeholder="t('globals.messages.selectTLS')" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="none">Off</SelectItem>
+                    <SelectItem value="tls">SSL/TLS</SelectItem>
+                    <SelectItem value="starttls">STARTTLS</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        </FormField>
+      </div>
+    </div>
 
-    <!-- Max Message Retries Field -->
-    <FormField v-slot="{ componentField }" name="max_msg_retries">
-      <FormItem>
-        <FormLabel>{{ $t('admin.inbox.maxRetries') }}</FormLabel>
-        <FormControl>
-          <Input type="number" placeholder="3" v-bind="componentField" />
-        </FormControl>
-        <FormMessage />
-        <FormDescription> {{ $t('admin.inbox.maxRetries.description') }} </FormDescription>
-      </FormItem>
-    </FormField>
+    <div class="box p-5 space-y-5">
+      <div class="space-y-1">
+        <h3 class="font-medium">Identidade do remetente</h3>
+        <p class="text-sm text-muted-foreground">
+          Endereço exibido nas notificações e hostname usado na negociação SMTP.
+        </p>
+      </div>
 
-    <!-- Authentication Protocol Field -->
-    <FormField v-slot="{ componentField }" name="auth_protocol">
-      <FormItem>
-        <FormLabel>{{ $t('admin.inbox.authProtocol') }}</FormLabel>
-        <FormControl>
-          <Select v-bind="componentField" v-model="componentField.modelValue">
-            <SelectTrigger>
-              <SelectValue :placeholder="t('admin.inbox.authProtocol.description')" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="plain">Plain</SelectItem>
-                <SelectItem value="login">Login</SelectItem>
-                <SelectItem value="cram">CRAM-MD5</SelectItem>
-                <SelectItem value="none">None</SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </FormControl>
-        <FormMessage />
-      </FormItem>
-    </FormField>
+      <div class="grid gap-5 md:grid-cols-2">
+        <FormField v-slot="{ componentField }" name="email_address">
+          <FormItem>
+            <FormLabel>{{ $t('globals.terms.fromEmailAddress') }}</FormLabel>
+            <FormControl>
+              <Input
+                type="text"
+                :placeholder="t('admin.inbox.fromEmailAddress.placeholder')"
+                v-bind="componentField"
+              />
+            </FormControl>
+            <FormDescription>{{ $t('admin.inbox.fromEmailAddress.description') }}</FormDescription>
+            <FormMessage />
+          </FormItem>
+        </FormField>
 
-    <!-- Email Address Field -->
-    <FormField v-slot="{ componentField }" name="email_address">
-      <FormItem>
-        <FormLabel>{{ $t('globals.terms.fromEmailAddress') }}</FormLabel>
-        <FormControl>
-          <Input
-            type="text"
-            :placeholder="t('admin.inbox.fromEmailAddress.placeholder')"
-            v-bind="componentField"
-          />
-        </FormControl>
-        <FormMessage />
-        <FormDescription> {{ $t('admin.inbox.fromEmailAddress.description') }}</FormDescription>
-      </FormItem>
-    </FormField>
+        <FormField v-slot="{ componentField }" name="hello_hostname">
+          <FormItem>
+            <FormLabel>{{ $t('admin.inbox.heloHostname') }}</FormLabel>
+            <FormControl>
+              <Input type="text" placeholder="mail.seu-orgao.gov.br" v-bind="componentField" />
+            </FormControl>
+            <FormDescription>{{ $t('admin.inbox.heloHostname.description') }}</FormDescription>
+            <FormMessage />
+          </FormItem>
+        </FormField>
+      </div>
+    </div>
 
-    <!-- HELO Hostname Field -->
-    <FormField v-slot="{ componentField }" name="hello_hostname">
-      <FormItem>
-        <FormLabel>{{ $t('admin.inbox.heloHostname') }}</FormLabel>
-        <FormControl>
-          <Input type="text" placeholder="" v-bind="componentField" />
-        </FormControl>
-        <FormDescription>
-          {{ $t('admin.inbox.heloHostname.description') }}
-        </FormDescription>
-        <FormMessage />
-      </FormItem>
-    </FormField>
+    <div class="box p-5 space-y-5">
+      <div class="space-y-1">
+        <h3 class="font-medium">Desempenho e resiliência</h3>
+        <p class="text-sm text-muted-foreground">
+          Limites de conexão, tempo de espera e política de retentativas do envio.
+        </p>
+      </div>
 
-    <!-- TLS Type Field -->
-    <FormField v-slot="{ componentField }" name="tls_type">
-      <FormItem>
-        <FormLabel>TLS</FormLabel>
-        <FormControl>
-          <Select v-bind="componentField" v-model="componentField.modelValue">
-            <SelectTrigger>
-              <SelectValue :placeholder="t('globals.messages.selectTLS')" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="none">Off</SelectItem>
-                <SelectItem value="tls">SSL/TLS</SelectItem>
-                <SelectItem value="starttls">STARTTLS</SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </FormControl>
-        <FormMessage />
-      </FormItem>
-    </FormField>
+      <div class="grid gap-5 md:grid-cols-2">
+        <FormField v-slot="{ componentField }" name="max_conns">
+          <FormItem>
+            <FormLabel>{{ $t('admin.inbox.maxConnections') }}</FormLabel>
+            <FormControl>
+              <Input type="number" placeholder="2" v-bind="componentField" />
+            </FormControl>
+            <FormDescription>{{ $t('admin.inbox.maxConnections.description') }}</FormDescription>
+            <FormMessage />
+          </FormItem>
+        </FormField>
 
-    <!-- Skip TLS Verification Field -->
+        <FormField v-slot="{ componentField }" name="max_msg_retries">
+          <FormItem>
+            <FormLabel>{{ $t('admin.inbox.maxRetries') }}</FormLabel>
+            <FormControl>
+              <Input type="number" placeholder="3" v-bind="componentField" />
+            </FormControl>
+            <FormDescription>{{ $t('admin.inbox.maxRetries.description') }}</FormDescription>
+            <FormMessage />
+          </FormItem>
+        </FormField>
+
+        <FormField v-slot="{ componentField }" name="idle_timeout">
+          <FormItem>
+            <FormLabel>{{ $t('admin.inbox.idleTimeout') }}</FormLabel>
+            <FormControl>
+              <Input type="text" placeholder="15s" v-bind="componentField" />
+            </FormControl>
+            <FormDescription>{{ $t('admin.inbox.idleTimeout.description') }}</FormDescription>
+            <FormMessage />
+          </FormItem>
+        </FormField>
+
+        <FormField v-slot="{ componentField }" name="wait_timeout">
+          <FormItem>
+            <FormLabel>{{ $t('admin.inbox.waitTimeout') }}</FormLabel>
+            <FormControl>
+              <Input type="text" placeholder="5s" v-bind="componentField" />
+            </FormControl>
+            <FormDescription>{{ $t('admin.inbox.waitTimeout.description') }}</FormDescription>
+            <FormMessage />
+          </FormItem>
+        </FormField>
+      </div>
+    </div>
+
     <FormField v-slot="{ componentField, handleChange }" name="tls_skip_verify">
       <FormItem class="flex flex-row items-center justify-between box p-4">
         <div class="space-y-0.5">
@@ -197,7 +215,7 @@
       </FormItem>
     </FormField>
 
-    <Button type="submit" :isLoading="isLoading"> {{ submitLabel }} </Button>
+    <Button type="submit" :isLoading="isLoading">{{ submitLabel }}</Button>
   </form>
 </template>
 

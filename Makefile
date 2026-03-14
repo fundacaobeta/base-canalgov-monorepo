@@ -2,17 +2,19 @@
 LAST_COMMIT := $(or $(shell git rev-parse --short HEAD 2> /dev/null),$(shell head -n 1 VERSION | grep -oP -m 1 "^[a-z0-9]+$$"), "")
 
 # Try to get the semver from 1) git 2) the VERSION file 3) fallback.
-VERSION := $(or $(LIBREDESK_VERSION),$(shell git describe --tags --abbrev=0 2> /dev/null),$(shell grep -oP 'tag: \Kv\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?' VERSION),"v0.0.0")
+VERSION := $(or $(CANALGOV_VERSION),$(shell git describe --tags --abbrev=0 2> /dev/null),$(shell grep -oP 'tag: \Kv\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?' VERSION),"v0.0.0")
 
 BUILDSTR := ${VERSION} (\#${LAST_COMMIT} $(shell date -u +"%Y-%m-%dT%H:%M:%S%z"))
 
 # Binary names and paths
-BIN := libredesk
+BIN := canalgov
 FRONTEND_DIR := frontend
 FRONTEND_DIST := ${FRONTEND_DIR}/dist
 STATIC := ${FRONTEND_DIST} i18n schema.sql static
 GOPATH ?= $(HOME)/go
 STUFFBIN ?= $(GOPATH)/bin/stuffbin
+CONFIG ?= config.toml
+DEV_SEED_PASSWORD ?= CanalGov@123
 
 # The default target to run when `make` is executed.
 .DEFAULT_GOAL := build  
@@ -80,3 +82,13 @@ test:
 	go test -count=1 ./...
 	@echo "→ Running frontend tests..."
 	cd ${FRONTEND_DIR} && npx pnpm install --frozen-lockfile && npx pnpm test:run
+
+.PHONY: dev-seed
+dev-seed:
+	@echo "→ Gerando dados de desenvolvimento..."
+	@go run ./scripts/dev-seed --config ${CONFIG} --password "${DEV_SEED_PASSWORD}"
+
+.PHONY: swagger-coverage
+swagger-coverage:
+	@echo "→ Calculando cobertura OpenAPI..."
+	@go run ./scripts/openapi-coverage

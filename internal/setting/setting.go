@@ -53,7 +53,13 @@ func New(opts Opts) (*Manager, error) {
 
 	// Fields that need encryption.
 	encryptedFields := map[string]bool{
-		"notification.email.password": true,
+		"notification.email.password":                true,
+		"notification.whatsapp.access_token":         true,
+		"notification.whatsapp.webhook_verify_token": true,
+		"notification.telegram.bot_token":            true,
+		"notification.sms.api_key":                   true,
+		"notification.sms.api_secret":                true,
+		"notification.push.api_key":                  true,
 	}
 
 	return &Manager{

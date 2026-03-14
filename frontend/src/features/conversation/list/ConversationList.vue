@@ -14,7 +14,7 @@
           <Button variant="ghost" class="w-30">
             <div>
               <span class="mr-1">{{ conversationStore.conversations.total }}</span>
-              <span>{{ conversationStore.getListStatus }}</span>
+              <span>{{ translateConversationStatus(conversationStore.getListStatus, t) }}</span>
             </div>
             <ChevronDown class="w-4 h-4 ml-2 opacity-50" />
           </Button>
@@ -25,7 +25,7 @@
             :key="status.value"
             @click="handleStatusChange(status)"
           >
-            {{ status.label }}
+            {{ translateConversationStatus(status.label, t) }}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -165,6 +165,7 @@ import ConversationListItem from '@/features/conversation/list/ConversationListI
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import ConversationListItemSkeleton from '@/features/conversation/list/ConversationListItemSkeleton.vue'
+import { translateConversationStatus } from '@/utils/conversationStatus'
 
 const conversationStore = useConversationStore()
 const route = useRoute()

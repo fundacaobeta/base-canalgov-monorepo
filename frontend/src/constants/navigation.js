@@ -68,11 +68,17 @@ export const adminNavItems = [
         href: '/admin/inboxes',
         permission: 'inboxes:manage',
         isTitleKeyPlural: true
+      },
+      {
+        titleKey: 'globals.terms.domain',
+        href: '/admin/domains',
+        permission: 'general_settings:manage',
+        isTitleKeyPlural: true
       }
     ]
   },
   {
-    titleKey: 'globals.terms.teammate',
+    titleKey: 'globals.terms.agent',
     isTitleKeyPlural: true,
     children: [
       {
@@ -80,13 +86,24 @@ export const adminNavItems = [
         href: '/admin/teams/agents',
         permission: 'users:manage',
         isTitleKeyPlural: true
-      },
+      }
+    ]
+  },
+  {
+    titleKey: 'globals.terms.team',
+    isTitleKeyPlural: true,
+    children: [
       {
         titleKey: 'globals.terms.team',
         href: '/admin/teams/teams',
         permission: 'teams:manage',
         isTitleKeyPlural: true
-      },
+      }
+    ]
+  },
+  {
+    titleKey: 'globals.terms.security',
+    children: [
       {
         titleKey: 'globals.terms.role',
         href: '/admin/teams/roles',
@@ -98,6 +115,11 @@ export const adminNavItems = [
         href: '/admin/teams/activity-log',
         permission: 'activity_logs:manage',
         isTitleKeyPlural: true
+      },
+      {
+        titleKey: 'globals.terms.sso',
+        href: '/admin/sso',
+        permission: 'oidc:manage'
       }
     ]
   },
@@ -132,6 +154,26 @@ export const adminNavItems = [
         titleKey: 'globals.terms.email',
         href: '/admin/notification',
         permission: 'notification_settings:manage'
+      },
+      {
+        titleKey: 'navigation.integrations.whatsapp',
+        href: '/admin/notification/whatsapp'
+      },
+      {
+        titleKey: 'navigation.integrations.telegram',
+        href: '/admin/notification/telegram'
+      },
+      {
+        titleKey: 'navigation.integrations.sms',
+        href: '/admin/notification/sms'
+      },
+      {
+        titleKey: 'navigation.integrations.push',
+        href: '/admin/notification/push'
+      },
+      {
+        titleKey: 'navigation.notifications.officialCommunications',
+        href: '/admin/notification/official-communications'
       }
     ]
   },
@@ -148,19 +190,13 @@ export const adminNavItems = [
     ]
   },
   {
-    titleKey: 'globals.terms.security',
-    children: [
-      {
-        titleKey: 'globals.terms.sso',
-        href: '/admin/sso',
-        permission: 'oidc:manage'
-      }
-    ]
-  },
-  {
     titleKey: 'globals.terms.integration',
     isTitleKeyPlural: true,
     children: [
+      {
+        titleKey: 'navigation.integrations.actions',
+        href: '/admin/integrations/actions'
+      },
       {
         titleKey: 'globals.terms.webhook',
         href: '/admin/webhooks',

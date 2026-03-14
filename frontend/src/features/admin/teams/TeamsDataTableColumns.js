@@ -1,13 +1,13 @@
 import { h } from 'vue'
 import { RouterLink } from 'vue-router'
 import TeamDataTableDropdown from '@/features/admin/teams/TeamDataTableDropdown.vue'
-import { format } from 'date-fns'
+import DateTimeMeta from '@/components/datetime/DateTimeMeta.vue'
 
 export const columns = [
   {
     accessorKey: 'name',
     header: function () {
-      return h('div', { class: 'text-center' }, 'Name')
+      return h('div', { class: 'text-center' }, 'Nome')
     },
     cell: function ({ row }) {
       return h('div', { class: 'text-center' },
@@ -24,27 +24,19 @@ export const columns = [
   {
     accessorKey: 'created_at',
     header: function () {
-      return h('div', { class: 'text-center' }, 'Created at')
+      return h('div', { class: 'text-center' }, 'Criado em')
     },
     cell: function ({ row }) {
-      return h(
-        'div',
-        { class: 'text-center' },
-        format(row.getValue('created_at'), 'PPpp')
-      )
+      return h(DateTimeMeta, { value: row.getValue('created_at'), centered: true, compact: true })
     }
   },
   {
     accessorKey: 'updated_at',
     header: function () {
-      return h('div', { class: 'text-center' }, 'Updated at')
+      return h('div', { class: 'text-center' }, 'Atualizado em')
     },
     cell: function ({ row }) {
-      return h(
-        'div',
-        { class: 'text-center' },
-        format(row.getValue('updated_at'), 'PPpp')
-      )
+      return h(DateTimeMeta, { value: row.getValue('updated_at'), centered: true, compact: true })
     }
   },
   {

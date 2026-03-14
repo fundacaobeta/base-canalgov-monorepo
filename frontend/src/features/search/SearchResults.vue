@@ -66,11 +66,12 @@
                     <!-- Timestamp -->
                     <div class="text-sm text-muted-foreground flex items-center">
                       <ClockIcon class="h-4 w-4 mr-1" />
-                      {{
-                        formatDate(
-                          type === 'conversations' ? item.created_at : item.conversation_created_at
-                        )
-                      }}
+                      <DateTimeMeta
+                        :value="type === 'conversations' ? item.created_at : item.conversation_created_at"
+                        :show-absolute="false"
+                        inline
+                        compact
+                      />
                     </div>
                   </div>
 
@@ -95,8 +96,8 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { ChevronRightIcon, ClockIcon } from 'lucide-vue-next'
-import { format, parseISO } from 'date-fns'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import DateTimeMeta from '@/components/datetime/DateTimeMeta.vue'
 
 const props = defineProps({
   results: {
@@ -133,11 +134,6 @@ const tabsGridClass = computed(() => {
   if (tabCount <= 4) return 'grid-cols-4'
   return 'grid-cols-5'
 })
-
-const formatDate = (dateString) => {
-  const date = parseISO(dateString)
-  return format(date, 'MMM d, yyyy HH:mm')
-}
 
 const truncateText = (text, length) => {
   if (!text) return ''

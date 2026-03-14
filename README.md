@@ -1,52 +1,50 @@
 <a href="https://zerodha.tech"><img src="https://zerodha.tech/static/images/github-badge.svg" align="right" alt="Zerodha Tech Badge" /></a>
 
 
-# Libredesk
+# CanalGov
 
-Modern, open source, self-hosted customer support desk. Single binary app. 
+Central de atendimento moderna, open source e self-hosted. Aplicacao em binario unico.
 
 ![image](https://libredesk.io/hero.png?v=1)
 
 
-Visit [libredesk.io](https://libredesk.io) for more info. Check out the [**Live demo**](https://demo.libredesk.io/).
+Consulte a [documentacao local](./docs/README.md) para operacao e desenvolvimento.
 
-## Features
+## Recursos
 
-- **Multi Shared Inbox**  
-  Libredesk supports multiple shared inboxes, letting you manage conversations across teams effortlessly.
-- **Granular Permissions**  
-  Create custom roles with granular permissions for teams and individual agents.
-- **Smart Automation**  
-  Eliminate repetitive tasks with powerful automation rules. Auto-tag, assign, and route conversations based on custom conditions.
-- **CSAT Surveys**  
-  Measure customer satisfaction with automated surveys.
-- **Macros**  
-  Save frequently sent messages as templates. With one click, send saved responses, set tags, and more.
-- **Smart Organization**  
-  Keep conversations organized with tags, custom statuses for conversations, and snoozing. Find any conversation instantly from the search bar.
-- **Auto Assignment**  
-  Distribute workload with auto assignment rules. Auto-assign conversations based on agent capacity or custom criteria.
-- **SLA Management**  
-  Set and track response time targets. Get notified when conversations are at risk of breaching SLA commitments.
-- **Custom attributes**  
-  Create custom attributes for contacts or conversations such as the subscription plan or the date of their first purchase. 
-- **AI-Assist**  
-  Instantly rewrite responses with AI to make them more friendly, professional, or polished.
-- **Activity logs**  
-  Track all actions performed by agents and admins—updates and key events across the system—for auditing and accountability.
-- **Webhooks**  
-  Integrate with external systems using real-time HTTP notifications for conversation and message events.
-- **Command Bar**  
-  Opens with a simple shortcut (CTRL+K) and lets you quickly perform actions on conversations.
-
-And more checkout - [libredesk.io](https://libredesk.io)
+- **Caixas compartilhadas**
+  Gerencie conversas em multiplas filas e equipes.
+- **Permissoes granulares**
+  Crie funcoes com controle fino por equipe e por agente.
+- **Automacoes**
+  Automatize marcacao, atribuicao e roteamento de conversas.
+- **Pesquisas CSAT**
+  Meça satisfacao com pesquisas automaticas.
+- **Macros**
+  Padronize respostas e acoes frequentes em um clique.
+- **Organizacao**
+  Use tags, status personalizados e adiamento de conversas.
+- **Autoatribuicao**
+  Distribua carga conforme regras e capacidade.
+- **SLA**
+  Defina metas e receba alertas antes de violacoes.
+- **Atributos personalizados**
+  Amplie contatos e conversas com campos de negocio.
+- **Assistencia com IA**
+  Reescreva respostas para ajustar tom e clareza.
+- **Logs de atividade**
+  Audite alteracoes e eventos relevantes.
+- **Webhooks**
+  Integre eventos de conversa e mensagem em tempo real.
+- **Barra de comando**
+  Execute acoes rapidas com atalhos.
 
 
-## Installation
+## Instalacao
 
 ### Docker
 
-The latest image is available on DockerHub at [`libredesk/libredesk:latest`](https://hub.docker.com/r/libredesk/libredesk/tags?page=1&ordering=last_updated&name=latest)
+The latest image is available on DockerHub at [`canalgov/canalgov:latest`](https://hub.docker.com/)
 
 ```shell
 # Download the compose file and sample config file in the current directory.
@@ -60,34 +58,36 @@ cp config.sample.toml config.toml
 docker compose up -d
 
 # Setting System user password.
-docker exec -it libredesk_app ./libredesk --set-system-user-password
+docker exec -it canalgov_app ./canalgov --set-system-user-password
 ```
 
 Go to `http://localhost:9000` and login with username `System` and the password you set using the `--set-system-user-password` command.
 
-See [installation docs](https://docs.libredesk.io/getting-started/installation)
+Veja a documentacao local em [docs](./docs/README.md)
 
 __________________
 
 ### Binary
-- Download the [latest release](https://github.com/abhinavxd/libredesk/releases) and extract the libredesk binary.
+- Download the latest release and extract the `canalgov` binary.
 - Copy config.sample.toml to config.toml and edit as needed.
-- `./libredesk --install` to setup the Postgres DB (or `--upgrade` to upgrade an existing DB. Upgrades are idempotent and running them multiple times have no side effects).
-- Run `./libredesk --set-system-user-password` to set the password for the System user.
-- Run `./libredesk` and visit `http://localhost:9000` and login with username `System` and the password you set using the --set-system-user-password command.
+- `./canalgov --install` to setup the Postgres DB (or `--upgrade` to upgrade an existing DB. Upgrades are idempotent and running them multiple times have no side effects).
+- Run `./canalgov --set-system-user-password` to set the password for the System user.
+- Run `./canalgov` and visit `http://localhost:9000` and login with username `System` and the password you set using the --set-system-user-password command.
 
-See [installation docs](https://docs.libredesk.io/getting-started/installation)
+Veja a documentacao local em [docs](./docs/README.md)
 __________________
 
-## Developers
+## Desenvolvimento
 
-- If you are interested in contributing, **please read [CONTRIBUTING.md](./CONTRIBUTING.md) first**.
-- For local development and setup, refer to the [developer setup](https://docs.libredesk.io/contributing/developer-setup).
-- For planned features and project direction, see [ROADMAP.md](./ROADMAP.md).
+- Para contribuir, leia [docs/contributing.md](./docs/contributing.md).
+- Para usuarios e acessos de desenvolvimento, veja [docs/usuarios-dev.md](./docs/usuarios-dev.md).
+- Para o frontend, veja [docs/frontend.md](./docs/frontend.md).
+- Para direcao do projeto, veja [docs/roadmap.md](./docs/roadmap.md).
 
 The backend is written in Go and the frontend is Vue.js 3 with Shadcn UI.
 
 
 
-## Translators
-You can help translate Libredesk into your language on [Crowdin](https://crowdin.com/project/libredesk).  
+## Documentacao
+
+A documentacao operacional e de desenvolvimento fica em [docs/README.md](./docs/README.md).

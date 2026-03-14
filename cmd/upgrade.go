@@ -40,7 +40,10 @@ var migList = []migFunc{
 	{"v0.9.1", migrations.V0_9_1},
 	{"v0.10.0", migrations.V0_10_0},
 	{"v1.0.1", migrations.V1_0_1},
-}
+		{"v1.0.2", migrations.V1_0_2},
+		{"v1.0.3", migrations.V1_0_3},
+		{"v1.0.4", migrations.V1_0_4},
+	}
 
 // upgrade upgrades the database to the current version by running SQL migration files
 // for all version from the last known version to the current one.
@@ -152,6 +155,6 @@ func checkPendingUpgrade(db *sqlx.DB) {
 		vers = append(vers, m.version)
 	}
 
-	log.Fatalf(`there are %d pending database upgrade(s): %v. The last upgrade was %s. Backup the database and run libredesk --upgrade`,
+	log.Fatalf(`there are %d pending database upgrade(s): %v. The last upgrade was %s. Backup the database and run canalgov --upgrade`,
 		len(toRun), vers, lastVer)
 }

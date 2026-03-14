@@ -99,18 +99,15 @@
       </Avatar>
     </div>
 
-    <!-- Timestamp tooltip -->
+    <!-- Timestamp -->
     <div :class="isOutgoing ? 'pr-[47px]' : 'pl-[47px]'">
-      <Tooltip>
-        <TooltipTrigger>
-          <span class="text-muted-foreground text-xs mt-1">
-            {{ formatMessageTimestamp(message.created_at) }}
-          </span>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>{{ formatFullTimestamp(message.created_at) }}</p>
-        </TooltipContent>
-      </Tooltip>
+      <DateTimeMeta
+        v-if="message.created_at"
+        :value="message.created_at"
+        :show-absolute="false"
+        inline
+        compact
+      />
     </div>
   </div>
 </template>
@@ -123,9 +120,8 @@ import { useAppSettingsStore } from '@/stores/appSettings'
 import { useI18n } from 'vue-i18n'
 import { Lock, RotateCcw, Check } from 'lucide-vue-next'
 import { revertCIDToImageSrc } from '@/utils/strings'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Spinner } from '@/components/ui/spinner'
-import { formatMessageTimestamp, formatFullTimestamp } from '@/utils/datetime'
+import DateTimeMeta from '@/components/datetime/DateTimeMeta.vue'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Letter } from 'vue-letter'
 import MessageAttachmentPreview from '@/features/conversation/message/attachment/MessageAttachmentPreview.vue'

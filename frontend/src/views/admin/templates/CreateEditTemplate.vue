@@ -96,7 +96,9 @@ onMounted(async () => {
     }
   } else {
     template.value = {
-      type: route.query.type
+      type: route.query.type || 'response',
+      team_id: null,
+      is_default: false
     }
   }
 })

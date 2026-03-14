@@ -1,7 +1,9 @@
 <script setup>
+import { computed } from 'vue'
 import { DateFormatter, getLocalTimeZone } from '@internationalized/date'
 import { CalendarIcon } from '@radix-icons/vue'
 import { beautifyObjectName } from './utils'
+import { useI18n } from 'vue-i18n'
 import AutoFormLabel from './AutoFormLabel.vue'
 import {
   FormControl,
@@ -24,9 +26,8 @@ defineProps({
   disabled: { type: Boolean, required: false }
 })
 
-const df = new DateFormatter('en-US', {
-  dateStyle: 'long'
-})
+const { locale, t } = useI18n()
+const df = computed(() => new DateFormatter(locale.value || 'pt-BR', { dateStyle: 'long' }))
 </script>
 
 <template>
@@ -52,8 +53,8 @@ const df = new DateFormatter('en-US', {
                   <CalendarIcon class="mr-2 h-4 w-4" />
                   {{
                     slotProps.componentField.modelValue
-                      ? df.format(slotProps.componentField.modelValue.toDate(getLocalTimeZone()))
-                      : 'Pick a date'
+                      ? df.value.format(slotProps.componentField.modelValue.toDate(getLocalTimeZone()))
+                      : t('globals.terms.pickDate')
                   }}
                 </Button>
               </PopoverTrigger>

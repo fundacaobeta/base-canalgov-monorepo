@@ -23,14 +23,15 @@
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectItem value="da">Danish</SelectItem>
-                <SelectItem value="de">German</SelectItem>
-                <SelectItem value="en">English</SelectItem>
-                <SelectItem value="fa">Farsi</SelectItem>
-                <SelectItem value="fr">French</SelectItem>
-                <SelectItem value="it">Italian</SelectItem>
-                <SelectItem value="ja">Japanese</SelectItem>
-                <SelectItem value="es">Spanish</SelectItem>
+                <SelectItem value="pt-BR">Português (Brasil)</SelectItem>
+                <SelectItem value="da">Dinamarquês</SelectItem>
+                <SelectItem value="de">Alemão</SelectItem>
+                <SelectItem value="en">Inglês</SelectItem>
+                <SelectItem value="es">Espanhol</SelectItem>
+                <SelectItem value="fa">Persa</SelectItem>
+                <SelectItem value="fr">Francês</SelectItem>
+                <SelectItem value="it">Italiano</SelectItem>
+                <SelectItem value="ja">Japonês</SelectItem>
                 <SelectItem value="mr">Marathi</SelectItem>
               </SelectGroup>
             </SelectContent>

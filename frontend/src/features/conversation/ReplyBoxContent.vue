@@ -1,93 +1,205 @@
 <template>
-  <!-- Set fixed width only when not in fullscreen. -->
-  <div class="flex flex-col h-full" :class="{ 'max-h-[600px]': !isFullscreen }">
-    <!-- Message type toggle -->
+  <div class="flex h-full flex-col" :class="{ 'max-h-[600px]': !isFullscreen }">
     <div
-      class="flex justify-between items-center"
+      class="flex items-center justify-between gap-3"
       :class="{ 'mb-4': !isFullscreen, 'border-b border-border pb-4': isFullscreen }"
     >
-      <Tabs v-model="messageType" class="rounded border">
-        <TabsList class="bg-muted p-1 rounded">
-          <TabsTrigger
-            value="reply"
-            class="px-3 py-1 rounded transition-colors duration-200"
-            :class="{ 'bg-background text-foreground': messageType === 'reply' }"
-          >
-            {{ $t('globals.terms.reply') }}
-          </TabsTrigger>
+      <Tabs v-model="messageType">
+        <TabsList class="h-10 rounded-full border border-border bg-muted/50 p-1">
           <TabsTrigger
             value="private_note"
-            class="px-3 py-1 rounded transition-colors duration-200"
-            :class="{ 'bg-background text-foreground': messageType === 'private_note' }"
+            class="rounded-full px-4 py-1.5 text-sm transition-colors"
+            :class="{ 'bg-background text-foreground shadow-sm': messageType === 'private_note' }"
           >
             {{ $t('globals.terms.privateNote') }}
           </TabsTrigger>
+          <TabsTrigger
+            value="reply"
+            class="rounded-full px-4 py-1.5 text-sm transition-colors"
+            :class="{ 'bg-background text-foreground shadow-sm': messageType === 'reply' }"
+          >
+            {{ $t('globals.terms.reply') }}
+          </TabsTrigger>
         </TabsList>
       </Tabs>
-      <Button class="text-muted-foreground" variant="ghost" @click="toggleFullscreen">
+
+      <Button type="button" class="text-muted-foreground" variant="ghost" @click="toggleFullscreen">
         <component :is="isFullscreen ? Minimize2 : Maximize2" />
       </Button>
     </div>
 
-    <!-- To, CC, and BCC fields -->
     <div
-      :class="['space-y-3', isFullscreen ? 'p-4 border-b border-border' : 'mb-4']"
       v-if="messageType === 'reply'"
+      :class="['space-y-3', isFullscreen ? 'border-b border-border pb-4' : 'mb-4']"
     >
-      <div class="flex items-center space-x-2">
-        <label class="w-12 text-sm font-medium text-muted-foreground">TO:</label>
-        <Input
-          type="text"
-          :placeholder="t('replyBox.emailAddresess')"
-          v-model="to"
-          class="flex-grow px-3 py-2 text-sm border rounded focus:ring-2 focus:ring-ring"
-          @blur="validateEmails"
-        />
-      </div>
-      <div class="flex items-center space-x-2">
-        <label class="w-12 text-sm font-medium text-muted-foreground">CC:</label>
-        <Input
-          type="text"
-          :placeholder="t('replyBox.emailAddresess')"
-          v-model="cc"
-          class="flex-grow px-3 py-2 text-sm border rounded focus:ring-2 focus:ring-ring"
-          @blur="validateEmails"
-        />
-        <Button
-          size="sm"
-          @click="toggleBcc"
-          class="text-sm bg-secondary text-secondary-foreground hover:bg-secondary/80"
-        >
-          {{ showBcc ? 'Remove BCC' : 'BCC' }}
-        </Button>
-      </div>
-      <div v-if="showBcc" class="flex items-center space-x-2">
-        <label class="w-12 text-sm font-medium text-muted-foreground">BCC:</label>
-        <Input
-          type="text"
-          :placeholder="t('replyBox.emailAddresess')"
-          v-model="bcc"
-          class="flex-grow px-3 py-2 text-sm border rounded focus:ring-2 focus:ring-ring"
-          @blur="validateEmails"
-        />
+      <div class="space-y-3 rounded-2xl border border-border/70 bg-background/70 px-4 py-3">
+        <div class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+          <div class="min-w-0 flex-1 space-y-2">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                Canal
+              </span>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  v-for="channel in visibleResponseChannels"
+                  :key="channel.value"
+                  type="button"
+                  class="rounded-full border px-3 py-1 text-sm transition-colors"
+                  :class="
+                    selectedResponseChannel === channel.value
+                      ? 'border-foreground bg-foreground text-background'
+                      : 'border-border bg-background text-muted-foreground hover:text-foreground'
+                  "
+                  @click="selectedResponseChannel = channel.value"
+                >
+                  {{ channel.label }}
+                </button>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+              <span>{{ selectedChannelDescription }}</span>
+              <button
+                type="button"
+                class="font-medium text-foreground underline-offset-4 hover:underline"
+                @click="showChannelSettings = !showChannelSettings"
+              >
+                {{ showChannelSettings ? 'Ocultar meios' : 'Escolher meios visíveis' }}
+              </button>
+              <button
+                v-if="selectedResponseChannel === 'email'"
+                type="button"
+                class="font-medium text-foreground underline-offset-4 hover:underline"
+                @click="showEmailEnvelope = !showEmailEnvelope"
+              >
+                {{ emailSummary }}
+              </button>
+            </div>
+          </div>
+
+          <div class="w-full xl:w-[320px]">
+            <label class="mb-2 block text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+              Modelo
+            </label>
+            <div class="flex gap-2">
+              <Select v-model="selectedTemplateId">
+                <SelectTrigger class="bg-background">
+                  <SelectValue placeholder="Escrever uma nova mensagem" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="new-message">Escrever uma nova mensagem</SelectItem>
+                  <SelectItem
+                    v-for="template in responseTemplates"
+                    :key="template.id"
+                    :value="String(template.id)"
+                  >
+                    {{ template.name }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                v-if="selectedTemplateId !== 'new-message'"
+                type="button"
+                variant="ghost"
+                class="shrink-0"
+                @click="clearSelectedTemplate"
+              >
+                Limpar
+              </Button>
+            </div>
+            <p class="mt-2 text-xs text-muted-foreground">
+              {{ templateSummary }}
+            </p>
+          </div>
+        </div>
+
+        <Collapsible v-model:open="showChannelSettings">
+          <CollapsibleContent>
+            <div class="grid gap-2 border-t border-border/60 pt-3 sm:grid-cols-2 xl:grid-cols-3">
+              <label
+                v-for="channel in allResponseChannels"
+                :key="`config-${channel.value}`"
+                class="flex items-start gap-3 rounded-2xl border border-border/70 bg-muted/20 px-3 py-3"
+              >
+                <Checkbox
+                  :checked="enabledResponseChannels.includes(channel.value)"
+                  @update:checked="(checked) => toggleResponseChannel(channel.value, checked)"
+                />
+                <div class="space-y-1">
+                  <div class="text-sm font-medium">{{ channel.label }}</div>
+                  <p class="text-xs text-muted-foreground">{{ channel.description }}</p>
+                </div>
+              </label>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+
+        <div class="flex items-start justify-between gap-3 border-t border-border/60 pt-3">
+          <div class="space-y-1">
+            <div class="text-sm font-medium">Meio ativo: {{ selectedResponseChannelLabel }}</div>
+            <p class="text-xs text-muted-foreground">{{ selectedChannelHint }}</p>
+          </div>
+        </div>
+
+        <Collapsible v-if="selectedResponseChannel === 'email'" v-model:open="showEmailEnvelope">
+          <CollapsibleContent>
+            <div class="grid gap-3 border-t border-border/60 pt-3">
+              <div class="grid gap-2">
+                <label class="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">TO</label>
+                <Input
+                  v-model="to"
+                  type="text"
+                  :placeholder="t('replyBox.emailAddresess')"
+                  @blur="validateEmails"
+                />
+              </div>
+
+              <div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
+                <div class="grid gap-2">
+                  <label class="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">CC</label>
+                  <Input
+                    v-model="cc"
+                    type="text"
+                    :placeholder="t('replyBox.emailAddresess')"
+                    @blur="validateEmails"
+                  />
+                </div>
+
+                <div class="flex items-end">
+                  <Button type="button" size="sm" variant="ghost" @click="toggleBcc">
+                    {{ showBcc ? 'Ocultar BCC' : 'Adicionar BCC' }}
+                  </Button>
+                </div>
+              </div>
+
+              <div v-if="showBcc" class="grid gap-2">
+                <label class="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">BCC</label>
+                <Input
+                  v-model="bcc"
+                  type="text"
+                  :placeholder="t('replyBox.emailAddresess')"
+                  @blur="validateEmails"
+                />
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
     </div>
 
-    <!-- email errors -->
     <div
       v-if="emailErrors.length > 0"
-      class="mb-4 px-2 py-1 bg-destructive/10 border border-destructive text-destructive rounded"
+      class="mb-4 rounded-lg border border-destructive bg-destructive/10 px-3 py-2 text-destructive"
     >
       <p v-for="error in emailErrors" :key="error" class="text-sm">{{ error }}</p>
     </div>
 
-    <!-- Main tiptap editor -->
-    <div class="flex-grow flex flex-col overflow-hidden">
+    <div class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-background">
       <Editor
         ref="editorRef"
         v-model:htmlContent="htmlContent"
         v-model:textContent="textContent"
-        :placeholder="t('editor.newLine') + t('editor.send') + t('editor.ctrlK')"
+        :placeholder="editorPlaceholder"
         :aiPrompts="aiPrompts"
         :insertContent="insertContent"
         :autoFocus="true"
@@ -100,7 +212,6 @@
       />
     </div>
 
-    <!-- Macro preview -->
     <MacroActionsPreview
       v-if="conversationStore.getMacro(MACRO_CONTEXT.REPLY)?.actions?.length > 0"
       :actions="conversationStore.getMacro(MACRO_CONTEXT.REPLY).actions"
@@ -108,18 +219,16 @@
       class="mt-2"
     />
 
-    <!-- Attachments preview -->
     <AttachmentsPreview
+      v-if="uploadedFiles.length > 0 || uploadingFiles.length > 0"
       :attachments="uploadedFiles"
       :uploadingFiles="uploadingFiles"
       :onDelete="handleOnFileDelete"
-      v-if="uploadedFiles.length > 0 || uploadingFiles.length > 0"
       class="mt-2"
     />
 
-    <!-- Editor menu bar with send button -->
     <ReplyBoxMenuBar
-      class="mt-1 shrink-0"
+      class="mt-2 shrink-0"
       :isFullscreen="isFullscreen"
       :handleFileUpload="handleFileUpload"
       :isSending="isSending"
@@ -131,16 +240,29 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick, watch } from 'vue'
-import { EMITTER_EVENTS } from '@/constants/emitterEvents.js'
-import { MACRO_CONTEXT } from '@/constants/conversation'
+import { computed, nextTick, ref, watch } from 'vue'
 import { Maximize2, Minimize2 } from 'lucide-vue-next'
 import Editor from '@/components/editor/TextEditor.vue'
-import { useConversationStore } from '@/stores/conversation'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger
+} from '@/components/ui/collapsible'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
 import { useEmitter } from '@/composables/useEmitter'
+import { EMITTER_EVENTS } from '@/constants/emitterEvents.js'
+import { MACRO_CONTEXT } from '@/constants/conversation'
+import { useConversationStore } from '@/stores/conversation'
 import AttachmentsPreview from '@/features/conversation/message/attachment/AttachmentsPreview.vue'
 import MacroActionsPreview from '@/features/conversation/MacroActionsPreview.vue'
 import ReplyBoxMenuBar from '@/features/conversation/ReplyBoxMenuBar.vue'
@@ -155,51 +277,14 @@ const to = defineModel('to', { default: '' })
 const cc = defineModel('cc', { default: '' })
 const bcc = defineModel('bcc', { default: '' })
 const showBcc = defineModel('showBcc', { default: false })
+const selectedResponseChannel = defineModel('selectedResponseChannel', { default: 'email' })
+const enabledResponseChannels = defineModel('enabledResponseChannels', {
+  default: () => ['email', 'whatsapp', 'telegram', 'sms', 'official_communication']
+})
 const emailErrors = defineModel('emailErrors', { default: () => [] })
 const htmlContent = defineModel('htmlContent', { default: '' })
 const textContent = defineModel('textContent', { default: '' })
 const mentions = defineModel('mentions', { default: () => [] })
-const macroStore = useMacroStore()
-const usersStore = useUsersStore()
-const teamStore = useTeamStore()
-
-// Get suggestions for the mention dropdown
-const getSuggestions = async (query) => {
-  // Only show suggestions in private note mode
-  if (messageType.value !== 'private_note') {
-    return []
-  }
-
-  await Promise.all([usersStore.fetchUsers(), teamStore.fetchTeams()])
-
-  const q = query.toLowerCase()
-
-  const users = usersStore.users
-    .filter((u) => u.enabled)
-    .filter((u) => `${u.first_name} ${u.last_name}`.toLowerCase().includes(q))
-    .map((u) => ({
-      id: u.id,
-      type: 'agent',
-      label: `${u.first_name} ${u.last_name}`.trim(),
-      avatar_url: u.avatar_url
-    }))
-
-  const teams = teamStore.teams
-    .filter((t) => t.name.toLowerCase().includes(q))
-    .map((t) => ({
-      id: t.id,
-      type: 'team',
-      label: t.name,
-      emoji: t.emoji
-    }))
-
-  return [...users, ...teams].slice(0, 25)
-}
-
-// Handle mentions changed from editor
-const handleMentionsChanged = (newMentions) => {
-  mentions.value = newMentions
-}
 
 const props = defineProps({
   isFullscreen: {
@@ -209,6 +294,11 @@ const props = defineProps({
   aiPrompts: {
     type: Array,
     required: true
+  },
+  responseTemplates: {
+    type: Array,
+    required: false,
+    default: () => []
   },
   isSending: {
     type: Boolean,
@@ -239,16 +329,141 @@ const emit = defineEmits([
   'aiPromptSelected'
 ])
 
+const macroStore = useMacroStore()
+const usersStore = useUsersStore()
+const teamStore = useTeamStore()
 const conversationStore = useConversationStore()
 const emitter = useEmitter()
 const { t } = useI18n()
 const insertContent = ref(null)
 const editorRef = ref(null)
+const showChannelSettings = ref(false)
+const showEmailEnvelope = ref(false)
+const selectedTemplateId = ref('new-message')
+
+const allResponseChannels = [
+  {
+    value: 'email',
+    label: 'E-mail',
+    description: 'Ideal para respostas com destinatários, cópia e trilha formal.'
+  },
+  {
+    value: 'whatsapp',
+    label: 'WhatsApp',
+    description: 'Útil para continuidade rápida do atendimento em canal conversacional.'
+  },
+  {
+    value: 'telegram',
+    label: 'Telegram',
+    description: 'Adequado para fluxos com bot, grupo ou comunicação transacional.'
+  },
+  {
+    value: 'sms',
+    label: 'SMS',
+    description: 'Indicado para mensagens curtas, alertas e confirmações objetivas.'
+  },
+  {
+    value: 'official_communication',
+    label: 'Comunicado oficial',
+    description: 'Canal formal para respostas institucionais e linguagem padronizada.'
+  }
+]
+
+const visibleResponseChannels = computed(() =>
+  allResponseChannels.filter((channel) => enabledResponseChannels.value.includes(channel.value))
+)
+
+const selectedChannel = computed(() => {
+  return allResponseChannels.find((channel) => channel.value === selectedResponseChannel.value) || allResponseChannels[0]
+})
+
+const selectedResponseChannelLabel = computed(() => selectedChannel.value.label)
+const selectedChannelDescription = computed(() => selectedChannel.value.description)
+
+const selectedChannelHint = computed(() => {
+  if (selectedResponseChannel.value === 'email') {
+    return 'Abra os destinatários apenas quando precisar revisar ou ajustar TO, CC e BCC.'
+  }
+  if (selectedResponseChannel.value === 'official_communication') {
+    return 'Use preferencialmente um modelo do sistema para manter tom e estrutura institucionais.'
+  }
+  return 'O meio fica registrado no composer para orientar a redação, mesmo sem alterar o envio técnico nesta etapa.'
+})
+
+const templateSummary = computed(() => {
+  if (selectedTemplateId.value === 'new-message') {
+    return 'Selecione um modelo salvo ou escreva uma resposta nova.'
+  }
+
+  const selectedTemplate = props.responseTemplates.find(
+    (template) => String(template.id) === String(selectedTemplateId.value)
+  )
+
+  if (!selectedTemplate) {
+    return 'Selecione um modelo salvo ou escreva uma resposta nova.'
+  }
+
+  return selectedTemplate.team_name
+    ? `Modelo priorizado da equipe ${selectedTemplate.team_name}.`
+    : 'Modelo global disponível para todo o workspace.'
+})
+
+const emailSummary = computed(() => {
+  if (to.value || cc.value || bcc.value) {
+    return 'Revisar destinatários'
+  }
+  return showEmailEnvelope.value ? 'Ocultar destinatários' : 'Adicionar destinatários'
+})
+
+const editorPlaceholder = computed(() => {
+  if (messageType.value === 'private_note') {
+    return 'Escreva uma mensagem privada para o time. Use @ para mencionar pessoas ou equipes.'
+  }
+  return `Responda por ${selectedResponseChannelLabel.value.toLowerCase()} ou selecione um modelo do sistema.`
+})
+
+const getSuggestions = async (query) => {
+  if (messageType.value !== 'private_note') {
+    return []
+  }
+
+  await Promise.all([usersStore.fetchUsers(), teamStore.fetchTeams()])
+
+  const q = query.toLowerCase()
+
+  const users = usersStore.users
+    .filter((user) => user.enabled)
+    .filter((user) => `${user.first_name} ${user.last_name}`.toLowerCase().includes(q))
+    .map((user) => ({
+      id: user.id,
+      type: 'agent',
+      label: `${user.first_name} ${user.last_name}`.trim(),
+      avatar_url: user.avatar_url
+    }))
+
+  const teams = teamStore.teams
+    .filter((team) => team.name.toLowerCase().includes(q))
+    .map((team) => ({
+      id: team.id,
+      type: 'team',
+      label: team.name,
+      emoji: team.emoji
+    }))
+
+  return [...users, ...teams].slice(0, 25)
+}
+
+const handleMentionsChanged = (newMentions) => {
+  mentions.value = newMentions
+}
+
+const toggleFullscreen = () => {
+  emit('toggleFullscreen')
+}
 
 const toggleBcc = async () => {
   showBcc.value = !showBcc.value
   await nextTick()
-  // If hiding BCC field, clear the content and validate email bcc so it doesn't show errors.
   if (!showBcc.value) {
     bcc.value = ''
     await nextTick()
@@ -256,27 +471,63 @@ const toggleBcc = async () => {
   }
 }
 
-const toggleFullscreen = () => {
-  emit('toggleFullscreen')
+const toggleResponseChannel = (channelValue, checked) => {
+  const currentChannels = [...enabledResponseChannels.value]
+
+  if (checked) {
+    enabledResponseChannels.value = Array.from(new Set([...currentChannels, channelValue]))
+    return
+  }
+
+  if (currentChannels.length === 1) {
+    return
+  }
+
+  enabledResponseChannels.value = currentChannels.filter((value) => value !== channelValue)
+  if (!enabledResponseChannels.value.includes(selectedResponseChannel.value)) {
+    selectedResponseChannel.value = enabledResponseChannels.value[0] || 'email'
+  }
+}
+
+const applyTemplate = (templateId) => {
+  if (templateId === 'new-message') {
+    return
+  }
+
+  const selectedTemplate = props.responseTemplates.find(
+    (template) => String(template.id) === String(templateId)
+  )
+
+  if (!selectedTemplate) {
+    return
+  }
+
+  htmlContent.value = selectedTemplate.body || ''
+  textContent.value = selectedTemplate.body || ''
+}
+
+const clearSelectedTemplate = () => {
+  selectedTemplateId.value = 'new-message'
 }
 
 const enableSend = computed(() => {
   return (
     (textContent.value.trim().length > 0 ||
-      conversationStore.getMacro('reply')?.actions?.length > 0 ||
+      conversationStore.getMacro(MACRO_CONTEXT.REPLY)?.actions?.length > 0 ||
       props.uploadedFiles.length > 0) &&
     emailErrors.value.length === 0 &&
-    !props.uploadingFiles.length && !props.isDraftLoading
+    !props.uploadingFiles.length &&
+    !props.isDraftLoading
   )
 })
 
-/**
- * Validates email addresses in To, CC, and BCC fields.
- * Populates `emailErrors` with invalid emails grouped by field.
- */
 const validateEmails = async () => {
   emailErrors.value = []
   await nextTick()
+
+  if (selectedResponseChannel.value !== 'email') {
+    return
+  }
 
   const fields = ['to', 'cc', 'bcc']
   const values = { to: to.value, cc: cc.value, bcc: bcc.value }
@@ -284,17 +535,15 @@ const validateEmails = async () => {
   fields.forEach((field) => {
     const invalid = values[field]
       .split(',')
-      .map((e) => e.trim())
-      .filter((e) => e && !validateEmail(e))
+      .map((email) => email.trim())
+      .filter((email) => email && !validateEmail(email))
 
-    if (invalid.length)
+    if (invalid.length) {
       emailErrors.value.push(`${t('replyBox.invalidEmailsIn')} '${field}': ${invalid.join(', ')}`)
+    }
   })
 }
 
-/**
- * Send the reply or private note
- */
 const handleSend = async () => {
   await validateEmails()
   if (emailErrors.value.length > 0) {
@@ -317,7 +566,6 @@ const handleOnFileDelete = (uuid) => {
 
 const handleEmojiSelect = (emoji) => {
   insertContent.value = undefined
-  // Force reactivity so the user can select the same emoji multiple times
   nextTick(() => (insertContent.value = emoji))
 }
 
@@ -325,16 +573,15 @@ const handleAiPromptSelected = (key) => {
   emit('aiPromptSelected', key)
 }
 
-// Watch and update macro view based on message type this filters our macros.
 watch(
   messageType,
-  (newType, oldType) => {
+  (newType) => {
     if (newType === 'reply') {
       macroStore.setCurrentView('replying')
-    } else if (newType === 'private_note') {
+    } else {
       macroStore.setCurrentView('adding_private_note')
     }
-    // Focus editor on tab change
+
     setTimeout(() => {
       editorRef.value?.focus()
     }, 50)
@@ -342,9 +589,62 @@ watch(
   { immediate: true }
 )
 
-// Expose focus method for parent components
+watch(
+  enabledResponseChannels,
+  (channels) => {
+    if (!channels.includes(selectedResponseChannel.value)) {
+      selectedResponseChannel.value = channels[0] || 'email'
+    }
+  },
+  { deep: true, immediate: true }
+)
+
+watch(selectedTemplateId, (templateId) => {
+  if (templateId !== 'new-message') {
+    applyTemplate(templateId)
+  }
+})
+
+watch(
+  () => props.responseTemplates,
+  (templates) => {
+    if (
+      messageType.value !== 'reply' ||
+      selectedTemplateId.value !== 'new-message' ||
+      htmlContent.value.trim() ||
+      textContent.value.trim()
+    ) {
+      return
+    }
+
+    const defaultTemplate = templates.find((template) => template.is_default)
+    if (defaultTemplate) {
+      selectedTemplateId.value = String(defaultTemplate.id)
+    }
+  },
+  { immediate: true, deep: true }
+)
+
+watch(selectedResponseChannel, (channel) => {
+  if (channel !== 'email') {
+    showEmailEnvelope.value = false
+    showBcc.value = false
+    bcc.value = ''
+    emailErrors.value = []
+  }
+})
+
+watch(
+  () => [to.value, cc.value, bcc.value],
+  ([nextTo, nextCC, nextBCC]) => {
+    showEmailEnvelope.value = Boolean(nextTo || nextCC || nextBCC)
+  },
+  { immediate: true }
+)
+
 const focus = () => {
   editorRef.value?.focus()
 }
+
 defineExpose({ focus })
 </script>

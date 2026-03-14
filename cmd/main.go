@@ -56,7 +56,7 @@ import (
 var (
 	ko          = koanf.New(".")
 	ctx         = context.Background()
-	appName     = "libredesk"
+	appName     = "canalgov"
 	frontendDir = "frontend/dist"
 
 	// Injected at build time.

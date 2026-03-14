@@ -77,9 +77,9 @@
               <p v-if="notification.body" class="text-xs text-muted-foreground mt-0.5">
                 {{ notification.body }}
               </p>
-              <p class="text-xs text-muted-foreground mt-1">
-                {{ getRelativeTime(new Date(notification.created_at)) }}
-              </p>
+              <div class="mt-1">
+                <DateTimeMeta :value="notification.created_at" :show-absolute="false" compact />
+              </div>
             </div>
 
             <!-- Action buttons (visible on hover) -->
@@ -141,7 +141,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useNotificationStore } from '@/stores/notification'
-import { getRelativeTime } from '@/utils/datetime'
+import DateTimeMeta from '@/components/datetime/DateTimeMeta.vue'
 
 const emit = defineEmits(['close'])
 

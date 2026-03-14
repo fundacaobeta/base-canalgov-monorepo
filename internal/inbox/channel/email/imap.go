@@ -181,7 +181,7 @@ func (e *Email) fetchAndProcessMessages(ctx context.Context, client *imapclient.
 				HeaderFields: []string{
 					headerAutoSubmitted,
 					headerAutoreply,
-					headerLibredeskLoopPrevention,
+					headerCanalgovLoopPrevention,
 					headerMessageID,
 				},
 			},
@@ -580,9 +580,9 @@ func isAutoReply(envelope *enmime.Envelope) bool {
 	return false
 }
 
-// isLoopMessage returns true if the email is a loop prevention message. i.e., it has the `X-Libredesk-Loop-Prevention` header with the inbox email address.
+// isLoopMessage returns true if the email is a loop prevention message. i.e., it has the `X-Canalgov-Loop-Prevention` header with the inbox email address.
 func isLoopMessage(envelope *enmime.Envelope, inboxEmailaddress string) bool {
-	loopHeader := envelope.GetHeader(headerLibredeskLoopPrevention)
+	loopHeader := envelope.GetHeader(headerCanalgovLoopPrevention)
 	if loopHeader == "" {
 		return false
 	}

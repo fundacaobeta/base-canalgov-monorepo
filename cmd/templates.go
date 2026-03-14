@@ -12,13 +12,23 @@ import (
 // handleGetTemplates returns all templates.
 func handleGetTemplates(r *fastglue.Request) error {
 	var (
-		app = r.Context.(*App)
-		typ = string(r.RequestCtx.QueryArgs().Peek("type"))
+		app           = r.Context.(*App)
+		typ           = string(r.RequestCtx.QueryArgs().Peek("type"))
+		teamIDRaw     = string(r.RequestCtx.QueryArgs().Peek("team_id"))
+		includeGlobal = string(r.RequestCtx.QueryArgs().Peek("include_global")) == "true"
+		teamID        *int
 	)
 	if typ == "" {
 		return r.SendErrorEnvelope(fasthttp.StatusBadRequest, app.i18n.Ts("globals.messages.empty", "name", "`type`"), nil, envelope.InputError)
 	}
-	t, err := app.tmpl.GetAll(typ)
+	if teamIDRaw != "" {
+		id, err := strconv.Atoi(teamIDRaw)
+		if err != nil || id <= 0 {
+			return r.SendErrorEnvelope(fasthttp.StatusBadRequest, app.i18n.Ts("globals.messages.invalid", "name", "`team_id`"), nil, envelope.InputError)
+		}
+		teamID = &id
+	}
+	t, err := app.tmpl.GetAll(typ, teamID, includeGlobal)
 	if err != nil {
 		return sendErrorEnvelope(r, err)
 	}
@@ -53,6 +63,12 @@ func handleCreateTemplate(r *fastglue.Request) error {
 	if req.Name == "" {
 		return r.SendErrorEnvelope(fasthttp.StatusBadRequest, app.i18n.Ts("globals.messages.empty", "name", "`name`"), nil, envelope.InputError)
 	}
+	if req.Type == "" {
+		req.Type = "response"
+	}
+	if req.Type != "response" {
+		req.TeamID = nil
+	}
 	template, err := app.tmpl.Create(req)
 	if err != nil {
 		return sendErrorEnvelope(r, err)
@@ -76,6 +92,12 @@ func handleUpdateTemplate(r *fastglue.Request) error {
 	}
 	if req.Name == "" {
 		return r.SendErrorEnvelope(fasthttp.StatusBadRequest, app.i18n.Ts("globals.messages.empty", "name", "`name`"), nil, envelope.InputError)
+	}
+	if req.Type == "" {
+		req.Type = "response"
+	}
+	if req.Type != "response" {
+		req.TeamID = nil
 	}
 	updatedTemplate, err := app.tmpl.Update(id, req)
 	if err != nil {

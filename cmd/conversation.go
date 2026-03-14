@@ -1,8 +1,12 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"slices"
+	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	amodels "github.com/abhinavxd/libredesk/internal/auth/models"
@@ -52,6 +56,61 @@ type createConversationRequest struct {
 	Content         string `json:"content"`
 	Attachments     []int  `json:"attachments"`
 	Initiator       string `json:"initiator"` // "contact" | "agent"
+}
+
+func summarizeAttributeChanges(previousJSON []byte, next map[string]any) string {
+	prev := map[string]any{}
+	if len(previousJSON) > 0 {
+		_ = json.Unmarshal(previousJSON, &prev)
+	}
+
+	keysSet := map[string]struct{}{}
+	for key := range prev {
+		keysSet[key] = struct{}{}
+	}
+	for key := range next {
+		keysSet[key] = struct{}{}
+	}
+
+	keys := make([]string, 0, len(keysSet))
+	for key := range keysSet {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	changes := make([]string, 0, len(keys))
+	for _, key := range keys {
+		before, hadBefore := prev[key]
+		after, hadAfter := next[key]
+		if hadBefore && hadAfter && fmt.Sprintf("%v", before) == fmt.Sprintf("%v", after) {
+			continue
+		}
+		changes = append(changes, fmt.Sprintf("%s: %s -> %s", key, formatAttributeValue(before, hadBefore), formatAttributeValue(after, hadAfter)))
+	}
+
+	if len(changes) == 0 {
+		return "no visible value changes"
+	}
+	return strings.Join(changes, "; ")
+}
+
+func formatAttributeValue(value any, exists bool) string {
+	if !exists || value == nil {
+		return "vazio"
+	}
+	switch v := value.(type) {
+	case string:
+		if strings.TrimSpace(v) == "" {
+			return "vazio"
+		}
+		return v
+	default:
+		b, err := json.Marshal(v)
+		if err != nil {
+			return fmt.Sprintf("%v", v)
+		}
+		return string(b)
+	}
 }
 
 // handleGetAllConversations retrieves all conversations.
@@ -619,13 +678,20 @@ func handleUpdateConversationCustomAttributes(r *fastglue.Request) error {
 	if err != nil {
 		return sendErrorEnvelope(r, err)
 	}
-	_, err = enforceConversationAccess(app, uuid, user)
+	conversation, err := enforceConversationAccess(app, uuid, user)
 	if err != nil {
 		return sendErrorEnvelope(r, err)
 	}
 
 	// Update custom attributes.
 	if err := app.conversation.UpdateConversationCustomAttributes(uuid, attributes); err != nil {
+		return sendErrorEnvelope(r, err)
+	}
+	if err := app.conversation.RecordConversationCustomAttributesUpdated(
+		uuid,
+		summarizeAttributeChanges(conversation.CustomAttributes, attributes),
+		user,
+	); err != nil {
 		return sendErrorEnvelope(r, err)
 	}
 	return r.SendEnvelope(true)
@@ -654,6 +720,13 @@ func handleUpdateContactCustomAttributes(r *fastglue.Request) error {
 		return sendErrorEnvelope(r, err)
 	}
 	if err := app.user.UpdateCustomAttributes(conversation.ContactID, attributes); err != nil {
+		return sendErrorEnvelope(r, err)
+	}
+	if err := app.conversation.RecordContactCustomAttributesUpdated(
+		conversation.UUID,
+		summarizeAttributeChanges(conversation.Contact.CustomAttributes, attributes),
+		user,
+	); err != nil {
 		return sendErrorEnvelope(r, err)
 	}
 	// Broadcast update.

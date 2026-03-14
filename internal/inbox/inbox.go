@@ -22,7 +22,13 @@ import (
 )
 
 const (
-	ChannelEmail = "email"
+	ChannelNone     = "none"
+	ChannelEmail    = "email"
+	ChannelWhatsApp = "whatsapp"
+	ChannelTelegram = "telegram"
+	ChannelSMS      = "sms"
+	ChannelPush     = "push"
+	ChannelWebhook  = "webhook"
 )
 
 var (

@@ -1,28 +1,24 @@
 <template>
-  <AdminPageWithHelp>
-    <template #content>
-      <div :class="{ 'opacity-50 transition-opacity duration-300': isLoading }">
-        <Spinner v-if="isLoading" />
-        <NotificationsForm :initial-values="initialValues" :submit-form="submitForm" />
-      </div>
-    </template>
-
-    <template #help>
-      <p>Configure SMTP server settings for sending email notifications to team members.</p>
-      <p>
-        Once configured, teammates receive automated alerts for conversation assignments, SLA
-        breaches, and other important events.
-      </p>
-    </template>
-  </AdminPageWithHelp>
+  <div :class="{ 'opacity-50 transition-opacity duration-300': isLoading }">
+    <NotificationConfigShell
+      title="E-mail"
+      description="Configure o envio de notificações por SMTP para alertas operacionais, atribuições, violações de SLA e outros eventos internos."
+      status-label="Canal de notificação por e-mail"
+      :status-description="statusDescription"
+      :help-items="helpItems"
+    >
+      <Spinner v-if="isLoading" />
+      <NotificationsForm :initial-values="initialValues" :submit-form="submitForm" />
+    </NotificationConfigShell>
+  </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import api from '@/api'
-import AdminPageWithHelp from '@/layouts/admin/AdminPageWithHelp.vue'
 import { useI18n } from 'vue-i18n'
 import NotificationsForm from './NotificationSettingForm.vue'
+import NotificationConfigShell from './NotificationConfigShell.vue'
 import { EMITTER_EVENTS } from '@/constants/emitterEvents.js'
 import { useEmitter } from '@/composables/useEmitter'
 import { handleHTTPError } from '@/utils/http'
@@ -34,6 +30,31 @@ const { t } = useI18n()
 const isLoading = ref(false)
 const emitter = useEmitter()
 const appSettingsStore = useAppSettingsStore()
+
+const statusDescription = computed(() =>
+  initialValues.value.enabled
+    ? 'Canal ativo para envio de notificações internas por SMTP.'
+    : 'Canal desabilitado ou ainda não configurado.'
+)
+
+const helpItems = [
+  {
+    title: 'Segurança',
+    description: 'Prefira SMTP autenticado com TLS ou STARTTLS e evite armazenar credenciais de teste em produção.'
+  },
+  {
+    title: 'Entregabilidade',
+    description: 'Configure corretamente o endereço de remetente e o hostname HELO para reduzir bloqueios e spam.'
+  },
+  {
+    title: 'Capacidade',
+    description: 'Ajuste conexões, timeouts e retentativas conforme o volume de notificações da operação.'
+  },
+  {
+    title: 'Aplicação',
+    description: 'Depois de salvar, reinicie a aplicação para que as alterações de SMTP tenham efeito.'
+  }
+]
 
 onMounted(() => {
   getNotificationSettings()

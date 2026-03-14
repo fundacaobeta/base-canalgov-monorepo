@@ -34,12 +34,13 @@
                   class="w-3 h-3 text-muted-foreground flex-shrink-0"
                 />
               </div>
-              <span
-                class="text-xs text-gray-400 whitespace-nowrap"
+              <DateTimeMeta
                 v-if="conversation.last_message_at"
-              >
-                {{ relativeLastMessageTime }}
-              </span>
+                :value="conversation.last_message_at"
+                :show-absolute="false"
+                inline
+                compact
+              />
             </div>
 
             <!-- Subject -->
@@ -120,9 +121,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { getRelativeTime } from '@/utils/datetime'
 import { Mail, Reply, Pencil, MailOpen } from 'lucide-vue-next'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -133,9 +133,8 @@ import {
 } from '@/components/ui/context-menu'
 import SlaBadge from '@/features/sla/SlaBadge.vue'
 import { useConversationStore } from '@/stores/conversation'
+import DateTimeMeta from '@/components/datetime/DateTimeMeta.vue'
 
-let timer = null
-const now = ref(new Date())
 const route = useRoute()
 const conversationStore = useConversationStore()
 const frdStatus = ref('')
@@ -171,28 +170,12 @@ const conversationRoute = computed(() => {
   }
 })
 
-onMounted(() => {
-  timer = setInterval(() => {
-    now.value = new Date()
-  }, 60000)
-})
-
-onUnmounted(() => {
-  if (timer) clearInterval(timer)
-})
-
 const trimmedLastMessage = computed(() => {
   const message = props.conversation.last_message || ''
   return message.length > 100 ? message.slice(0, 100) + '...' : message
 })
 
 const getSlaClass = (status) => (['overdue', 'remaining'].includes(status) ? 'mr-2' : '')
-
-const relativeLastMessageTime = computed(() => {
-  return props.conversation.last_message_at
-    ? getRelativeTime(props.conversation.last_message_at, now.value)
-    : ''
-})
 
 const hasDraftForConversation = computed(() => {
   return conversationStore.hasDraft(props.conversation.uuid)

@@ -9,29 +9,29 @@
             <EmojiPicker :native="true" @select="onSelectEmoji" class="w-[300px]" />
           </div>
         </FormControl>
-        <FormDescription>Display emoji for this team.</FormDescription>
+        <FormDescription>Emoji exibido para esta equipe.</FormDescription>
         <FormMessage />
       </FormItem>
     </FormField>
 
     <FormField v-slot="{ componentField }" name="name">
       <FormItem>
-        <FormLabel>Name</FormLabel>
+        <FormLabel>Nome</FormLabel>
         <FormControl>
-          <Input type="text" placeholder="Name" v-bind="componentField" />
+          <Input type="text" placeholder="Nome" v-bind="componentField" />
         </FormControl>
-        <FormDescription>Select an unique name for the team.</FormDescription>
+        <FormDescription>Selecione um nome único para a equipe.</FormDescription>
         <FormMessage />
       </FormItem>
     </FormField>
 
     <FormField name="conversation_assignment_type" v-slot="{ componentField }">
       <FormItem>
-        <FormLabel>Auto assignment type</FormLabel>
+        <FormLabel>Tipo de atribuição automática</FormLabel>
         <FormControl>
           <Select v-bind="componentField">
             <SelectTrigger>
-              <SelectValue placeholder="Select a assignment type" />
+              <SelectValue placeholder="Selecione um tipo de atribuição" />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
@@ -43,8 +43,8 @@
           </Select>
         </FormControl>
         <FormDescription>
-          Round robin: Conversations are assigned to team members in a round-robin fashion. <br />
-          Manual: Conversations are to be picked by team members.
+          Round robin: as conversas são atribuídas aos membros da equipe em rodízio. <br />
+          Manual: as conversas devem ser assumidas pelos membros da equipe.
         </FormDescription>
         <FormMessage />
       </FormItem>
@@ -52,13 +52,13 @@
 
     <FormField v-slot="{ componentField }" name="max_auto_assigned_conversations">
       <FormItem>
-        <FormLabel>Maximum auto-assigned conversations</FormLabel>
+        <FormLabel>Máximo de conversas autoatribuídas</FormLabel>
         <FormControl>
           <Input type="number" placeholder="0" v-bind="componentField" />
         </FormControl>
         <FormDescription>
-          Maximum number of conversations that can be auto-assigned to an agent, conversations in
-          "Resolved" or "Closed" states do not count toward this limit. Set to 0 for unlimited.
+          Número máximo de conversas que podem ser atribuídas automaticamente a um agente.
+          Conversas com status "Resolvido" ou "Fechado" não contam para esse limite. Use 0 para ilimitado.
         </FormDescription>
         <FormMessage />
       </FormItem>
@@ -66,11 +66,11 @@
 
     <FormField v-slot="{ componentField }" name="timezone">
       <FormItem>
-        <FormLabel>Timezone</FormLabel>
+        <FormLabel>Fuso horário</FormLabel>
         <FormControl>
           <Select v-bind="componentField">
             <SelectTrigger>
-              <SelectValue placeholder="Select a timezone" />
+              <SelectValue placeholder="Selecione um fuso horário" />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
@@ -81,22 +81,22 @@
             </SelectContent>
           </Select>
         </FormControl>
-        <FormDescription>Team's timezone will be used to calculate SLA.</FormDescription>
+        <FormDescription>O fuso horário da equipe será usado para calcular o SLA.</FormDescription>
         <FormMessage />
       </FormItem>
     </FormField>
 
     <FormField v-slot="{ componentField }" name="business_hours_id">
       <FormItem>
-        <FormLabel>Business hours</FormLabel>
+        <FormLabel>Horário comercial</FormLabel>
         <FormControl>
           <Select v-bind="componentField">
             <SelectTrigger>
-              <SelectValue placeholder="Select business hours" />
+              <SelectValue placeholder="Selecione o horário comercial" />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectItem :value = 0>None</SelectItem>
+                <SelectItem :value = 0>Nenhum</SelectItem>
                 <SelectItem v-for="bh in businessHours" :key="bh.id" :value="bh.id">
                   {{ bh.name }}
                 </SelectItem>
@@ -105,7 +105,7 @@
           </Select>
         </FormControl>
         <FormDescription
-          >Default business hours for the team, will be used to calculate SLA.</FormDescription
+          >Horário comercial padrão da equipe; será usado para calcular o SLA.</FormDescription
         >
         <FormMessage />
       </FormItem>
@@ -113,15 +113,15 @@
 
     <FormField v-slot="{ componentField }" name="sla_policy_id">
       <FormItem>
-        <FormLabel>SLA policy</FormLabel>
+        <FormLabel>Política de SLA</FormLabel>
         <FormControl>
           <Select v-bind="componentField">
             <SelectTrigger>
-              <SelectValue placeholder="Select policy" />
+              <SelectValue placeholder="Selecione a política" />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectItem :value= 0>None</SelectItem>
+                <SelectItem :value= 0>Nenhuma</SelectItem>
                 <SelectItem
                   v-for="sla in slaStore.options"
                   :key="sla.value"
@@ -134,8 +134,7 @@
           </Select>
         </FormControl>
         <FormDescription
-          >SLA policy to be auto applied to conversations, when conversations are assigned to this
-          team.</FormDescription
+          >Política de SLA aplicada automaticamente às conversas quando forem atribuídas a esta equipe.</FormDescription
         >
         <FormMessage />
       </FormItem>
@@ -186,7 +185,7 @@ const businessHours = ref([])
 const props = defineProps({
   initialValues: { type: Object, required: false },
   submitForm: { type: Function, required: true },
-  submitLabel: { type: String, default: 'Submit' },
+  submitLabel: { type: String, default: 'Enviar' },
   isLoading: { type: Boolean }
 })
 
@@ -213,12 +212,12 @@ const fetchBusinessHours = async () => {
     const toastPayload =
       error.response.status === 403
         ? {
-            title: 'Unauthorized',
+            title: 'Não autorizado',
             variant: 'destructive',
-            description: 'You do not have permission to view business hours.'
+            description: 'Você não tem permissão para visualizar horários comerciais.'
           }
         : {
-            title: 'Could not fetch business hours',
+            title: 'Não foi possível buscar horários comerciais',
             variant: 'destructive',
             description: handleHTTPError(error).message
           }

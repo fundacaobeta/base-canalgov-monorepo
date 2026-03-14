@@ -6,7 +6,7 @@ DROP TYPE IF EXISTS "message_sender_type" CASCADE; CREATE TYPE "message_sender_t
 DROP TYPE IF EXISTS "message_status" CASCADE; CREATE TYPE "message_status" AS ENUM ('received','sent','failed','pending');
 DROP TYPE IF EXISTS "content_type" CASCADE; CREATE TYPE "content_type" AS ENUM ('text','html');
 DROP TYPE IF EXISTS "conversation_assignment_type" CASCADE; CREATE TYPE "conversation_assignment_type" AS ENUM ('Round robin','Manual');
-DROP TYPE IF EXISTS "template_type" CASCADE; CREATE TYPE "template_type" AS ENUM ('email_outgoing', 'email_notification');
+DROP TYPE IF EXISTS "template_type" CASCADE; CREATE TYPE "template_type" AS ENUM ('response', 'email_outgoing', 'email_notification');
 DROP TYPE IF EXISTS "user_type" CASCADE; CREATE TYPE "user_type" AS ENUM ('agent', 'contact');
 DROP TYPE IF EXISTS "ai_provider" CASCADE; CREATE TYPE "ai_provider" AS ENUM ('openai');
 DROP TYPE IF EXISTS "automation_execution_mode" CASCADE; CREATE TYPE "automation_execution_mode" AS ENUM ('all', 'first_match');
@@ -452,10 +452,14 @@ CREATE TABLE templates (
 	"name" TEXT NOT NULL,
 	subject TEXT NULL,
 	is_builtin bool DEFAULT false NOT NULL,
+	team_id INT NULL REFERENCES teams(id) ON DELETE SET NULL ON UPDATE CASCADE,
 	CONSTRAINT constraint_templates_on_name CHECK (length("name") <= 140),
-	CONSTRAINT constraint_templates_on_subject CHECK (length(subject) <= 1000)
+	CONSTRAINT constraint_templates_on_subject CHECK (length(subject) <= 1000),
+	CONSTRAINT constraint_templates_on_team_for_response CHECK (
+		team_id IS NULL OR type = 'response'
+	)
 );
-CREATE UNIQUE INDEX index_unique_templates_on_is_default_when_is_default_is_true ON templates USING btree (is_default)
+CREATE UNIQUE INDEX index_unique_templates_on_default_scope ON templates USING btree (type, COALESCE(team_id, 0))
 WHERE (is_default = true);
 
 DROP TABLE IF EXISTS conversation_tags CASCADE;
@@ -691,14 +695,14 @@ VALUES
 -- Default settings
 INSERT INTO settings ("key", value)
 VALUES
-    ('app.lang', '"en"'::jsonb),
+    ('app.lang', '"pt-BR"'::jsonb),
     ('app.root_url', '"http://localhost:9000"'::jsonb),
     ('app.logo_url', '"http://localhost:9000/logo.png"'::jsonb),
-    ('app.site_name', '"LIBREDESK"'::jsonb),
+    ('app.site_name', '"CANALGOV"'::jsonb),
     ('app.favicon_url', '"http://localhost:9000/favicon.ico"'::jsonb),
     ('app.max_file_upload_size', '20'::jsonb),
     ('app.allowed_file_upload_extensions', '["*"]'::jsonb),
-	('app.timezone', '"Asia/Kolkata"'::jsonb),
+	('app.timezone', '"America/Sao_Paulo"'::jsonb),
 	('app.business_hours_id', '""'::jsonb),
     ('notification.email.username', '"admin@yourcompany.com"'::jsonb),
     ('notification.email.host', '"smtp.gmail.com"'::jsonb),
@@ -713,7 +717,49 @@ VALUES
 	('notification.email.hello_hostname', '""'::jsonb),
     ('notification.email.email_address', '"admin@yourcompany.com"'::jsonb),
     ('notification.email.max_msg_retries', '3'::jsonb),
-    ('notification.email.enabled', 'false'::jsonb);
+    ('notification.email.enabled', 'false'::jsonb),
+    ('notification.whatsapp.enabled', 'false'::jsonb),
+    ('notification.whatsapp.provider', '"meta"'::jsonb),
+    ('notification.whatsapp.display_name', '""'::jsonb),
+    ('notification.whatsapp.phone_number_id', '""'::jsonb),
+    ('notification.whatsapp.access_token', '""'::jsonb),
+    ('notification.whatsapp.base_url', '""'::jsonb),
+    ('notification.whatsapp.webhook_verify_token', '""'::jsonb),
+    ('notification.whatsapp.default_template', '""'::jsonb),
+    ('notification.whatsapp.department_hint', '""'::jsonb),
+    ('notification.telegram.enabled', 'false'::jsonb),
+    ('notification.telegram.bot_name', '""'::jsonb),
+    ('notification.telegram.bot_token', '""'::jsonb),
+    ('notification.telegram.webhook_url', '""'::jsonb),
+    ('notification.telegram.default_chat_id', '""'::jsonb),
+    ('notification.telegram.allowed_updates', '"message,callback_query"'::jsonb),
+    ('notification.telegram.default_message', '""'::jsonb),
+    ('notification.sms.enabled', 'false'::jsonb),
+    ('notification.sms.provider', '"twilio"'::jsonb),
+    ('notification.sms.sender_id', '""'::jsonb),
+    ('notification.sms.api_key', '""'::jsonb),
+    ('notification.sms.api_secret', '""'::jsonb),
+    ('notification.sms.base_url', '""'::jsonb),
+    ('notification.sms.fallback_country_code', '"55"'::jsonb),
+    ('notification.sms.default_message', '""'::jsonb),
+    ('notification.push.enabled', 'false'::jsonb),
+    ('notification.push.provider', '"firebase"'::jsonb),
+    ('notification.push.app_id', '""'::jsonb),
+    ('notification.push.project_id', '""'::jsonb),
+    ('notification.push.api_key', '""'::jsonb),
+    ('notification.push.topic_default', '""'::jsonb),
+    ('notification.push.click_action_url', '""'::jsonb),
+    ('notification.push.payload_template', '"{\n  \"title\": \"Novo alerta\",\n  \"body\": \"Você recebeu uma nova atualização.\"\n}"'::jsonb),
+    ('notification.official_communications.enabled', 'false'::jsonb),
+    ('notification.official_communications.auto_create_conversation', 'true'::jsonb),
+    ('notification.official_communications.inbox_id', '""'::jsonb),
+    ('notification.official_communications.priority_id', '""'::jsonb),
+    ('notification.official_communications.status_id', '""'::jsonb),
+    ('notification.official_communications.subject_prefix', '"[Oficial] Comunicação recebida"'::jsonb),
+    ('notification.official_communications.target_sla_hours', '"24"'::jsonb),
+    ('notification.official_communications.default_types', '["Ofício", "Carta", "Notificação", "Intimação"]'::jsonb),
+    ('notification.official_communications.internal_note', '""'::jsonb),
+    ('notification.official_communications.routing_rules', '[]'::jsonb);
 
 -- Default conversation priorities
 INSERT INTO conversation_priorities (name) VALUES
@@ -752,23 +798,23 @@ VALUES
 INSERT INTO templates
 ("type", body, is_default, "name", subject, is_builtin)
 VALUES('email_notification'::template_type, '
-<p>A new conversation has been assigned to you:</p>
+<p>Uma nova conversa foi atribuída a você:</p>
 
 <div>
-    Reference number: {{ .Conversation.ReferenceNumber }} <br>
-    Subject: {{ .Conversation.Subject }}
+    Número de referência: {{ .Conversation.ReferenceNumber }} <br>
+    Assunto: {{ .Conversation.Subject }}
 </div>
 
 <p>
-    <a href="{{ RootURL }}/inboxes/assigned/conversation/{{ .Conversation.UUID }}">View Conversation</a>
+    <a href="{{ RootURL }}/inboxes/assigned/conversation/{{ .Conversation.UUID }}">Ver conversa</a>
 </p>
 
 <div>
     Best regards,<br>
-    Libredesk
+    CanalGov
 </div>
 
-', false, 'Conversation assigned', 'New conversation assigned to you', true);
+', false, 'Conversa atribuída', 'Uma nova conversa foi atribuída a você', true);
 
 INSERT INTO templates
 ("type", body, is_default, "name", subject, is_builtin)
@@ -776,29 +822,29 @@ VALUES (
   'email_notification'::template_type,
   '
 
-<p>This is a notification that the SLA for conversation {{ .Conversation.ReferenceNumber }} is approaching the SLA deadline for {{ .SLA.Metric }}.</p>
+<p>Este é um aviso de que o SLA da conversa {{ .Conversation.ReferenceNumber }} está se aproximando do prazo para {{ .SLA.Metric }}.</p>
 
 <p>
-  Details:<br>
-  - Conversation reference number: {{ .Conversation.ReferenceNumber }}<br>
-  - Metric: {{ .SLA.Metric }}<br>
-  - Due in: {{ .SLA.DueIn }}
+  Detalhes:<br>
+  - Número de referência da conversa: {{ .Conversation.ReferenceNumber }}<br>
+  - Métrica: {{ .SLA.Metric }}<br>
+  - Vence em: {{ .SLA.DueIn }}
 </p>
 
 <p>
-    <a href="{{ RootURL }}/inboxes/assigned/conversation/{{ .Conversation.UUID }}">View Conversation</a>
+    <a href="{{ RootURL }}/inboxes/assigned/conversation/{{ .Conversation.UUID }}">Ver conversa</a>
 </p>
 
 
 <p>
   Best regards,<br>
-  Libredesk
+  CanalGov
 </p>
 
 ',
   false,
-  'SLA breach warning',
-  'SLA Alert: Conversation {{ .Conversation.ReferenceNumber }} is approaching SLA deadline for {{ .SLA.Metric }}',
+  'Aviso de violação de SLA',
+  'Alerta de SLA: a conversa {{ .Conversation.ReferenceNumber }} está se aproximando do prazo para {{ .SLA.Metric }}',
   true
 );
 
@@ -807,29 +853,29 @@ INSERT INTO templates
 VALUES (
   'email_notification'::template_type,
   '
-<p>This is an urgent alert that the SLA for conversation {{ .Conversation.ReferenceNumber }} has been breached for {{ .SLA.Metric }}. Please take immediate action.</p>
+<p>Este é um alerta urgente de que o SLA da conversa {{ .Conversation.ReferenceNumber }} foi violado para {{ .SLA.Metric }}. Tome uma ação imediata.</p>
 
 <p>
-  Details:<br>
-  - Conversation reference number: {{ .Conversation.ReferenceNumber }}<br>
-  - Metric: {{ .SLA.Metric }}<br>
-  - Overdue by: {{ .SLA.OverdueBy }}
+  Detalhes:<br>
+  - Número de referência da conversa: {{ .Conversation.ReferenceNumber }}<br>
+  - Métrica: {{ .SLA.Metric }}<br>
+  - Atrasado em: {{ .SLA.OverdueBy }}
 </p>
 
 <p>
-    <a href="{{ RootURL }}/inboxes/assigned/conversation/{{ .Conversation.UUID }}">View Conversation</a>
+    <a href="{{ RootURL }}/inboxes/assigned/conversation/{{ .Conversation.UUID }}">Ver conversa</a>
 </p>
 
 
 <p>
   Best regards,<br>
-  Libredesk
+  CanalGov
 </p>
 
 ',
   false,
-  'SLA breached',
-  'Urgent: SLA Breach for Conversation {{ .Conversation.ReferenceNumber }} for {{ .SLA.Metric }}',
+  'SLA violado',
+  'Urgente: violação de SLA na conversa {{ .Conversation.ReferenceNumber }} para {{ .SLA.Metric }}',
   true
 );
 
@@ -838,23 +884,23 @@ INSERT INTO templates
 VALUES (
   'email_notification'::template_type,
   '
-<p>{{ .MentionedBy.FullName }} mentioned you in a private note on conversation #{{ .Conversation.ReferenceNumber }}.</p>
+<p>{{ .MentionedBy.FullName }} mencionou você em uma nota privada na conversa #{{ .Conversation.ReferenceNumber }}.</p>
 
 <blockquote style="background-color: #f5f5f5; padding: 12px; margin: 16px 0; border-left: 4px solid #ddd;">
 {{ .Message.Content }}
 </blockquote>
 
 <p>
-<a href="{{ RootURL }}/inboxes/mentioned/conversation/{{ .Conversation.UUID }}?scrollTo={{ .Message.UUID }}">View Conversation</a>
+<a href="{{ RootURL }}/inboxes/mentioned/conversation/{{ .Conversation.UUID }}?scrollTo={{ .Message.UUID }}">Ver conversa</a>
 </p>
 
 <p>
 Best regards,<br>
-Libredesk
+CanalGov
 </p>
 ',
   false,
-  'Mentioned in conversation',
-  '{{ .MentionedBy.FullName }} mentioned you in conversation #{{ .Conversation.ReferenceNumber }}',
+  'Menção na conversa',
+  '{{ .MentionedBy.FullName }} mencionou você na conversa #{{ .Conversation.ReferenceNumber }}',
   true
 );

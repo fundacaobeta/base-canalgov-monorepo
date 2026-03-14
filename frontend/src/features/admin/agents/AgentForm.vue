@@ -352,7 +352,7 @@ const props = defineProps({
   submitLabel: {
     type: String,
     required: false,
-    default: 'Submit'
+    default: 'Enviar'
   },
   isNewForm: {
     type: Boolean,

@@ -1,6 +1,6 @@
 // Copyright Kailash Nadh (https://github.com/knadh/listmonk)
 // SPDX-License-Identifier: AGPL-3.0
-// Adapted from listmonk for Libredesk.
+// Adapted from listmonk for CanalGov.
 
 package main
 
@@ -14,7 +14,7 @@ import (
 	"golang.org/x/mod/semver"
 )
 
-const updateCheckURL = "https://updates.libredesk.io/updates.json"
+const updateCheckURL = ""
 
 type AppUpdate struct {
 	Update struct {
@@ -41,6 +41,10 @@ var reSemver = regexp.MustCompile(`-(.*)`)
 // at the given intervals. On detecting a new update (new semver), it
 // sets the global update status that renders a prompt on the UI.
 func checkUpdates(curVersion string, interval time.Duration, app *App) {
+	if updateCheckURL == "" {
+		return
+	}
+
 	// Strip -* suffix.
 	curVersion = reSemver.ReplaceAllString(curVersion, "")
 

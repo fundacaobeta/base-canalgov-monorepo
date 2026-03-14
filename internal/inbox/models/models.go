@@ -31,6 +31,12 @@ type Inbox struct {
 
 // Config holds the email inbox configuration with multiple SMTP servers and IMAP clients.
 type Config struct {
+	ReceiveMode          string       `json:"receive_mode"`
+	DeliveryProvider     string       `json:"delivery_provider"`
+	ManagedDomainID      string       `json:"managed_domain_id"`
+	ManagedDomain        string       `json:"managed_domain"`
+	ManagedLocalPart     string       `json:"managed_local_part"`
+	ManagedEmailAddress  string       `json:"managed_email_address"`
 	AuthType             string       `json:"auth_type"` // AuthTypePassword or AuthTypeOAuth2
 	OAuth                *OAuthConfig `json:"oauth"`     // OAuth config when auth_type is "oauth2"
 	SMTP                 []SMTPConfig `json:"smtp"`

@@ -3,26 +3,26 @@
 
 <h1 style="text-align: center; margin-top: 0; color: #1f2937;">
     {{ if ne SiteName "" }}
-    Welcome to {{ SiteName }}
+    Bem-vindo ao {{ SiteName }}
     {{ else }}
-    Welcome to Libredesk
+    Bem-vindo ao CanalGov
     {{ end }}
 </h1>
 
-<p>A new account has been created for you with <strong>{{ .Email }}</strong></p>
+<p>Uma nova conta foi criada para você com o e-mail <strong>{{ .Email }}</strong></p>
 
-<p>To set your password, click the button below:</p>
+<p>Para definir sua senha, clique no botão abaixo:</p>
 
-<p style="color: #ef4444; font-size: 14px; margin-bottom: 16px;">This link will expire in 24 hours.</p>
+<p style="color: #ef4444; font-size: 14px; margin-bottom: 16px;">Este link expira em 24 horas.</p>
 
 <div style="text-align: center; margin: 24px 0;">
     <a href="{{ RootURL }}/set-password?token={{ .ResetToken }}" class="button">
-        Set Your Password
+        Definir sua senha
     </a>
 </div>
 
 <div style="text-align: center; margin-top: 24px;">
-    <p>After setting your password, <a href="{{ RootURL }}">log in here</a></p>
+    <p>Depois de definir sua senha, <a href="{{ RootURL }}">faça login aqui</a></p>
 </div>
 
 {{ template "footer" . }}

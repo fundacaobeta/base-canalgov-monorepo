@@ -49,7 +49,7 @@
       </template>
 
       <template #help>
-        <p>Create custom conversation statuses to extend default workflow.</p>
+        <p>{{ t('admin.status.help') }}</p>
       </template>
     </AdminPageWithHelp>
   </div>
@@ -114,7 +114,7 @@ const onSubmit = form.handleSubmit(async (values) => {
     dialogOpen.value = false
     getStatuses()
   } catch (error) {
-    console.error('Failed to create status:', error)
+    console.error('Falha ao criar status:', error)
   } finally {
     isLoading.value = false
   }

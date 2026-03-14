@@ -39,14 +39,19 @@
         </div>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div class="flex gap-1 items-center text-xs text-muted-foreground flex-shrink-0">
-              <span v-if="conversation.created_at">
-                {{ getRelativeTime(new Date(conversation.created_at)) }}
-              </span>
-              <span>•</span>
-              <span v-if="conversation.last_message_at">
-                {{ getRelativeTime(new Date(conversation.last_message_at)) }}
-              </span>
+            <div class="flex flex-col items-end text-xs text-muted-foreground flex-shrink-0">
+              <DateTimeMeta
+                v-if="conversation.created_at"
+                :value="conversation.created_at"
+                :show-absolute="false"
+                compact
+              />
+              <DateTimeMeta
+                v-if="conversation.last_message_at"
+                :value="conversation.last_message_at"
+                :show-absolute="false"
+                compact
+              />
             </div>
           </TooltipTrigger>
           <TooltipContent>
@@ -70,7 +75,8 @@
 <script setup>
 import { useConversationStore } from '@/stores/conversation'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { formatFullTimestamp, getRelativeTime } from '@/utils/datetime'
+import { formatFullTimestamp } from '@/utils/datetime'
+import DateTimeMeta from '@/components/datetime/DateTimeMeta.vue'
 
 const conversationStore = useConversationStore()
 </script>

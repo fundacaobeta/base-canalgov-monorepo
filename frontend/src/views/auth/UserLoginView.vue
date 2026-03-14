@@ -9,7 +9,7 @@
       <CardContent class="p-6 space-y-6">
         <div class="space-y-2 text-center">
           <CardTitle class="text-3xl font-bold text-foreground">
-            {{ appSettingsStore.public_config?.['app.site_name'] || 'LIBREDESK' }}
+            {{ appSettingsStore.public_config?.['app.site_name'] || 'CANALGOV' }}
           </CardTitle>
           <p class="text-muted-foreground">{{ t('auth.signIn') }}</p>
         </div>
@@ -157,8 +157,8 @@ const appSettingsStore = useAppSettingsStore()
 const isDemoBuild = import.meta.env.VITE_DEMO_BUILD === 'true'
 
 const demoCredentials = {
-  email: 'demo@libredesk.io',
-  password: 'demo@libredesk.io'
+  email: 'demo@canalgov.local',
+  password: 'demo@canalgov.local'
 }
 
 onMounted(async () => {

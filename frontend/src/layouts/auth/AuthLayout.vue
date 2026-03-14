@@ -6,14 +6,9 @@
       </div>
     </main>
     <div class="flex justify-center mb-6">
-      <a
-        href="https://libredesk.io/"
-        class="text-[0.75rem] text-center text-[#aaa]"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Powered by Libredesk
-      </a>
+      <span class="text-[0.75rem] text-center text-[#aaa]">
+        Desenvolvido por CanalGov
+      </span>
     </div>
   </div>
 </template>

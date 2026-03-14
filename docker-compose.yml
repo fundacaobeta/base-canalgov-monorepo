@@ -1,42 +1,50 @@
 services:
-  # Libredesk app
+  # CanalGov app
   app:
-    image: libredesk/libredesk:latest
-    container_name: libredesk_app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: canalgov_app
     restart: unless-stopped
     ports:
       - "9000:9000"
     environment:
       # If the password is set during first docker-compose up, the system user password will be set to this value.
-      # You can always set system user password later by running `docker exec -it libredesk_app ./libredesk --set-system-user-password`.
-      LIBREDESK_SYSTEM_USER_PASSWORD: ${LIBREDESK_SYSTEM_USER_PASSWORD:-}
+      # You can always set the system user password later by running `docker exec -it canalgov_app ./canalgov --set-system-user-password`.
+      CANALGOV_SYSTEM_USER_PASSWORD: ${CANALGOV_SYSTEM_USER_PASSWORD:-}
+      CANALGOV_DB__HOST: db
+      CANALGOV_DB__PORT: 5432
+      CANALGOV_DB__USER: ${POSTGRES_USER:-canalgov}
+      CANALGOV_DB__PASSWORD: ${POSTGRES_PASSWORD:-canalgov}
+      CANALGOV_DB__DATABASE: ${POSTGRES_DB:-canalgov}
+      CANALGOV_REDIS__ADDRESS: redis:6379
     networks:
-      - libredesk
+      - canalgov
     depends_on:
       - db
       - redis
     volumes:
-      - ./uploads:/libredesk/uploads:rw 
-      - ./config.toml:/libredesk/config.toml
-    command: [sh, -c, "./libredesk --install --idempotent-install --yes --config /libredesk/config.toml && ./libredesk --upgrade --yes --config /libredesk/config.toml && ./libredesk --config /libredesk/config.toml"]
+      - ./uploads:/canalgov/uploads:rw 
+      - ./config.toml:/canalgov/config.toml
+    command: [sh, -c, "./canalgov --install --idempotent-install --yes --config /canalgov/config.toml && ./canalgov --upgrade --yes --config /canalgov/config.toml && ./canalgov --config /canalgov/config.toml"]
 
   # PostgreSQL database
   db:
     image: postgres:17-alpine
-    container_name: libredesk_db
+    container_name: canalgov_db
     restart: unless-stopped
     networks:
-      - libredesk
+      - canalgov
     ports:
       # Only bind on the local interface. To connect to Postgres externally, change this to 0.0.0.0
       - "127.0.0.1:5432:5432"
     environment:
-      # Set these environment variables to configure the database, defaults to libredesk.
-      POSTGRES_USER: ${POSTGRES_USER:-libredesk}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-libredesk} 
-      POSTGRES_DB: ${POSTGRES_DB:-libredesk}
+      # Set these environment variables to configure the database, defaults to canalgov.
+      POSTGRES_USER: ${POSTGRES_USER:-canalgov}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-canalgov} 
+      POSTGRES_DB: ${POSTGRES_DB:-canalgov}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-libredesk} -d ${POSTGRES_DB:-libredesk}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-canalgov} -d ${POSTGRES_DB:-canalgov}"]
       interval: 10s
       timeout: 5s
       retries: 6
@@ -46,18 +54,18 @@ services:
   # Redis
   redis:
     image: redis:7-alpine
-    container_name: libredesk_redis
+    container_name: canalgov_redis
     restart: unless-stopped
     ports:
       # Only bind on the local interface.
       - "127.0.0.1:6379:6379"
     networks:
-      - libredesk
+      - canalgov
     volumes:
       - redis-data:/data
 
 networks:
-  libredesk:
+  canalgov:
 
 volumes:
   postgres-data:

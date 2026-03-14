@@ -3,7 +3,7 @@
   <div :class="{ 'transition-opacity duration-300 opacity-50': isLoading }">
     <div class="flex justify-end mb-5">
       <router-link :to="{ name: 'new-team' }">
-        <Button> New team </Button>
+        <Button>{{ $t('globals.messages.new', { name: $t('globals.terms.team') }) }}</Button>
       </router-link>
     </div>
     <div>
@@ -21,11 +21,13 @@ import { Spinner } from '@/components/ui/spinner'
 import { useEmitter } from '@/composables/useEmitter'
 import { EMITTER_EVENTS } from '@/constants/emitterEvents.js'
 import DataTable from '@/components/datatable/DataTable.vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/api'
 
 const emitter = useEmitter()
 const data = ref([])
 const isLoading = ref(false)
+const { t } = useI18n()
 
 const getData = async () => {
   try {
@@ -34,7 +36,7 @@ const getData = async () => {
     data.value = response.data.data
   } catch (error) {
     emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      title: 'Error',
+      title: t('globals.terms.error'),
       variant: 'destructive',
       description: handleHTTPError(error).message
     })

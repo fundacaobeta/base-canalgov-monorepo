@@ -1156,6 +1156,17 @@ func (m *Manager) RemoveConversationAssignee(uuid, typ string, actor umodels.Use
 		return envelope.NewError(envelope.GeneralError, m.i18n.T("conversation.errorRemovingConversationAssignee"), nil)
 	}
 
+	switch typ {
+	case models.AssigneeTypeUser:
+		if err := m.RecordAssigneeUserRemoval(uuid, actor); err != nil {
+			return err
+		}
+	case models.AssigneeTypeTeam:
+		if err := m.RecordAssigneeTeamRemoval(uuid, actor); err != nil {
+			return err
+		}
+	}
+
 	// Trigger webhook for conversation unassigned from user.
 	if typ == models.AssigneeTypeUser {
 		conversation, err := m.GetConversation(0, uuid, "")

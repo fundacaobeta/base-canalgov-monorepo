@@ -8,10 +8,7 @@
             <div class="flex justify-between mb-5">
               <div></div>
               <div class="flex justify-end mb-4">
-                <Button
-                  @click="navigateToNewTemplate"
-                  :disabled="templateType !== 'email_outgoing'"
-                >
+                <Button @click="navigateToNewTemplate" :disabled="templateType === 'email_notification'">
                   {{
                     $t('globals.messages.new', {
                       name: $t('globals.terms.template')
@@ -21,15 +18,21 @@
               </div>
             </div>
             <div>
-              <Tabs default-value="email_outgoing" v-model="templateType">
-                <TabsList class="grid w-full grid-cols-2 mb-5">
+              <Tabs default-value="response" v-model="templateType">
+                <TabsList class="grid w-full grid-cols-3 mb-5">
+                  <TabsTrigger value="response">
+                    Modelos de resposta
+                  </TabsTrigger>
                   <TabsTrigger value="email_outgoing">
-                    {{ $t('admin.template.outgoingEmailTemplates') }}
+                    Layouts de e-mail
                   </TabsTrigger>
                   <TabsTrigger value="email_notification">
-                    {{ $t('admin.template.emailNotificationTemplates') }}
+                    Notificações por e-mail
                   </TabsTrigger>
                 </TabsList>
+                <TabsContent value="response">
+                  <DataTable :columns="createResponseTemplateColumns(t)" :data="templates" :loading="isLoading" />
+                </TabsContent>
                 <TabsContent value="email_outgoing">
                   <DataTable :columns="createOutgoingEmailTableColumns(t)" :data="templates" :loading="isLoading" />
                 </TabsContent>
@@ -46,16 +49,9 @@
       </template>
 
       <template #help>
-        <p>Design templates for customer communications and responses.</p>
-        <p>Modify content for internal and external emails.</p>
-        <a
-          href="https://docs.libredesk.io/configuration/email-templates"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="link-style"
-        >
-          <p>Learn more</p>
-        </a>
+        <p>Modelos de resposta passam a ser a base padrão do atendimento.</p>
+        <p>Use escopo global quando o texto servir para toda a operação, ou associe a uma equipe para priorização automática no composer.</p>
+        <p>Layouts e notificações de e-mail continuam separados para não misturar conteúdo de resposta com estrutura técnica.</p>
       </template>
     </AdminPageWithHelp>
   </div>
@@ -65,6 +61,7 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import DataTable from '@/components/datatable/DataTable.vue'
 import {
+  createResponseTemplateColumns,
   createOutgoingEmailTableColumns,
   createEmailNotificationTableColumns
 } from '@/features/admin/templates/dataTableColumns.js'
@@ -80,7 +77,7 @@ import { useI18n } from 'vue-i18n'
 import { handleHTTPError } from '@/utils/http'
 import api from '@/api'
 
-const templateType = useStorage('templateType', 'email_outgoing')
+const templateType = useStorage('templateType', 'response')
 const { t } = useI18n()
 const templates = ref([])
 const isLoading = ref(false)

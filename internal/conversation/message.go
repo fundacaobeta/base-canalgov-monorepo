@@ -552,6 +552,16 @@ func (m *Manager) RecordAssigneeTeamChange(conversationUUID string, teamID int, 
 	return m.InsertConversationActivity(models.ActivityAssignedTeamChange, conversationUUID, team.Name, actor)
 }
 
+// RecordAssigneeUserRemoval records an activity for removing the assigned user.
+func (m *Manager) RecordAssigneeUserRemoval(conversationUUID string, actor umodels.User) error {
+	return m.InsertConversationActivity(models.ActivityAssignedUserRemoved, conversationUUID, "", actor)
+}
+
+// RecordAssigneeTeamRemoval records an activity for removing the assigned team.
+func (m *Manager) RecordAssigneeTeamRemoval(conversationUUID string, actor umodels.User) error {
+	return m.InsertConversationActivity(models.ActivityAssignedTeamRemoved, conversationUUID, "", actor)
+}
+
 // RecordPriorityChange records an activity for a priority change.
 func (m *Manager) RecordPriorityChange(priority, conversationUUID string, actor umodels.User) error {
 	return m.InsertConversationActivity(models.ActivityPriorityChange, conversationUUID, priority, actor)
@@ -577,6 +587,16 @@ func (m *Manager) RecordTagRemoval(conversationUUID string, tag string, actor um
 	return m.InsertConversationActivity(models.ActivityTagRemoved, conversationUUID, tag, actor)
 }
 
+// RecordConversationCustomAttributesUpdated records an activity for conversation custom attribute updates.
+func (m *Manager) RecordConversationCustomAttributesUpdated(conversationUUID, summary string, actor umodels.User) error {
+	return m.InsertConversationActivity(models.ActivityConversationCustomAttributesUpdated, conversationUUID, summary, actor)
+}
+
+// RecordContactCustomAttributesUpdated records an activity for contact custom attribute updates.
+func (m *Manager) RecordContactCustomAttributesUpdated(conversationUUID, summary string, actor umodels.User) error {
+	return m.InsertConversationActivity(models.ActivityContactCustomAttributesUpdated, conversationUUID, summary, actor)
+}
+
 // InsertConversationActivity inserts an activity message.
 func (m *Manager) InsertConversationActivity(activityType, conversationUUID, newValue string, actor umodels.User) error {
 	content, err := m.getMessageActivityContent(activityType, newValue, actor.FullName())
@@ -591,7 +611,7 @@ func (m *Manager) InsertConversationActivity(activityType, conversationUUID, new
 		Content:          content,
 		ContentType:      models.ContentTypeText,
 		ConversationUUID: conversationUUID,
-		Private:          true,
+		Private:          false,
 		SenderID:         actor.ID,
 		SenderType:       models.SenderTypeAgent,
 	}
@@ -618,21 +638,29 @@ func (m *Manager) getMessageActivityContent(activityType, newValue, actorName st
 	var content = ""
 	switch activityType {
 	case models.ActivityAssignedUserChange:
-		content = fmt.Sprintf("Assigned to %s by %s", newValue, actorName)
+		content = fmt.Sprintf("%s atribuiu a conversa para %s", actorName, newValue)
 	case models.ActivityAssignedTeamChange:
-		content = fmt.Sprintf("Assigned to %s team by %s", newValue, actorName)
+		content = fmt.Sprintf("%s atribuiu a conversa para a equipe %s", actorName, newValue)
+	case models.ActivityAssignedUserRemoved:
+		content = fmt.Sprintf("%s removeu o agente responsável", actorName)
+	case models.ActivityAssignedTeamRemoved:
+		content = fmt.Sprintf("%s removeu a equipe responsável", actorName)
 	case models.ActivitySelfAssign:
-		content = fmt.Sprintf("%s self-assigned this conversation", actorName)
+		content = fmt.Sprintf("%s assumiu esta conversa", actorName)
 	case models.ActivityPriorityChange:
-		content = fmt.Sprintf("%s set priority to %s", actorName, newValue)
+		content = fmt.Sprintf("%s definiu a prioridade como %s", actorName, newValue)
 	case models.ActivityStatusChange:
-		content = fmt.Sprintf("%s marked the conversation as %s", actorName, newValue)
+		content = fmt.Sprintf("%s alterou o status para %s", actorName, newValue)
 	case models.ActivityTagAdded:
-		content = fmt.Sprintf("%s added tag %s", actorName, newValue)
+		content = fmt.Sprintf("%s adicionou a tag %s", actorName, newValue)
 	case models.ActivityTagRemoved:
-		content = fmt.Sprintf("%s removed tag %s", actorName, newValue)
+		content = fmt.Sprintf("%s removeu a tag %s", actorName, newValue)
 	case models.ActivitySLASet:
-		content = fmt.Sprintf("%s set %s SLA policy", actorName, newValue)
+		content = fmt.Sprintf("%s aplicou a política de SLA %s", actorName, newValue)
+	case models.ActivityConversationCustomAttributesUpdated:
+		content = fmt.Sprintf("%s atualizou os atributos da conversa: %s", actorName, newValue)
+	case models.ActivityContactCustomAttributesUpdated:
+		content = fmt.Sprintf("%s atualizou os atributos do contato: %s", actorName, newValue)
 	default:
 		return "", fmt.Errorf("invalid activity type %s", activityType)
 	}

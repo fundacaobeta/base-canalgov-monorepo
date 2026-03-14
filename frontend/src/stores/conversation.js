@@ -7,6 +7,7 @@ import { computeRecipientsFromMessage } from '@/utils/email-recipients'
 import { useEmitter } from '@/composables/useEmitter'
 import { EMITTER_EVENTS } from '@/constants/emitterEvents'
 import MessageCache from '@/utils/conversation-message-cache'
+import { translateConversationStatus } from '@/utils/conversationStatus'
 import api from '@/api'
 
 export const useConversationStore = defineStore('conversation', () => {
@@ -25,12 +26,12 @@ export const useConversationStore = defineStore('conversation', () => {
     return priorities.value.map(p => ({ label: p.name, value: p.id }))
   })
   const statusOptions = computed(() => {
-    return statuses.value.map(s => ({ label: s.name, value: s.id }))
+    return statuses.value.map(s => ({ label: translateConversationStatus(s.name), value: s.id }))
   })
   // Status options excluding 'Snoozed'
   const statusOptionsNoSnooze = computed(() =>
     statuses.value.filter(s => s.name !== 'Snoozed').map(s => ({
-      label: s.name,
+      label: translateConversationStatus(s.name),
       value: s.id
     }))
   )

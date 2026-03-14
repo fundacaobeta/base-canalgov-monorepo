@@ -2,7 +2,7 @@ env:
   - GO111MODULE=on
   - CGO_ENABLED=0
   - GITHUB_ORG=abhinavxd
-  - DOCKER_ORG=libredesk
+  - DOCKER_ORG=canalgov
 
 before:
   hooks:
@@ -28,7 +28,7 @@ builds:
     goarm:
       - 6
       - 7
-    binary: 'libredesk{{ if eq .Os "windows" }}.exe{{ end }}'
+    binary: 'canalgov{{ if eq .Os "windows" }}.exe{{ end }}'
     ldflags:
       - -s -w -X "main.buildString={{ .Tag }} ({{ .ShortCommit }} {{ .Date }}, {{ .Os }}/{{ .Arch }})" -X "main.versionString={{ .Tag }}"
     hooks:
@@ -36,18 +36,18 @@ builds:
 
 archives:
   - format: tar.gz
-    name_template: 'libredesk_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if eq .Arch "arm" }}v{{ .Arm }}{{ end }}'
+    name_template: 'canalgov_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if eq .Arch "arm" }}v{{ .Arm }}{{ end }}'
     files:
       - README.md
       - LICENSE
 
 checksum:
-  name_template: "libredesk_{{ .Version }}_checksums.txt"
+  name_template: "canalgov_{{ .Version }}_checksums.txt"
 
 source:
   enabled: true
   format: tar.gz
-  name_template: "libredesk_{{ .Version }}_source"
+  name_template: "canalgov_{{ .Version }}_source"
 
 dockers:
   - use: buildx
@@ -177,6 +177,6 @@ docker_manifests:
 release:
   github:
     owner: abhinavxd
-    name: libredesk
+    name: canalgov
   prerelease: auto
   draft: true

@@ -21,6 +21,7 @@ var (
 	//go:embed queries.sql
 	efs                   embed.FS
 	ErrTemplateNotFound   = errors.New("template not found")
+	TypeResponse          = "response"
 	TypeEmailOutgoing     = "email_outgoing"
 	TypeEmailNotification = "email_notification"
 )
@@ -43,6 +44,7 @@ type queries struct {
 	DeleteTemplate     *sqlx.Stmt `query:"delete"`
 	GetDefaultTemplate *sqlx.Stmt `query:"get-default"`
 	GetAllTemplates    *sqlx.Stmt `query:"get-all"`
+	GetAllByTeam       *sqlx.Stmt `query:"get-all-by-team"`
 	GetTemplate        *sqlx.Stmt `query:"get-template"`
 	GetByName          *sqlx.Stmt `query:"get-by-name"`
 	IsBuiltIn          *sqlx.Stmt `query:"is-builtin"`
@@ -68,7 +70,7 @@ func New(lo *logf.Logger, db *sqlx.DB, webTpls *template.Template, tpls *templat
 // Update updates a new template with the given name, and body.
 func (m *Manager) Update(id int, t models.Template) (models.Template, error) {
 	var result models.Template
-	if err := m.q.UpdateTemplate.Get(&result, id, t.Name, t.Body, t.IsDefault, t.Subject, t.Type); err != nil {
+	if err := m.q.UpdateTemplate.Get(&result, id, t.Name, t.Body, t.IsDefault, t.Subject, t.Type, t.TeamID); err != nil {
 		m.lo.Error("error updating template", "error", err)
 		return models.Template{}, envelope.NewError(envelope.GeneralError, m.i18n.Ts("globals.messages.errorUpdating", "name", "{globals.terms.template}"), nil)
 	}
@@ -77,11 +79,11 @@ func (m *Manager) Update(id int, t models.Template) (models.Template, error) {
 
 // Create creates a template.
 func (m *Manager) Create(t models.Template) (models.Template, error) {
-	if t.IsDefault {
+	if t.IsDefault && t.Type == "" {
 		t.Type = TypeEmailOutgoing
 	}
 	var result models.Template
-	if err := m.q.InsertTemplate.Get(&result, t.Name, t.Body, t.IsDefault, t.Subject, t.Type); err != nil {
+	if err := m.q.InsertTemplate.Get(&result, t.Name, t.Body, t.IsDefault, t.Subject, t.Type, t.TeamID); err != nil {
 		if dbutil.IsUniqueViolationError(err) && t.IsDefault {
 			return models.Template{}, envelope.NewError(envelope.GeneralError, m.i18n.T("template.defaultTemplateAlreadyExists"), nil)
 		}
@@ -92,9 +94,15 @@ func (m *Manager) Create(t models.Template) (models.Template, error) {
 }
 
 // GetAll returns all templates by type.
-func (m *Manager) GetAll(typ string) ([]models.Template, error) {
+func (m *Manager) GetAll(typ string, teamID *int, includeGlobal bool) ([]models.Template, error) {
 	var templates = make([]models.Template, 0)
-	if err := m.q.GetAllTemplates.Select(&templates, typ); err != nil {
+	var err error
+	if teamID != nil {
+		err = m.q.GetAllByTeam.Select(&templates, typ, *teamID, includeGlobal)
+	} else {
+		err = m.q.GetAllTemplates.Select(&templates, typ)
+	}
+	if err != nil {
 		m.lo.Error("error fetching templates", "error", err)
 		return templates, envelope.NewError(envelope.GeneralError, m.i18n.Ts("globals.messages.errorFetching", "name", "{globals.terms.template}"), nil)
 	}

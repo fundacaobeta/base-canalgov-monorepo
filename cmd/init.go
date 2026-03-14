@@ -29,6 +29,7 @@ import (
 	"github.com/abhinavxd/libredesk/internal/importer"
 	"github.com/abhinavxd/libredesk/internal/inbox"
 	"github.com/abhinavxd/libredesk/internal/inbox/channel/email"
+	"github.com/abhinavxd/libredesk/internal/inbox/channel/noop"
 	imodels "github.com/abhinavxd/libredesk/internal/inbox/models"
 	"github.com/abhinavxd/libredesk/internal/macro"
 	"github.com/abhinavxd/libredesk/internal/media"
@@ -89,11 +90,20 @@ func initConfig(ko *koanf.Koanf) {
 			log.Fatalf("error loading config from file: %v.", err)
 		}
 	}
-	// Load environment variables with `LIBREDESK_` prefix.
+	// Load environment variables with `CANALGOV_` prefix.
+	ko.Load(env.Provider(".", env.Opt{
+		Prefix: "CANALGOV_",
+		TransformFunc: func(key, val string) (string, any) {
+			// Transform the key.
+			key = strings.ReplaceAll(strings.ToLower(strings.TrimPrefix(key, "CANALGOV_")), "__", ".")
+			return key, val
+		},
+	}), nil)
+
+	// Backward compatibility for existing deployments still using `LIBREDESK_`.
 	ko.Load(env.Provider(".", env.Opt{
 		Prefix: "LIBREDESK_",
 		TransformFunc: func(key, val string) (string, any) {
-			// Transform the key.
 			key = strings.ReplaceAll(strings.ToLower(strings.TrimPrefix(key, "LIBREDESK_")), "__", ".")
 			return key, val
 		},
@@ -159,6 +169,7 @@ func initConstants() *constants {
 // initFS initializes the stuffbin FileSystem.
 func initFS() stuffbin.FileSystem {
 	var files = []string{
+		"schema.sql",
 		"frontend/dist",
 		"i18n",
 		"static",
@@ -591,6 +602,15 @@ func initEmailInbox(inboxRecord imodels.Inbox, msgStore inbox.MessageStore, usrS
 		return nil, fmt.Errorf("unmarshalling `%s` %s config: %w", inboxRecord.Channel, inboxRecord.Name, err)
 	}
 
+	if config.ReceiveMode == "managed" {
+		log.Printf("`%s` inbox configured as managed email address `%s`", inboxRecord.Name, config.ManagedEmailAddress)
+		return noop.New(noop.Opts{
+			ID:      inboxRecord.ID,
+			Channel: inboxRecord.Channel,
+			From:    inboxRecord.From,
+		}), nil
+	}
+
 	if len(config.SMTP) == 0 {
 		log.Printf("WARNING: Zero SMTP servers configured for `%s` inbox: Name: `%s`", inboxRecord.Channel, inboxRecord.Name)
 	}
@@ -644,6 +664,17 @@ func initEmailInbox(inboxRecord imodels.Inbox, msgStore inbox.MessageStore, usrS
 func makeInboxInitializer(mgr *inbox.Manager) func(imodels.Inbox, inbox.MessageStore, inbox.UserStore) (inbox.Inbox, error) {
 	return func(inboxR imodels.Inbox, msgStore inbox.MessageStore, usrStore inbox.UserStore) (inbox.Inbox, error) {
 		switch inboxR.Channel {
+		case inbox.ChannelNone,
+			inbox.ChannelWhatsApp,
+			inbox.ChannelTelegram,
+			inbox.ChannelSMS,
+			inbox.ChannelPush,
+			inbox.ChannelWebhook:
+			return noop.New(noop.Opts{
+				ID:      inboxR.ID,
+				Channel: inboxR.Channel,
+				From:    inboxR.From,
+			}), nil
 		case inbox.ChannelEmail:
 			return initEmailInbox(inboxR, msgStore, usrStore, mgr)
 		default:

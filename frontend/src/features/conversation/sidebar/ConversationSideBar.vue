@@ -233,11 +233,6 @@ const updateContactCustomAttributes = async (attributes) => {
   try {
     conversationStore.current.contact.custom_attributes = attributes
     await api.updateContactCustomAttribute(conversationStore.current.uuid, attributes)
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      description: t('globals.messages.updatedSuccessfully', {
-        name: t('globals.terms.attribute')
-      })
-    })
   } catch (error) {
     emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
       variant: 'destructive',

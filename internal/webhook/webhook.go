@@ -339,12 +339,12 @@ func (m *Manager) deliverSingleWebhook(webhook models.Webhook, task DeliveryTask
 
 	// Set headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "Libredesk-Webhook/"+version.Version)
+	req.Header.Set("User-Agent", "CanalGov-Webhook/"+version.Version)
 
 	// Add signature if secret is provided
 	if webhook.Secret != "" {
 		signature := m.generateSignature(payloadBytes, webhook.Secret)
-		req.Header.Set("X-Libredesk-Signature", signature)
+		req.Header.Set("X-Canalgov-Signature", signature)
 	}
 
 	m.lo.Debug("delivering webhook",
