@@ -1,141 +1,68 @@
 <template>
   <Dialog v-model:open="dialogOpen">
-    <DropdownMenu>
-      <DropdownMenuTrigger as-child>
-        <Button
-          variant="ghost"
-          class="w-8 h-8 p-0"
-          v-if="!CONVERSATION_DEFAULT_STATUSES_LIST.includes(props.status.name)"
-        >
-          <span class="sr-only"></span>
-          <MoreHorizontal class="w-4 h-4" />
-        </Button>
-        <div v-else class="w-8 h-8 p-0 invisible"></div>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent>
-        <DialogTrigger as-child>
-          <DropdownMenuItem> {{ $t('globals.messages.edit') }} </DropdownMenuItem>
-        </DialogTrigger>
-        <DropdownMenuItem @click="() => (alertOpen = true)">
-          {{ $t('globals.messages.delete') }}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <DataTableRowActions
+      v-if="!CONVERSATION_DEFAULT_STATUSES_LIST.includes(props.status.name)"
+      :entity-name="t('globals.terms.status')"
+      :delete-description="t('globals.messages.deletionConfirmation', { name: t('globals.terms.status').toLowerCase() })"
+      @edit="dialogOpen = true"
+      @delete="handleDelete"
+    />
+    <div v-else class="w-8 h-8 p-0 invisible" />
+
     <DialogContent class="sm:max-w-[425px]">
       <DialogHeader>
-        <DialogTitle>
-          {{
-            $t('globals.messages.edit', {
-              name: $t('globals.terms.status')
-            })
-          }}
-        </DialogTitle>
-        <DialogDescription>
-          {{ $t('admin.conversationStatus.name.description') }}
-        </DialogDescription>
+        <DialogTitle>{{ t('globals.messages.edit', { name: t('globals.terms.status') }) }}</DialogTitle>
+        <DialogDescription>{{ t('admin.conversationStatus.name.description') }}</DialogDescription>
       </DialogHeader>
       <StatusForm @submit.prevent="onSubmit">
         <template #footer>
-          <DialogFooter class="mt-10">
-            <Button type="submit" :isLoading="isLoading" :disabled="isLoading">{{
-              $t('globals.messages.save')
-            }}</Button>
+          <DialogFooter class="mt-6 gap-2">
+            <Button variant="outline" type="button" @click="dialogOpen = false">
+              {{ t('globals.messages.cancel') }}
+            </Button>
+            <Button type="submit" :disabled="isLoading">{{ t('globals.messages.save') }}</Button>
           </DialogFooter>
         </template>
       </StatusForm>
     </DialogContent>
   </Dialog>
-
-  <AlertDialog :open="alertOpen" @update:open="alertOpen = $event">
-    <AlertDialogContent>
-      <AlertDialogHeader>
-        <AlertDialogTitle> {{ $t('globals.messages.areYouAbsolutelySure') }}</AlertDialogTitle>
-        <AlertDialogDescription>
-          {{
-            $t('globals.messages.deletionConfirmation', {
-              name: $t('globals.terms.status').toLowerCase()
-            })
-          }}
-        </AlertDialogDescription>
-      </AlertDialogHeader>
-      <AlertDialogFooter>
-        <AlertDialogCancel>{{ $t('globals.messages.cancel') }}</AlertDialogCancel>
-        <AlertDialogAction @click="handleDelete">{{
-          $t('globals.messages.delete')
-        }}</AlertDialogAction>
-      </AlertDialogFooter>
-    </AlertDialogContent>
-  </AlertDialog>
 </template>
 
 <script setup>
 import { watch, ref } from 'vue'
-import { MoreHorizontal } from 'lucide-vue-next'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle
-} from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { createFormSchema } from './formSchema.js'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 import StatusForm from './StatusForm.vue'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from '@/components/ui/dialog'
+import DataTableRowActions from '@/components/admin/DataTableRowActions.vue'
 import { CONVERSATION_DEFAULT_STATUSES_LIST } from '@/constants/conversation.js'
-import { useEmitter } from '@/composables/useEmitter'
-import { handleHTTPError } from '@/utils/http'
-import { EMITTER_EVENTS } from '@/constants/emitterEvents.js'
+import { useAdminListRefresh } from '@/composables/useAdminListRefresh'
+import { useAdminErrorToast } from '@/composables/useAdminErrorToast'
 import { useI18n } from 'vue-i18n'
 import api from '@/api/index.js'
 
 const { t } = useI18n()
 const isLoading = ref(false)
 const dialogOpen = ref(false)
-const alertOpen = ref(false)
-const emit = useEmitter()
+const { emitRefresh } = useAdminListRefresh('status', () => {})
+const { showErrorToast } = useAdminErrorToast()
 
 const props = defineProps({
-  status: {
-    type: Object,
-    required: true
-  }
+  status: { type: Object, required: true }
 })
 
-const form = useForm({
-  validationSchema: toTypedSchema(createFormSchema(t))
-})
+const form = useForm({ validationSchema: toTypedSchema(createFormSchema(t)) })
 
 const onSubmit = form.handleSubmit(async (values) => {
   isLoading.value = true
   try {
     await api.updateStatus(props.status.id, values)
     dialogOpen.value = false
-    emitRefreshStatusList()
+    emitRefresh()
   } catch (error) {
-    emit.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      variant: 'destructive',
-      description: handleHTTPError(error).message
-    })
+    showErrorToast(error)
   } finally {
     isLoading.value = false
   }
@@ -145,29 +72,13 @@ const handleDelete = async () => {
   isLoading.value = true
   try {
     await api.deleteStatus(props.status.id)
-    alertOpen.value = false
-    emitRefreshStatusList()
+    emitRefresh()
   } catch (error) {
-    emit.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      variant: 'destructive',
-      description: handleHTTPError(error).message
-    })
+    showErrorToast(error)
   } finally {
     isLoading.value = false
   }
 }
 
-const emitRefreshStatusList = () => {
-  emit.emit(EMITTER_EVENTS.REFRESH_LIST, {
-    model: 'status'
-  })
-}
-
-watch(
-  () => props.status,
-  (newValues) => {
-    form.setValues(newValues)
-  },
-  { immediate: true, deep: true }
-)
+watch(() => props.status, (val) => form.setValues(val), { immediate: true, deep: true })
 </script>

@@ -51,10 +51,12 @@ import {
 import { filterNavItems } from '@/utils/nav-permissions'
 import { permissions } from '@/constants/permissions'
 import { useStorage } from '@vueuse/core'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useUserStore } from '@/stores/user'
 import { useConversationStore } from '@/stores/conversation'
+import { useContactSegments } from '@/composables/useContactSegments'
+import { useInboxTypes } from '@/composables/useInboxTypes'
 
 defineProps({
   userTeams: { type: Array, default: () => [] },
@@ -64,18 +66,31 @@ defineProps({
 const userStore = useUserStore()
 const conversationStore = useConversationStore()
 const settingsStore = useAppSettingsStore()
+const { segments, fetchSegments } = useContactSegments()
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
+const { toParam: inboxTypeParam } = useInboxTypes()
+
+onMounted(() => {
+  if (route.matched.some(r => r.meta?.area === 'contacts' || r.meta?.section === 'people')) {
+    fetchSegments()
+  }
+})
 const emit = defineEmits(['createView', 'editView', 'deleteView', 'createConversation'])
 
-const isActiveParent = (parentHref) => {
-  return route.path.startsWith(parentHref)
+const isActive = (activeGroup) => {
+  if (!activeGroup?.length) return false
+  return activeGroup.includes(route.name)
 }
 
-const isInboxRoute = (path) => {
-  return path.startsWith('/inboxes')
-}
+const isInboxSection = computed(() =>
+  route.matched.some(r => r.meta?.area === 'inboxes')
+)
+
+const isAccountSection = computed(() =>
+  route.matched.some(r => r.name === 'account')
+)
 
 const openCreateViewDialog = () => {
   emit('createView')
@@ -99,7 +114,8 @@ const handleDeleteView = () => {
 }
 
 // Navigation methods with conversation retention
-const navigateToInbox = (type) => {
+const navigateToInbox = (internalType) => {
+  const type = inboxTypeParam(internalType)
   if (conversationStore.hasConversationOpen && conversationStore.conversation.data?.uuid) {
     router.push({
       name: 'inbox-conversation',
@@ -161,11 +177,11 @@ const toggleAdminCollapsible = (titleKey) => {
 }
 // Watch for route changes and update the active collapsible
 watch(
-  [() => route.path, filteredAdminNavItems],
+  [() => route.name, filteredAdminNavItems],
   () => {
     const activeItem = filteredAdminNavItems.value.find((item) => {
-      if (!item.children) return isActiveParent(item.href)
-      return item.children.some((child) => isActiveParent(child.href))
+      if (!item.children) return isActive(item.activeGroup)
+      return item.children.some((child) => isActive(child.activeGroup))
     })
     if (activeItem) {
       openAdminCollapsible.value = activeItem.titleKey
@@ -214,8 +230,8 @@ const viewToDelete = ref(null)
           <SidebarGroup>
             <SidebarMenu>
               <SidebarMenuItem v-for="item in filteredContactsNavItems" :key="item.titleKey">
-                <SidebarMenuButton :isActive="isActiveParent(item.href)" asChild>
-                  <router-link :to="item.href">
+                <SidebarMenuButton :isActive="isActive(item.activeGroup)" asChild>
+                  <router-link :to="item.to">
                     <span>{{
                       t('globals.messages.all', {
                         name: t(item.titleKey, 2).toLowerCase()
@@ -224,6 +240,41 @@ const viewToDelete = ref(null)
                   </router-link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+
+              <!-- Contact Segments (Groups) -->
+              <Collapsible
+                defaultOpen
+                class="group/collapsible"
+                v-if="segments.length"
+              >
+                <SidebarMenuItem>
+                  <CollapsibleTrigger as-child>
+                    <SidebarMenuButton asChild>
+                      <router-link to="#">
+                        <span>{{ t('globals.terms.group', 2) }}</span>
+                        <ChevronRight
+                          class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
+                        />
+                      </router-link>
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub v-for="segment in segments" :key="segment.id">
+                      <SidebarMenuSubItem>
+                        <SidebarMenuButton
+                          size="sm"
+                          :isActive="route.query.segment_id == segment.id"
+                          asChild
+                        >
+                          <router-link :to="{ name: 'contacts', query: { segment_id: segment.id } }">
+                            <span>{{ segment.name }}</span>
+                          </router-link>
+                        </SidebarMenuButton>
+                      </SidebarMenuSubItem>
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
             </SidebarMenu>
           </SidebarGroup>
         </SidebarContent>
@@ -253,8 +304,8 @@ const viewToDelete = ref(null)
           <SidebarGroup>
             <SidebarMenu>
               <SidebarMenuItem v-for="item in filteredReportsNavItems" :key="item.titleKey">
-                <SidebarMenuButton :isActive="isActiveParent(item.href)" asChild>
-                  <router-link :to="item.href">
+                <SidebarMenuButton :isActive="isActive(item.activeGroup)" asChild>
+                  <router-link :to="item.to">
                     <span>{{ t(item.titleKey) }}</span>
                   </router-link>
                 </SidebarMenuButton>
@@ -276,8 +327,8 @@ const viewToDelete = ref(null)
                   {{ t('globals.terms.admin') }}
                 </span>
                 <!-- App version -->
-                <div class="text-xs text-muted-foreground">
-                  ({{ settingsStore.settings['app.version'] }})
+                <div class="text-xs text-muted-foreground" v-if="settingsStore.public_config.version">
+                  ({{ settingsStore.public_config.version }})
                 </div>
               </div>
             </SidebarMenuItem>
@@ -289,10 +340,10 @@ const viewToDelete = ref(null)
               <SidebarMenuItem v-for="item in filteredAdminNavItems" :key="item.titleKey">
                 <SidebarMenuButton
                   v-if="!item.children"
-                  :isActive="isActiveParent(item.href)"
+                  :isActive="isActive(item.activeGroup)"
                   asChild
                 >
-                  <router-link :to="item.href">
+                  <router-link :to="item.to">
                     <span>{{ t(item.titleKey) }}</span>
                   </router-link>
                 </SidebarMenuButton>
@@ -304,7 +355,7 @@ const viewToDelete = ref(null)
                   @update:open="toggleAdminCollapsible(item.titleKey)"
                 >
                   <CollapsibleTrigger as-child>
-                    <SidebarMenuButton :isActive="isActiveParent(item.href)">
+                    <SidebarMenuButton :isActive="isActive(item.activeGroup)">
                       <span>{{ t(item.titleKey, item.isTitleKeyPlural === true ? 2 : 1) }}</span>
                       <ChevronRight
                         class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
@@ -314,8 +365,8 @@ const viewToDelete = ref(null)
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       <SidebarMenuSubItem v-for="child in item.children" :key="child.titleKey">
-                        <SidebarMenuButton size="sm" :isActive="isActiveParent(child.href)" asChild>
-                          <router-link :to="child.href">
+                        <SidebarMenuButton size="sm" :isActive="isActive(child.activeGroup)" asChild>
+                          <router-link :to="child.to">
                             <span>{{ t(child.titleKey, child.isTitleKeyPlural === true ? 2 : 1) }}</span>
                           </router-link>
                         </SidebarMenuButton>
@@ -331,7 +382,7 @@ const viewToDelete = ref(null)
     </template>
 
     <!-- Account sidebar -->
-    <template v-if="isActiveParent('/account')">
+    <template v-if="isAccountSection">
       <Sidebar collapsible="offcanvas" class="sidebar-secondary">
         <SidebarHeader>
           <SidebarMenu>
@@ -348,8 +399,8 @@ const viewToDelete = ref(null)
           <SidebarGroup>
             <SidebarMenu>
               <SidebarMenuItem v-for="item in accountNavItems" :key="item.titleKey">
-                <SidebarMenuButton :isActive="isActiveParent(item.href)" asChild>
-                  <router-link :to="item.href">
+                <SidebarMenuButton :isActive="isActive(item.activeGroup)" asChild>
+                  <router-link :to="item.to">
                     <span>{{ t(item.titleKey) }}</span>
                   </router-link>
                 </SidebarMenuButton>
@@ -364,7 +415,7 @@ const viewToDelete = ref(null)
     </template>
 
     <!-- Inbox sidebar -->
-    <template v-if="route.path && isInboxRoute(route.path)">
+    <template v-if="isInboxSection">
       <Sidebar collapsible="offcanvas" class="sidebar-secondary">
         <SidebarHeader>
           <SidebarMenu>
@@ -401,8 +452,8 @@ const viewToDelete = ref(null)
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild :isActive="isActiveParent('/inboxes/assigned')">
-                  <router-link :to="{ name: 'inbox', params: { type: 'assigned' } }">
+                <SidebarMenuButton asChild :isActive="isInboxSection && route.params.type === inboxTypeParam('assigned')">
+                  <router-link :to="{ name: 'inbox', params: { type: inboxTypeParam('assigned') } }">
                     <User />
                     <span>{{ t('globals.terms.myInbox') }}</span>
                   </router-link>
@@ -410,7 +461,7 @@ const viewToDelete = ref(null)
               </SidebarMenuItem>
 
               <SidebarMenuItem>
-                <SidebarMenuButton asChild :isActive="isActiveParent('/inboxes/mentioned')">
+                <SidebarMenuButton asChild :isActive="isInboxSection && route.params.type === inboxTypeParam('mentioned')">
                   <a href="#" @click.prevent="navigateToInbox('mentioned')">
                     <AtSign />
                     <span>
@@ -421,8 +472,8 @@ const viewToDelete = ref(null)
               </SidebarMenuItem>
 
               <SidebarMenuItem>
-                <SidebarMenuButton asChild :isActive="isActiveParent('/inboxes/unassigned')">
-                  <router-link :to="{ name: 'inbox', params: { type: 'unassigned' } }">
+                <SidebarMenuButton asChild :isActive="isInboxSection && route.params.type === inboxTypeParam('unassigned')">
+                  <router-link :to="{ name: 'inbox', params: { type: inboxTypeParam('unassigned') } }">
                     <CircleDashed />
                     <span>
                       {{ t('globals.terms.unassigned') }}
@@ -432,8 +483,8 @@ const viewToDelete = ref(null)
               </SidebarMenuItem>
 
               <SidebarMenuItem>
-                <SidebarMenuButton asChild :isActive="isActiveParent('/inboxes/all')">
-                  <router-link :to="{ name: 'inbox', params: { type: 'all' } }">
+                <SidebarMenuButton asChild :isActive="isInboxSection && route.params.type === inboxTypeParam('all')">
+                  <router-link :to="{ name: 'inbox', params: { type: inboxTypeParam('all') } }">
                     <List />
                     <span>
                       {{ t('globals.messages.all') }}
@@ -471,7 +522,7 @@ const viewToDelete = ref(null)
                           :is-active="route.params.teamID == team.id"
                           asChild
                         >
-                          <router-link :to="{ name: 'team-inbox', params: { teamID: team.id } }">
+                          <router-link :to="{ name: 'team-inbox', params: { teamID: team?.id || '0' } }">
                             {{ team.emoji }}<span>{{ team.name }}</span>
                           </router-link>
                         </SidebarMenuButton>
@@ -517,7 +568,7 @@ const viewToDelete = ref(null)
                           :isActive="route.params.viewID == view.id"
                           asChild
                         >
-                          <router-link :to="{ name: 'view-inbox', params: { viewID: view.id } }">
+                          <router-link :to="{ name: 'view-inbox', params: { viewID: view?.id || '0' } }">
                             <span class="break-words w-32 truncate" :title="view.name">{{ view.name }}</span>
                             <SidebarMenuAction
                               @click.stop
@@ -579,7 +630,7 @@ const viewToDelete = ref(null)
                           :isActive="route.params.viewID == view.id"
                           asChild
                         >
-                          <router-link :to="{ name: 'view-inbox', params: { viewID: view.id } }">
+                          <router-link :to="{ name: 'view-inbox', params: { viewID: view?.id || '0' } }">
                             <span class="break-words w-32 truncate" :title="view.name">{{
                               view.name
                             }}</span>

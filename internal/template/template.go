@@ -1,17 +1,16 @@
 // Package template manages templates including creation, retrieval and rendering.
 package template
-
 import (
 	"database/sql"
 	"embed"
 	"errors"
-	"fmt"
 	"html/template"
 	"sync"
 
-	"github.com/abhinavxd/libredesk/internal/dbutil"
-	"github.com/abhinavxd/libredesk/internal/envelope"
-	"github.com/abhinavxd/libredesk/internal/template/models"
+
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/dbutil"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/envelope"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/template/models"
 	"github.com/jmoiron/sqlx"
 	"github.com/knadh/go-i18n"
 	"github.com/zerodha/logf"
@@ -24,6 +23,7 @@ var (
 	TypeResponse          = "response"
 	TypeEmailOutgoing     = "email_outgoing"
 	TypeEmailNotification = "email_notification"
+	TypeNote              = "note"
 )
 
 // Manager handles template-related operations.
@@ -48,6 +48,16 @@ type queries struct {
 	GetTemplate        *sqlx.Stmt `query:"get-template"`
 	GetByName          *sqlx.Stmt `query:"get-by-name"`
 	IsBuiltIn          *sqlx.Stmt `query:"is-builtin"`
+
+	// Category queries.
+	GetCategories          *sqlx.Stmt `query:"get-categories"`
+	GetCategoryTeams       *sqlx.Stmt `query:"get-category-teams"`
+	InsertCategory         *sqlx.Stmt `query:"insert-category"`
+	UpdateCategory         *sqlx.Stmt `query:"update-category"`
+	DeleteCategory         *sqlx.Stmt `query:"delete-category"`
+	ClearCategoryTeams     *sqlx.Stmt `query:"clear-category-teams"`
+	InsertCategoryTeam     *sqlx.Stmt `query:"insert-category-team"`
+	GetTemplatesByCategory *sqlx.Stmt `query:"get-templates-by-category"`
 }
 
 // New creates and returns a new instance of the Manager.
@@ -102,36 +112,29 @@ func (m *Manager) GetAll(typ string, teamID *int, includeGlobal bool) ([]models.
 	} else {
 		err = m.q.GetAllTemplates.Select(&templates, typ)
 	}
+
 	if err != nil {
 		m.lo.Error("error fetching templates", "error", err)
-		return templates, envelope.NewError(envelope.GeneralError, m.i18n.Ts("globals.messages.errorFetching", "name", "{globals.terms.template}"), nil)
+		return nil, envelope.NewError(envelope.GeneralError, m.i18n.Ts("globals.messages.errorFetching", "name", "{globals.terms.template}"), nil)
 	}
 	return templates, nil
 }
 
-// Get returns a template by id.
+// Get returns a single template by ID.
 func (m *Manager) Get(id int) (models.Template, error) {
-	var templates = models.Template{}
-	if err := m.q.GetTemplate.Get(&templates, id); err != nil {
-		if err == sql.ErrNoRows {
-			return templates, envelope.NewError(envelope.NotFoundError, m.i18n.Ts("globals.messages.notFound", "name", "{globals.terms.template}"), nil)
+	var t models.Template
+	if err := m.q.GetTemplate.Get(&t, id); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return t, ErrTemplateNotFound
 		}
 		m.lo.Error("error fetching template", "error", err)
-		return templates, envelope.NewError(envelope.GeneralError, m.i18n.Ts("globals.messages.errorFetching", "name", "{globals.terms.template}"), nil)
+		return t, envelope.NewError(envelope.GeneralError, m.i18n.Ts("globals.messages.errorFetching", "name", "{globals.terms.template}"), nil)
 	}
-	return templates, nil
+	return t, nil
 }
 
-// Delete deletes a template by id.
+// Delete deletes a template by ID.
 func (m *Manager) Delete(id int) error {
-	// Do not allow deletion of built-in templates.
-	isBuiltIn, err := m.isBuiltIn(id)
-	if err != nil {
-		return envelope.NewError(envelope.GeneralError, m.i18n.Ts("globals.messages.errorFetching", "name", "{globals.terms.template}"), nil)
-	}
-	if isBuiltIn {
-		return envelope.NewError(envelope.PermissionError, m.i18n.T("template.cannotDeleteBuiltInTemplate"), nil)
-	}
 	if _, err := m.q.DeleteTemplate.Exec(id); err != nil {
 		m.lo.Error("error deleting template", "error", err)
 		return envelope.NewError(envelope.GeneralError, m.i18n.Ts("globals.messages.errorDeleting", "name", "{globals.terms.template}"), nil)
@@ -139,44 +142,84 @@ func (m *Manager) Delete(id int) error {
 	return nil
 }
 
-// isBuiltIn returns true if the template is built-in.
-func (m *Manager) isBuiltIn(id int) (bool, error) {
-	var isBuiltIn bool
-	if err := m.q.IsBuiltIn.Get(&isBuiltIn, id); err != nil {
-		m.lo.Error("error fetching template", "error", err)
-		return false, fmt.Errorf("error fetching template(%d) by id: %w", id, err)
-	}
-	return isBuiltIn, nil
-}
-
-// getDefaultOutgoingEmailTemplate returns the default outgoing email template.
 func (m *Manager) getDefaultOutgoingEmailTemplate() (models.Template, error) {
-	var template models.Template
-	if err := m.q.GetDefaultTemplate.Get(&template); err != nil {
-		if err == sql.ErrNoRows {
-			return template, ErrTemplateNotFound
-		}
-		m.lo.Error("error fetching default template", "error", err)
-		return template, fmt.Errorf("error fetching default template: %w", err)
+	var t models.Template
+	if err := m.q.GetDefaultTemplate.Get(&t); err != nil {
+		return t, err
 	}
-	return template, nil
+	return t, nil
 }
 
-// getByName returns a template by name.
 func (m *Manager) getByName(name string) (models.Template, error) {
-	var template models.Template
-	if err := m.q.GetByName.Get(&template, name); err != nil {
-		if err == sql.ErrNoRows {
-			return template, ErrTemplateNotFound
-		}
-		m.lo.Error("error fetching default template", "error", err)
-		return template, fmt.Errorf("error fetching template(%s) by name: %w", name, err)
+	var t models.Template
+	if err := m.q.GetByName.Get(&t, name); err != nil {
+		return t, err
 	}
-	return template, nil
+	return t, nil
 }
 
-// Reload reloads the templates and function map.
-func (m *Manager) Reload(webTpls, tpls *template.Template, funcMap template.FuncMap) error {
+// GetCategories returns all template categories.
+func (m *Manager) GetCategories() ([]models.TemplateCategory, error) {
+	var categories []models.TemplateCategory
+	if err := m.q.GetCategories.Select(&categories); err != nil {
+		m.lo.Error("error fetching template categories", "error", err)
+		return nil, envelope.NewError(envelope.GeneralError, m.i18n.Ts("globals.messages.errorFetching", "name", "{globals.terms.category}"), nil)
+	}
+
+	for i := range categories {
+		var teamIDs []int
+		if err := m.q.GetCategoryTeams.Select(&teamIDs, categories[i].ID); err == nil {
+			categories[i].TeamIDs = teamIDs
+		}
+	}
+
+	return categories, nil
+}
+
+// CreateCategory creates a new template category.
+func (m *Manager) CreateCategory(c models.TemplateCategory) (models.TemplateCategory, error) {
+	var result models.TemplateCategory
+	if err := m.q.InsertCategory.Get(&result, c.Name, c.Description); err != nil {
+		m.lo.Error("error inserting template category", "error", err)
+		return result, envelope.NewError(envelope.GeneralError, m.i18n.Ts("globals.messages.errorCreating", "name", "{globals.terms.category}"), nil)
+	}
+
+	for _, teamID := range c.TeamIDs {
+		m.q.InsertCategoryTeam.Exec(result.ID, teamID)
+	}
+	result.TeamIDs = c.TeamIDs
+
+	return result, nil
+}
+
+// UpdateCategory updates an existing template category.
+func (m *Manager) UpdateCategory(id int, c models.TemplateCategory) (models.TemplateCategory, error) {
+	var result models.TemplateCategory
+	if err := m.q.UpdateCategory.Get(&result, id, c.Name, c.Description); err != nil {
+		m.lo.Error("error updating template category", "error", err)
+		return result, envelope.NewError(envelope.GeneralError, m.i18n.Ts("globals.messages.errorUpdating", "name", "{globals.terms.category}"), nil)
+	}
+
+	m.q.ClearCategoryTeams.Exec(id)
+	for _, teamID := range c.TeamIDs {
+		m.q.InsertCategoryTeam.Exec(id, teamID)
+	}
+	result.TeamIDs = c.TeamIDs
+
+	return result, nil
+}
+
+// DeleteCategory deletes a template category.
+func (m *Manager) DeleteCategory(id int) error {
+	if _, err := m.q.DeleteCategory.Exec(id); err != nil {
+		m.lo.Error("error deleting template category", "error", err)
+		return envelope.NewError(envelope.GeneralError, m.i18n.Ts("globals.messages.errorDeleting", "name", "{globals.terms.category}"), nil)
+	}
+	return nil
+}
+
+// Reload reloads the templates.
+func (m *Manager) Reload(webTpls *template.Template, tpls *template.Template, funcMap template.FuncMap) error {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	m.webTpls = webTpls

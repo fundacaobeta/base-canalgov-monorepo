@@ -1,86 +1,26 @@
 <template>
-  <DropdownMenu>
-    <DropdownMenuTrigger as-child>
-      <Button variant="ghost" class="w-8 h-8 p-0">
-        <span class="sr-only"></span>
-        <MoreHorizontal class="w-4 h-4" />
-      </Button>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent>
-      <DropdownMenuItem @click="edit(props.role.id)">
-        {{ t('globals.messages.edit') }}
-      </DropdownMenuItem>
-      <DropdownMenuItem @click="() => (alertOpen = true)">
-        {{ t('globals.messages.delete') }}
-      </DropdownMenuItem>
-    </DropdownMenuContent>
-  </DropdownMenu>
-
-  <AlertDialog :open="alertOpen" @update:open="alertOpen = $event">
-    <AlertDialogContent>
-      <AlertDialogHeader>
-        <AlertDialogTitle>
-          {{ t('globals.messages.areYouAbsolutelySure') }}
-        </AlertDialogTitle>
-        <AlertDialogDescription>
-          {{
-            t('globals.messages.deletionConfirmation', {
-              name: t('globals.terms.businessHour').toLowerCase()
-            })
-          }}
-        </AlertDialogDescription>
-      </AlertDialogHeader>
-      <AlertDialogFooter>
-        <AlertDialogCancel>
-          {{ t('globals.messages.cancel') }}
-        </AlertDialogCancel>
-        <AlertDialogAction @click="handleDelete">
-          {{ t('globals.messages.delete') }}
-        </AlertDialogAction>
-      </AlertDialogFooter>
-    </AlertDialogContent>
-  </AlertDialog>
+  <DataTableRowActions
+    :entity-name="t('globals.terms.businessHour').toLowerCase()"
+    @edit="edit(props.role.id)"
+    @delete="handleDelete"
+  />
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { MoreHorizontal } from 'lucide-vue-next'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle
-} from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
 import { useRouter } from 'vue-router'
-import api from '@/api'
-import { useEmitter } from '@/composables/useEmitter'
+import DataTableRowActions from '@/components/admin/DataTableRowActions.vue'
+import { useAdminListRefresh } from '@/composables/useAdminListRefresh'
+import { useAdminErrorToast } from '@/composables/useAdminErrorToast'
 import { useI18n } from 'vue-i18n'
-import { EMITTER_EVENTS } from '@/constants/emitterEvents.js'
+import api from '@/api'
 
 const { t } = useI18n()
 const router = useRouter()
-const emit = useEmitter()
-const alertOpen = ref(false)
+const { emitRefresh } = useAdminListRefresh('business_hours', () => {})
+const { showErrorToast } = useAdminErrorToast()
 
 const props = defineProps({
-  role: {
-    type: Object,
-    required: true,
-    default: () => ({
-      id: ''
-    })
-  }
+  role: { type: Object, required: true, default: () => ({ id: '' }) }
 })
 
 function edit(id) {
@@ -88,10 +28,11 @@ function edit(id) {
 }
 
 async function handleDelete() {
-  await api.deleteBusinessHours(props.role.id)
-  alertOpen.value = false
-  emit.emit(EMITTER_EVENTS.REFRESH_LIST, {
-    model: 'business_hours'
-  })
+  try {
+    await api.deleteBusinessHours(props.role.id)
+    emitRefresh()
+  } catch (error) {
+    showErrorToast(error)
+  }
 }
 </script>

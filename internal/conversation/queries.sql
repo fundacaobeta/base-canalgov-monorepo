@@ -215,6 +215,8 @@ SELECT
     c.updated_at,
     c.uuid,
     c.subject,
+    c.reference_number,
+    cs.name AS status,
     u.first_name AS "contact.first_name",
     u.last_name AS "contact.last_name",
     u.avatar_url AS "contact.avatar_url",
@@ -222,6 +224,7 @@ SELECT
     c.last_message_at
 FROM users u
 JOIN conversations c ON c.contact_id = u.id
+JOIN conversation_statuses cs ON cs.id = c.status_id
 WHERE c.contact_id = $1
 ORDER BY c.created_at DESC
 LIMIT $2;

@@ -9,12 +9,12 @@ import (
 
 	"slices"
 
-	"github.com/abhinavxd/libredesk/internal/attachment"
-	amodels "github.com/abhinavxd/libredesk/internal/auth/models"
-	"github.com/abhinavxd/libredesk/internal/envelope"
-	"github.com/abhinavxd/libredesk/internal/image"
-	mmodels "github.com/abhinavxd/libredesk/internal/media/models"
-	"github.com/abhinavxd/libredesk/internal/stringutil"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/attachment"
+	amodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/auth/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/envelope"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/image"
+	mmodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/media/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/stringutil"
 	"github.com/google/uuid"
 	"github.com/valyala/fasthttp"
 	"github.com/volatiletech/null/v9"

@@ -1,4 +1,4 @@
-// Package user managers all users in libredesk - agents and contacts.
+// Package user managers all users in canalgov - agents and contacts.
 package user
 
 import (
@@ -15,11 +15,11 @@ import (
 
 	"log"
 
-	"github.com/abhinavxd/libredesk/internal/dbutil"
-	"github.com/abhinavxd/libredesk/internal/envelope"
-	rmodels "github.com/abhinavxd/libredesk/internal/role/models"
-	"github.com/abhinavxd/libredesk/internal/stringutil"
-	"github.com/abhinavxd/libredesk/internal/user/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/dbutil"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/envelope"
+	rmodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/role/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/stringutil"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/user/models"
 	"github.com/jmoiron/sqlx"
 	"github.com/knadh/go-i18n"
 	"github.com/lib/pq"
@@ -87,6 +87,13 @@ type queries struct {
 	SetAPIKey            *sqlx.Stmt `query:"set-api-key"`
 	RevokeAPIKey         *sqlx.Stmt `query:"revoke-api-key"`
 	UpdateAPIKeyLastUsed *sqlx.Stmt `query:"update-api-key-last-used"`
+
+	// Contact segment queries.
+	GetContactSegments   *sqlx.Stmt `query:"get-contact-segments"`
+	GetContactSegment    *sqlx.Stmt `query:"get-contact-segment"`
+	InsertContactSegment *sqlx.Stmt `query:"insert-contact-segment"`
+	UpdateContactSegment *sqlx.Stmt `query:"update-contact-segment"`
+	DeleteContactSegment *sqlx.Stmt `query:"delete-contact-segment"`
 }
 
 // New creates and returns a new instance of the Manager.
@@ -186,7 +193,6 @@ func (u *Manager) UpdateLastLoginAt(id int) error {
 
 // SetResetPasswordToken sets a reset password token for an user and returns the token.
 func (u *Manager) SetResetPasswordToken(id int) (string, error) {
-	// TODO: column `reset_password_token`, does not have a UNIQUE constraint. Add it in a future migration.
 	token, err := stringutil.RandomAlphanumeric(32)
 	if err != nil {
 		u.lo.Error("error generating reset password token", "error", err)
@@ -327,6 +333,58 @@ func (u *Manager) RevokeAPIKey(userID int) error {
 	if _, err := u.q.RevokeAPIKey.Exec(userID); err != nil {
 		u.lo.Error("error revoking API key", "error", err, "user_id", userID)
 		return envelope.NewError(envelope.GeneralError, u.i18n.Ts("globals.messages.errorRevoking", "name", "{globals.terms.apiKey}"), nil)
+	}
+	return nil
+}
+
+// GetContactSegments returns all contact segments.
+func (u *Manager) GetContactSegments() ([]models.ContactSegment, error) {
+	var segments []models.ContactSegment
+	if err := u.q.GetContactSegments.Select(&segments); err != nil {
+		u.lo.Error("error fetching contact segments", "error", err)
+		return nil, envelope.NewError(envelope.GeneralError, u.i18n.Ts("globals.messages.errorFetching", "name", "{globals.terms.group}"), nil)
+	}
+	return segments, nil
+}
+
+// GetContactSegment returns a single contact segment by ID.
+func (u *Manager) GetContactSegment(id int) (models.ContactSegment, error) {
+	var segment models.ContactSegment
+	if err := u.q.GetContactSegment.Get(&segment, id); err != nil {
+		if err == sql.ErrNoRows {
+			return segment, envelope.NewError(envelope.NotFoundError, u.i18n.Ts("globals.messages.notFound", "name", "{globals.terms.group}"), nil)
+		}
+		u.lo.Error("error fetching contact segment", "error", err)
+		return segment, envelope.NewError(envelope.GeneralError, u.i18n.Ts("globals.messages.errorFetching", "name", "{globals.terms.group}"), nil)
+	}
+	return segment, nil
+}
+
+// CreateContactSegment creates a new contact segment.
+func (u *Manager) CreateContactSegment(name string, description string, filters json.RawMessage) (models.ContactSegment, error) {
+	var segment models.ContactSegment
+	if err := u.q.InsertContactSegment.Get(&segment, name, description, filters); err != nil {
+		u.lo.Error("error inserting contact segment", "error", err)
+		return segment, envelope.NewError(envelope.GeneralError, u.i18n.Ts("globals.messages.errorCreating", "name", "{globals.terms.group}"), nil)
+	}
+	return segment, nil
+}
+
+// UpdateContactSegment updates an existing contact segment.
+func (u *Manager) UpdateContactSegment(id int, name string, description string, filters json.RawMessage) (models.ContactSegment, error) {
+	var segment models.ContactSegment
+	if err := u.q.UpdateContactSegment.Get(&segment, id, name, description, filters); err != nil {
+		u.lo.Error("error updating contact segment", "error", err)
+		return segment, envelope.NewError(envelope.GeneralError, u.i18n.Ts("globals.messages.errorUpdating", "name", "{globals.terms.group}"), nil)
+	}
+	return segment, nil
+}
+
+// DeleteContactSegment deletes a contact segment.
+func (u *Manager) DeleteContactSegment(id int) error {
+	if _, err := u.q.DeleteContactSegment.Exec(id); err != nil {
+		u.lo.Error("error deleting contact segment", "error", err)
+		return envelope.NewError(envelope.GeneralError, u.i18n.Ts("globals.messages.errorDeleting", "name", "{globals.terms.group}"), nil)
 	}
 	return nil
 }

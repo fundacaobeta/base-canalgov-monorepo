@@ -3,9 +3,9 @@ package main
 import (
 	"strconv"
 
-	amodels "github.com/abhinavxd/libredesk/internal/auth/models"
-	"github.com/abhinavxd/libredesk/internal/envelope"
-	vmodels "github.com/abhinavxd/libredesk/internal/view/models"
+	amodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/auth/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/envelope"
+	vmodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/view/models"
 	"github.com/valyala/fasthttp"
 	"github.com/zerodha/fastglue"
 )

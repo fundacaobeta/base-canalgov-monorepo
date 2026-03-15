@@ -3,8 +3,8 @@ package main
 import (
 	"strconv"
 
-	cmodels "github.com/abhinavxd/libredesk/internal/conversation/models"
-	"github.com/abhinavxd/libredesk/internal/envelope"
+	cmodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/conversation/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/envelope"
 	"github.com/valyala/fasthttp"
 	"github.com/zerodha/fastglue"
 )

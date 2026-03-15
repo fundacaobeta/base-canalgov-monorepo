@@ -1,53 +1,42 @@
 <template>
   <div>
-    <Spinner v-if="isLoading" />
+    <AdminPageHeader
+      :title="t('globals.terms.status', 2)"
+      :description="t('admin.status.description', 'Defina os estados possíveis de uma conversa no seu fluxo de atendimento.')"
+      :breadcrumbs="[{ label: $t('globals.terms.administration'), to: '/admin' }, { label: t('globals.terms.status', 2) }]"
+    >
+      <template #actions>
+        <Dialog v-model:open="dialogOpen">
+          <DialogTrigger as-child>
+            <Button>
+              <Plus class="h-4 w-4 mr-1.5" aria-hidden="true" />
+              {{ t('globals.messages.new', { name: t('globals.terms.status') }) }}
+            </Button>
+          </DialogTrigger>
+          <DialogContent class="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>{{ t('globals.messages.new', { name: t('globals.terms.status') }) }}</DialogTitle>
+              <DialogDescription>{{ t('admin.conversationStatus.name.description') }}</DialogDescription>
+            </DialogHeader>
+            <StatusForm @submit.prevent="onSubmit">
+              <template #footer>
+                <DialogFooter class="mt-6 gap-2">
+                  <Button variant="outline" type="button" @click="dialogOpen = false">
+                    {{ t('globals.messages.cancel') }}
+                  </Button>
+                  <Button type="submit" :disabled="isLoading">{{ t('globals.messages.save') }}</Button>
+                </DialogFooter>
+              </template>
+            </StatusForm>
+          </DialogContent>
+        </Dialog>
+      </template>
+    </AdminPageHeader>
+
     <AdminPageWithHelp>
       <template #content>
-        <div :class="{ 'transition-opacity duration-300 opacity-50': isLoading }">
-          <div class="flex justify-between mb-5">
-            <div class="flex justify-end mb-4 w-full">
-              <Dialog v-model:open="dialogOpen">
-                <DialogTrigger as-child>
-                  <Button class="ml-auto">
-                    {{
-                      $t('globals.messages.new', {
-                        name: $t('globals.terms.status')
-                      })
-                    }}
-                  </Button>
-                </DialogTrigger>
-                <DialogContent class="sm:max-w-[425px]">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {{
-                        $t('globals.messages.new', {
-                          name: $t('globals.terms.status')
-                        })
-                      }}
-                    </DialogTitle>
-                    <DialogDescription>
-                      {{ $t('admin.conversationStatus.name.description') }}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <StatusForm @submit.prevent="onSubmit">
-                    <template #footer>
-                      <DialogFooter class="mt-10">
-                        <Button type="submit" :isLoading="isLoading" :disabled="isLoading">
-                          {{ $t('globals.messages.save') }}
-                        </Button>
-                      </DialogFooter>
-                    </template>
-                  </StatusForm>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </div>
-          <div>
-            <DataTable :columns="createColumns(t)" :data="statuses" :loading="isLoading" />
-          </div>
-        </div>
+        <DataTable :columns="createColumns(t)" :data="statuses" :loading="isLoading" />
       </template>
-
       <template #help>
         <p>{{ t('admin.status.help') }}</p>
       </template>
@@ -56,50 +45,35 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
+import { Plus } from 'lucide-vue-next'
 import DataTable from '@/components/datatable/DataTable.vue'
 import AdminPageWithHelp from '@/layouts/admin/AdminPageWithHelp.vue'
+import AdminPageHeader from '@/components/layout/AdminPageHeader.vue'
 import { createColumns } from '@/features/admin/status/dataTableColumns.js'
 import { Button } from '@/components/ui/button'
-import { Spinner } from '@/components/ui/spinner'
 import StatusForm from '@/features/admin/status/StatusForm.vue'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
+  Dialog, DialogContent, DialogDescription,
+  DialogFooter, DialogHeader, DialogTitle, DialogTrigger
 } from '@/components/ui/dialog'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { createFormSchema } from '@/features/admin/status/formSchema.js'
-import { useEmitter } from '@/composables/useEmitter'
-import { EMITTER_EVENTS } from '@/constants/emitterEvents.js'
+import { useAdminListRefresh } from '@/composables/useAdminListRefresh'
+import { useAdminErrorToast } from '@/composables/useAdminErrorToast'
 import { useI18n } from 'vue-i18n'
 import api from '@/api'
 
 const { t } = useI18n()
 const isLoading = ref(false)
 const statuses = ref([])
-const emit = useEmitter()
 const dialogOpen = ref(false)
-
-onMounted(() => {
-  getStatuses()
-  emit.on(EMITTER_EVENTS.REFRESH_LIST, (data) => {
-    if (data?.model === 'status') getStatuses()
-  })
-})
-
-const form = useForm({
-  validationSchema: toTypedSchema(createFormSchema(t))
-})
+const { showErrorToast } = useAdminErrorToast()
 
 const getStatuses = async () => {
+  isLoading.value = true
   try {
-    isLoading.value = true
     const resp = await api.getStatuses()
     statuses.value = resp.data.data
   } finally {
@@ -107,14 +81,18 @@ const getStatuses = async () => {
   }
 }
 
+useAdminListRefresh('status', getStatuses)
+
+const form = useForm({ validationSchema: toTypedSchema(createFormSchema(t)) })
+
 const onSubmit = form.handleSubmit(async (values) => {
+  isLoading.value = true
   try {
-    isLoading.value = true
     await api.createStatus(values)
     dialogOpen.value = false
-    getStatuses()
+    await getStatuses()
   } catch (error) {
-    console.error('Falha ao criar status:', error)
+    showErrorToast(error)
   } finally {
     isLoading.value = false
   }

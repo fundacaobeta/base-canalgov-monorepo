@@ -39,7 +39,7 @@
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" class="w-30">
-            {{ conversationStore.getListSortField }}
+            {{ $t(conversationStore.getListSortField) }}
             <ChevronDown class="w-4 h-4 ml-2 opacity-50" />
           </Button>
         </DropdownMenuTrigger>
@@ -172,11 +172,8 @@ const route = useRoute()
 const { t } = useI18n()
 
 const title = computed(() => {
-  const typeValue = route.meta?.type?.(route)
-  return (
-    (typeValue || route.meta?.title || '').charAt(0).toUpperCase() +
-    (typeValue || route.meta?.title || '').slice(1)
-  )
+  const key = route.meta?.type?.(route) || route.meta?.title || ''
+  return key ? t(key) : ''
 })
 
 const handleStatusChange = (status) => {

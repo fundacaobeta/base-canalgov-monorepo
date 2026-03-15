@@ -99,7 +99,7 @@
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
 import { useConversationStore } from '@/stores/conversation'
-import { useUsersStore } from '@/stores/users'
+import { useAgentsStore } from '@/stores/agents'
 import { useTeamStore } from '@/stores/team'
 import { useTagStore } from '@/stores/tag'
 import {
@@ -125,7 +125,7 @@ import api from '@/api'
 const customAttributeStore = useCustomAttributeStore()
 const emitter = useEmitter()
 const conversationStore = useConversationStore()
-const usersStore = useUsersStore()
+const usersStore = useAgentsStore()
 const teamsStore = useTeamStore()
 const tagStore = useTagStore()
 const tags = ref([])

@@ -1,0 +1,80 @@
+frontend/src/features/admin/general/GeneralSettingForm.vue:              <span>MB</span>
+frontend/src/features/admin/notification/NotificationSettingForm.vue:                    <SelectItem value="cram">CRAM-MD5</SelectItem>
+frontend/src/features/admin/business-hours/BusinessHoursForm.vue:                <span class="text-gray-500">to</span>
+frontend/src/features/admin/custom-attributes/CustomAttributesForm.vue:                <SelectItem value="text"> Text </SelectItem>
+frontend/src/features/admin/custom-attributes/CustomAttributesForm.vue:                <SelectItem value="number"> Number </SelectItem>
+frontend/src/features/admin/custom-attributes/CustomAttributesForm.vue:                <SelectItem value="checkbox"> Checkbox </SelectItem>
+frontend/src/features/admin/custom-attributes/CustomAttributesForm.vue:                <SelectItem value="date"> Date </SelectItem>
+frontend/src/features/admin/custom-attributes/CustomAttributesForm.vue:                <SelectItem value="link"> Link </SelectItem>
+frontend/src/features/admin/custom-attributes/CustomAttributesForm.vue:                <SelectItem value="list"> List </SelectItem>
+frontend/src/features/admin/oidc/OIDCForm.vue:                <SelectItem value="Google"> Google </SelectItem>
+frontend/src/features/admin/oidc/OIDCForm.vue:                <SelectItem value="Microsoft"> Microsoft </SelectItem>
+frontend/src/features/admin/oidc/OIDCForm.vue:                <SelectItem value="Custom"> Custom </SelectItem>
+frontend/src/features/admin/macros/ActionBuilder.vue:                  <label class="block text-sm font-medium mb-2">Value</label>
+frontend/src/features/admin/teams/TeamForm.vue:        <FormLabel>Emoji</FormLabel>
+frontend/src/features/admin/teams/TeamForm.vue:        <FormDescription>Emoji exibido para esta equipe.</FormDescription>
+frontend/src/features/admin/teams/TeamForm.vue:        <FormLabel>Nome</FormLabel>
+frontend/src/features/admin/teams/TeamForm.vue:        <FormDescription>Selecione um nome único para a equipe.</FormDescription>
+frontend/src/features/admin/teams/TeamForm.vue:        <FormLabel>Tipo de atribuição automática</FormLabel>
+frontend/src/features/admin/teams/TeamForm.vue:        <FormLabel>Máximo de conversas autoatribuídas</FormLabel>
+frontend/src/features/admin/teams/TeamForm.vue:        <FormLabel>Fuso horário</FormLabel>
+frontend/src/features/admin/teams/TeamForm.vue:        <FormDescription>O fuso horário da equipe será usado para calcular o SLA.</FormDescription>
+frontend/src/features/admin/teams/TeamForm.vue:        <FormLabel>Horário comercial</FormLabel>
+frontend/src/features/admin/teams/TeamForm.vue:                <SelectItem :value = 0>Nenhum</SelectItem>
+frontend/src/features/admin/teams/TeamForm.vue:          >Horário comercial padrão da equipe; será usado para calcular o SLA.</FormDescription
+frontend/src/features/admin/teams/TeamForm.vue:        <FormLabel>Política de SLA</FormLabel>
+frontend/src/features/admin/teams/TeamForm.vue:                <SelectItem :value= 0>Nenhuma</SelectItem>
+frontend/src/features/admin/teams/TeamForm.vue:          >Política de SLA aplicada automaticamente às conversas quando forem atribuídas a esta equipe.</FormDescription
+frontend/src/features/admin/templates/TemplateForm.vue:        <h3 class="text-base font-medium">Modelo de resposta</h3>
+frontend/src/features/admin/templates/TemplateForm.vue:        <FormLabel>Equipe</FormLabel>
+frontend/src/features/admin/templates/TemplateForm.vue:              <SelectItem value="global">Global</SelectItem>
+frontend/src/features/admin/automation/RuleBox.vue:                    <SelectItem value="true">True</SelectItem>
+frontend/src/features/admin/automation/RuleBox.vue:                    <SelectItem value="false">False</SelectItem>
+frontend/src/features/view/ViewForm.vue:              <FormLabel>Filters</FormLabel>
+frontend/src/features/conversation/message/MessageEnvelope.vue:      <span class="font-medium text-foreground">From:</span> {{ message.meta.from.join(', ') }}
+frontend/src/features/conversation/message/MessageEnvelope.vue:      <span class="font-medium text-foreground">To:</span> {{ message.meta.to.join(', ') }}
+frontend/src/features/conversation/message/MessageEnvelope.vue:      <span class="font-medium text-foreground">CC:</span> {{ message.meta.cc.join(', ') }}
+frontend/src/features/conversation/message/MessageEnvelope.vue:      <span class="font-medium text-foreground">BCC:</span> {{ message.meta.bcc.join(', ') }}
+frontend/src/features/conversation/message/MessageEnvelope.vue:      <span class="font-medium text-foreground">Subject:</span> {{ message.meta.subject }}
+frontend/src/features/conversation/message/MessageBubble.vue:  () => !isOutgoing.value && sanitizedContent.value.includes('<blockquote')
+frontend/src/features/conversation/Conversation.vue:                <span class="font-medium inline-block">Ações</span>
+frontend/src/features/conversation/ReplyBoxContent.vue:                  <SelectItem value="new-message">Escrever uma nova mensagem</SelectItem>
+frontend/src/features/conversation/ReplyBoxContent.vue:                <label class="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">TO</label>
+frontend/src/features/conversation/ReplyBoxContent.vue:                  <label class="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">CC</label>
+frontend/src/features/conversation/ReplyBoxContent.vue:                <label class="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">BCC</label>
+frontend/src/components/ui/sidebar/SidebarTrigger.vue:    <span class="sr-only">Toggle Sidebar</span>
+frontend/src/components/ui/date-filter/DateFilter.vue:  if (days && days > 0 && days <= 365) {
+frontend/src/components/ui/combobox/ComboBox.vue:        <CommandEmpty>Not found.</CommandEmpty>
+frontend/src/components/ui/dialog/DialogContent.vue:        <span class="sr-only">Close</span>
+frontend/src/components/ui/dialog/DialogScrollContent.vue:          <span class="sr-only">Close</span>
+frontend/src/components/ui/select/SelectTag.vue:            <CommandEmpty> No results found </CommandEmpty>
+frontend/src/components/ui/breadcrumb/BreadcrumbEllipsis.vue:    <span class="sr-only">More</span>
+frontend/src/components/ui/error/Error.vue:    <AlertTitle>Error</AlertTitle>
+frontend/src/components/importer/Importer.vue:                  <div>first_name,last_name,email,roles,teams</div>
+frontend/src/components/importer/Importer.vue:                  <div>John,Doe,john@example.com,Agent,Sales</div>
+frontend/src/components/importer/Importer.vue:                  <div>Jane,Smith,jane@example.com,Admin,Support</div>
+frontend/src/components/importer/Importer.vue:                  <div>Bob,Test,bob@example.com,"Agent,Admin",Support</div>
+frontend/src/components/editor/TextEditor.vue:                <span class="text-medium">AI</span>
+frontend/src/views/admin/domains/DomainsView.vue:                  <SelectItem value="ses">AWS SES</SelectItem>
+frontend/src/views/admin/domains/DomainsView.vue:                  <SelectItem value="sns">AWS SNS</SelectItem>
+frontend/src/views/admin/domains/DomainsView.vue:                  <SelectItem value="mailgun">Mailgun</SelectItem>
+frontend/src/views/admin/domains/DomainsView.vue:                  <SelectItem value="sendgrid">SendGrid</SelectItem>
+frontend/src/views/admin/domains/DomainsView.vue:                  <SelectItem value="self_hosted">Servidor próprio</SelectItem>
+frontend/src/views/admin/domains/DomainsView.vue:                  <SelectItem value="custom">Customizado</SelectItem>
+frontend/src/views/admin/domains/DomainsView.vue:                  <SelectItem value="managed_mailbox">Caixa gerenciada</SelectItem>
+frontend/src/views/admin/domains/DomainsView.vue:                  <SelectItem value="smtp_imap">SMTP/IMAP próprio</SelectItem>
+frontend/src/views/admin/domains/DomainsView.vue:                  <SelectItem value="webhook">Webhook inbound</SelectItem>
+frontend/src/views/admin/domains/DomainsView.vue:                  <SelectItem value="docker_mailserver">Servidor via Docker</SelectItem>
+frontend/src/views/admin/integrations/IntegrationPlaceholderView.vue:        <h3 class="font-medium">Status da integração</h3>
+frontend/src/views/admin/integrations/IntegrationPlaceholderView.vue:        <h3 class="font-medium">Próximos passos</h3>
+frontend/src/views/admin/integrations/IntegrationActionsView.vue:                  <SelectItem value="POST">POST</SelectItem>
+frontend/src/views/admin/integrations/IntegrationActionsView.vue:                  <SelectItem value="PUT">PUT</SelectItem>
+frontend/src/views/admin/integrations/IntegrationActionsView.vue:                  <SelectItem value="PATCH">PATCH</SelectItem>
+frontend/src/views/admin/integrations/IntegrationActionsView.vue:                  <SelectItem value="GET">GET</SelectItem>
+frontend/src/views/admin/automations/CreateOrEditRule.vue:                <FormLabel>Type</FormLabel>
+frontend/src/views/search/SearchView.vue:          v-else-if="searchQuery.length > 0 && searchQuery.length < MIN_SEARCH_LENGTH"
+frontend/src/views/account/preferences/AccountPreferencesView.vue:                  <SelectItem value="email">E-mail</SelectItem>
+frontend/src/views/account/preferences/AccountPreferencesView.vue:                  <SelectItem value="official">Comunicado oficial</SelectItem>
+frontend/src/views/account/preferences/AccountPreferencesView.vue:                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
+frontend/src/views/account/preferences/AccountPreferencesView.vue:                  <SelectItem value="telegram">Telegram</SelectItem>
+frontend/src/views/account/preferences/AccountPreferencesView.vue:                  <SelectItem value="sms">SMS</SelectItem>

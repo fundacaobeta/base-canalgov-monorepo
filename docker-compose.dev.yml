@@ -1,0 +1,110 @@
+services:
+  # Go backend with Air hot reload
+  backend:
+    image: golang:1.25-alpine
+    container_name: canalgov_backend_dev
+    working_dir: /app
+    environment:
+      CANALGOV_SYSTEM_USER_PASSWORD: ${CANALGOV_SYSTEM_USER_PASSWORD:-}
+      CANALGOV_DB__HOST: db
+      CANALGOV_DB__PORT: 5432
+      CANALGOV_DB__USER: ${POSTGRES_USER:-canalgov}
+      CANALGOV_DB__PASSWORD: ${POSTGRES_PASSWORD:-canalgov}
+      CANALGOV_DB__DATABASE: ${POSTGRES_DB:-canalgov}
+      CANALGOV_REDIS__ADDRESS: redis:6379
+      CANALGOV_DB__SSL_MODE: disable
+      CANALGOV_AUTO_UPGRADE: "true"
+    ports:
+      - "9000:9000"
+    volumes:
+      - .:/app
+      - ./uploads:/canalgov/uploads:rw
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+    networks:
+      - canalgov
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    command: >
+      sh -c "
+        apk add --no-cache ca-certificates tzdata git &&
+        go install github.com/air-verse/air@latest &&
+        mkdir -p tmp &&
+        CGO_ENABLED=0 go build -o ./tmp/canalgov cmd/*.go &&
+        ./tmp/canalgov --install --idempotent-install --yes &&
+        ./tmp/canalgov --upgrade --yes &&
+        air -c .air.toml
+      "
+
+  # Vite frontend dev server with HMR
+  frontend:
+    image: node:22-alpine
+    container_name: canalgov_frontend_dev
+    working_dir: /app/frontend
+    environment:
+      # Point Vite proxy to the backend container
+      VITE_API_TARGET: http://backend:9000
+      VITE_WS_TARGET: ws://backend:9000
+      # Skip Cypress binary download (not needed in dev)
+      CYPRESS_INSTALL_BINARY: "0"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./frontend:/app/frontend
+      - frontend-node-modules:/app/frontend/node_modules
+    networks:
+      - canalgov
+    depends_on:
+      - backend
+    command: >
+      sh -c "
+        corepack enable &&
+        pnpm install --ignore-scripts &&
+        pnpm dev --host 0.0.0.0 --port 8000
+      "
+
+  # PostgreSQL database
+  db:
+    image: postgres:17-alpine
+    container_name: canalgov_db_dev
+    restart: unless-stopped
+    networks:
+      - canalgov
+    ports:
+      - "127.0.0.1:5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-canalgov}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-canalgov}
+      POSTGRES_DB: ${POSTGRES_DB:-canalgov}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-canalgov} -d ${POSTGRES_DB:-canalgov}"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    volumes:
+      - postgres-data-dev:/var/lib/postgresql/data
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: canalgov_redis_dev
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+    networks:
+      - canalgov
+    volumes:
+      - redis-data-dev:/data
+
+networks:
+  canalgov:
+
+volumes:
+  postgres-data-dev:
+  redis-data-dev:
+  go-mod-cache:
+  go-build-cache:
+  frontend-node-modules:

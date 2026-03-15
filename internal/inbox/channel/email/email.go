@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/abhinavxd/libredesk/internal/inbox"
-	"github.com/abhinavxd/libredesk/internal/inbox/channel/email/oauth"
-	"github.com/abhinavxd/libredesk/internal/inbox/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/inbox"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/inbox/channel/email/oauth"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/inbox/models"
 	"github.com/knadh/smtppool"
 	"github.com/zerodha/logf"
 	xoauth2 "golang.org/x/oauth2"

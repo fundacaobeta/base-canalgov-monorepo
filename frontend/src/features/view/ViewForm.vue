@@ -30,7 +30,7 @@
           </FormField>
           <FormField v-slot="{ componentField }" name="filters">
             <FormItem>
-              <FormLabel>Filters</FormLabel>
+              <FormLabel>{{ $t('globals.terms.filter', 2) }}</FormLabel>
               <FormControl>
                 <FilterBuilder
                   :fields="filterFields"

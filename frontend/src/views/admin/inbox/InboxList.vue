@@ -1,5 +1,4 @@
 <template>
-  <Spinner v-if="isLoading" />
   <div :class="{ 'transition-opacity duration-300 opacity-50': isLoading }">
     <div class="flex justify-between mb-5">
       <div></div>
@@ -24,14 +23,11 @@ import { onMounted, ref } from 'vue'
 import { h } from 'vue'
 import { RouterLink } from 'vue-router'
 import InboxDataTableDropDown from '@/features/admin/inbox/InboxDataTableDropDown.vue'
-import { handleHTTPError } from '@/utils/http'
 import { Button } from '@/components/ui/button'
 import DataTable from '@/components/datatable/DataTable.vue'
-import { EMITTER_EVENTS } from '@/constants/emitterEvents.js'
-import { useEmitter } from '@/composables/useEmitter'
+import { useAdminErrorToast } from '@/composables/useAdminErrorToast'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Spinner } from '@/components/ui/spinner'
 import { useInboxStore } from '@/stores/inbox'
 import DateTimeMeta from '@/components/datetime/DateTimeMeta.vue'
 import api from '@/api'
@@ -39,7 +35,7 @@ import api from '@/api'
 const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
-const emitter = useEmitter()
+const { showErrorToast, showSuccessToast } = useAdminErrorToast()
 const inboxStore = useInboxStore()
 const isLoading = ref(false)
 const data = ref([])
@@ -63,10 +59,7 @@ onMounted(async () => {
       msg = t('globals.messages.errorConnecting', { name: t('globals.terms.inbox') })
     }
     setTimeout(() => {
-      emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-        variant: 'destructive',
-        description: msg
-      })
+      showErrorToast(new Error(msg))
     }, 500)
   } else if (successCode) {
     const msg =
@@ -74,7 +67,7 @@ onMounted(async () => {
         ? t('globals.messages.reconnectedSuccessfully', { name: t('globals.terms.inbox') })
         : t('globals.messages.connectedSuccessfully', { name: t('globals.terms.inbox') })
     setTimeout(() => {
-      emitter.emit(EMITTER_EVENTS.SHOW_TOAST, { description: msg })
+      showSuccessToast(msg)
     }, 500)
   }
 
@@ -87,10 +80,7 @@ const getInboxes = async () => {
     await inboxStore.fetchInboxes(true)
     data.value = inboxStore.inboxes
   } catch (error) {
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      variant: 'destructive',
-      description: handleHTTPError(error).message
-    })
+    showErrorToast(error)
   } finally {
     isLoading.value = false
   }
@@ -171,7 +161,7 @@ const columns = [
 ]
 
 const handleEditInbox = (id) => {
-  router.push({ path: `/admin/inboxes/${id}/edit` })
+  router.push({ name: 'edit-inbox', params: { id } })
 }
 
 const handleDeleteInbox = async (id) => {

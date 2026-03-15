@@ -1,8 +1,8 @@
 package main
 
 import (
-	amodels "github.com/abhinavxd/libredesk/internal/auth/models"
-	"github.com/abhinavxd/libredesk/internal/envelope"
+	amodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/auth/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/envelope"
 	realip "github.com/ferluci/fast-realip"
 	"github.com/valyala/fasthttp"
 	"github.com/zerodha/fastglue"

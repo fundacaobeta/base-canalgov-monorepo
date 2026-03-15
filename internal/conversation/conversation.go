@@ -15,26 +15,26 @@ import (
 	"sync"
 	"time"
 
-	"github.com/abhinavxd/libredesk/internal/automation"
-	amodels "github.com/abhinavxd/libredesk/internal/automation/models"
-	"github.com/abhinavxd/libredesk/internal/conversation/models"
-	pmodels "github.com/abhinavxd/libredesk/internal/conversation/priority/models"
-	smodels "github.com/abhinavxd/libredesk/internal/conversation/status/models"
-	csatModels "github.com/abhinavxd/libredesk/internal/csat/models"
-	"github.com/abhinavxd/libredesk/internal/dbutil"
-	"github.com/abhinavxd/libredesk/internal/envelope"
-	"github.com/abhinavxd/libredesk/internal/inbox"
-	imodels "github.com/abhinavxd/libredesk/internal/inbox/models"
-	mmodels "github.com/abhinavxd/libredesk/internal/media/models"
-	notifier "github.com/abhinavxd/libredesk/internal/notification"
-	nmodels "github.com/abhinavxd/libredesk/internal/notification/models"
-	slaModels "github.com/abhinavxd/libredesk/internal/sla/models"
-	"github.com/abhinavxd/libredesk/internal/stringutil"
-	tmodels "github.com/abhinavxd/libredesk/internal/team/models"
-	"github.com/abhinavxd/libredesk/internal/template"
-	umodels "github.com/abhinavxd/libredesk/internal/user/models"
-	wmodels "github.com/abhinavxd/libredesk/internal/webhook/models"
-	"github.com/abhinavxd/libredesk/internal/ws"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/automation"
+	amodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/automation/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/conversation/models"
+	pmodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/conversation/priority/models"
+	smodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/conversation/status/models"
+	csatModels "github.com/fundacaobeta/base-canalgov-monorepo/internal/csat/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/dbutil"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/envelope"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/inbox"
+	imodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/inbox/models"
+	mmodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/media/models"
+	notifier "github.com/fundacaobeta/base-canalgov-monorepo/internal/notification"
+	nmodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/notification/models"
+	slaModels "github.com/fundacaobeta/base-canalgov-monorepo/internal/sla/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/stringutil"
+	tmodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/team/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/template"
+	umodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/user/models"
+	wmodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/webhook/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/ws"
 	"github.com/jmoiron/sqlx"
 	"github.com/knadh/go-i18n"
 	"github.com/lib/pq"
@@ -856,6 +856,41 @@ func (m *Manager) GetMessageSourceIDs(conversationID, limit int) ([]string, erro
 	return refs, nil
 }
 
+// GetContactConversations retrieves previous conversations for a contact.
+func (m *Manager) GetContactConversations(contactID, limit int) ([]models.Conversation, error) {
+	var conversations []models.Conversation
+	if err := m.q.GetContactPreviousConversations.Select(&conversations, contactID, limit); err != nil {
+		m.lo.Error("error fetching contact conversations", "contact_id", contactID, "error", err)
+		return nil, envelope.NewError(envelope.GeneralError, m.i18n.Ts("globals.messages.errorFetching", "name", "{globals.terms.conversation}"), nil)
+	}
+	return conversations, nil
+}
+
+// GetContactStats retrieves statistics for a contact.
+func (m *Manager) GetContactStats(contactID int) (map[string]any, error) {
+	var stats = make(map[string]any)
+
+	var total int
+	if err := m.db.Get(&total, `SELECT COUNT(*) FROM conversations WHERE contact_id = $1`, contactID); err != nil {
+		return nil, err
+	}
+	stats["total_conversations"] = total
+
+	var resolved int
+	if err := m.db.Get(&resolved, `SELECT COUNT(*) FROM conversations WHERE contact_id = $1 AND status_id IN (SELECT id FROM conversation_statuses WHERE name IN ('Resolved', 'Closed'))`, contactID); err != nil {
+		return nil, err
+	}
+	stats["resolved_conversations"] = resolved
+
+	var open int
+	if err := m.db.Get(&open, `SELECT COUNT(*) FROM conversations WHERE contact_id = $1 AND status_id IN (SELECT id FROM conversation_statuses WHERE name = 'Open')`, contactID); err != nil {
+		return nil, err
+	}
+	stats["open_conversations"] = open
+
+	return stats, nil
+}
+
 // NotifyAssignment sends notifications (in-app, WebSocket, email) for an assigned conversation.
 func (m *Manager) NotifyAssignment(userIDs []int, conversation models.Conversation) error {
 	agent, err := m.userStore.GetAgent(userIDs[0], "")
@@ -1376,12 +1411,15 @@ func (c *Manager) makeConversationsListQuery(viewingUserID, userID int, teamIDs 
 	}
 
 	// Add tag filter conditions
-	// TODO: Evaluate - https://github.com/Masterminds/squirrel when required.
 	for _, tf := range tagFilters {
 		switch tf.Operator {
 		case "contains", "not contains":
 			var tagIDs []int
-			if err := json.Unmarshal([]byte(tf.Value), &tagIDs); err != nil {
+			valStr, ok := tf.Value.(string)
+			if !ok {
+				return "", nil, fmt.Errorf("invalid type for tag filter value: %T", tf.Value)
+			}
+			if err := json.Unmarshal([]byte(valStr), &tagIDs); err != nil {
 				return "", nil, fmt.Errorf("invalid tag IDs in filter: %w", err)
 			}
 			if len(tagIDs) > 0 {

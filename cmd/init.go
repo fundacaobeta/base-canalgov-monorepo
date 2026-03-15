@@ -1,7 +1,6 @@
 package main
 
 import (
-	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -13,43 +12,48 @@ import (
 
 	"html/template"
 
-	activitylog "github.com/abhinavxd/libredesk/internal/activity_log"
-	"github.com/abhinavxd/libredesk/internal/ai"
-	auth_ "github.com/abhinavxd/libredesk/internal/auth"
-	"github.com/abhinavxd/libredesk/internal/authz"
-	"github.com/abhinavxd/libredesk/internal/autoassigner"
-	"github.com/abhinavxd/libredesk/internal/automation"
-	businesshours "github.com/abhinavxd/libredesk/internal/business_hours"
-	"github.com/abhinavxd/libredesk/internal/colorlog"
-	"github.com/abhinavxd/libredesk/internal/conversation"
-	"github.com/abhinavxd/libredesk/internal/conversation/priority"
-	"github.com/abhinavxd/libredesk/internal/conversation/status"
-	"github.com/abhinavxd/libredesk/internal/csat"
-	customAttribute "github.com/abhinavxd/libredesk/internal/custom_attribute"
-	"github.com/abhinavxd/libredesk/internal/importer"
-	"github.com/abhinavxd/libredesk/internal/inbox"
-	"github.com/abhinavxd/libredesk/internal/inbox/channel/email"
-	"github.com/abhinavxd/libredesk/internal/inbox/channel/noop"
-	imodels "github.com/abhinavxd/libredesk/internal/inbox/models"
-	"github.com/abhinavxd/libredesk/internal/macro"
-	"github.com/abhinavxd/libredesk/internal/media"
-	fs "github.com/abhinavxd/libredesk/internal/media/stores/localfs"
-	"github.com/abhinavxd/libredesk/internal/media/stores/s3"
-	notifier "github.com/abhinavxd/libredesk/internal/notification"
-	emailnotifier "github.com/abhinavxd/libredesk/internal/notification/providers/email"
-	"github.com/abhinavxd/libredesk/internal/oidc"
-	"github.com/abhinavxd/libredesk/internal/report"
-	"github.com/abhinavxd/libredesk/internal/role"
-	"github.com/abhinavxd/libredesk/internal/search"
-	"github.com/abhinavxd/libredesk/internal/setting"
-	"github.com/abhinavxd/libredesk/internal/sla"
-	"github.com/abhinavxd/libredesk/internal/tag"
-	"github.com/abhinavxd/libredesk/internal/team"
-	tmpl "github.com/abhinavxd/libredesk/internal/template"
-	"github.com/abhinavxd/libredesk/internal/user"
-	"github.com/abhinavxd/libredesk/internal/view"
-	"github.com/abhinavxd/libredesk/internal/webhook"
-	"github.com/abhinavxd/libredesk/internal/ws"
+	activitylog "github.com/fundacaobeta/base-canalgov-monorepo/internal/activity_log"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/ai"
+	auth_ "github.com/fundacaobeta/base-canalgov-monorepo/internal/auth"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/authz"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/autoassigner"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/automation"
+	businesshours "github.com/fundacaobeta/base-canalgov-monorepo/internal/business_hours"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/colorlog"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/conversation"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/conversation/priority"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/conversation/status"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/csat"
+	customAttribute "github.com/fundacaobeta/base-canalgov-monorepo/internal/custom_attribute"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/importer"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/inbox"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/inbox/channel/email"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/inbox/channel/noop"
+	imodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/inbox/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/macro"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/media"
+	fs "github.com/fundacaobeta/base-canalgov-monorepo/internal/media/stores/localfs"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/media/stores/s3"
+	notifier "github.com/fundacaobeta/base-canalgov-monorepo/internal/notification"
+	emailnotifier "github.com/fundacaobeta/base-canalgov-monorepo/internal/notification/providers/email"
+	pushnotifier "github.com/fundacaobeta/base-canalgov-monorepo/internal/notification/providers/push"
+	smsnotifier "github.com/fundacaobeta/base-canalgov-monorepo/internal/notification/providers/sms"
+	telegramnotifier "github.com/fundacaobeta/base-canalgov-monorepo/internal/notification/providers/telegram"
+	whatsappnotifier "github.com/fundacaobeta/base-canalgov-monorepo/internal/notification/providers/whatsapp"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/oidc"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/report"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/role"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/search"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/setting"
+	smodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/setting/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/sla"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/tag"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/team"
+	tmpl "github.com/fundacaobeta/base-canalgov-monorepo/internal/template"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/user"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/view"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/webhook"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/ws"
 	"github.com/jmoiron/sqlx"
 	"github.com/knadh/go-i18n"
 	kjson "github.com/knadh/koanf/parsers/json"
@@ -100,11 +104,11 @@ func initConfig(ko *koanf.Koanf) {
 		},
 	}), nil)
 
-	// Backward compatibility for existing deployments still using `LIBREDESK_`.
+	// Backward compatibility for existing deployments still using `CANALGOV_`.
 	ko.Load(env.Provider(".", env.Opt{
-		Prefix: "LIBREDESK_",
+		Prefix: "CANALGOV_",
 		TransformFunc: func(key, val string) (string, any) {
-			key = strings.ReplaceAll(strings.ToLower(strings.TrimPrefix(key, "LIBREDESK_")), "__", ".")
+			key = strings.ReplaceAll(strings.ToLower(strings.TrimPrefix(key, "CANALGOV_")), "__", ".")
 			return key, val
 		},
 	}), nil)
@@ -360,7 +364,8 @@ func initCSAT(db *sqlx.DB, i18n *i18n.I18n) *csat.Manager {
 
 // initWS inits websocket hub.
 func initWS(user *user.Manager) *ws.Hub {
-	return ws.NewHub(user)
+	lo := initLogger("ws")
+	return ws.NewHub(user, *lo)
 }
 
 // initTemplates inits template manager.
@@ -569,11 +574,13 @@ func initAutoAssigner(teamManager *team.Manager, userManager *user.Manager, conv
 
 // initNotifier initializes the notifier service with available providers.
 func initNotifier() *notifier.Service {
+	notifierProviders := make(map[string]notifier.Notifier)
+
+	// Initialize Email notifier
 	smtpCfg := imodels.SMTPConfig{}
 	if err := ko.UnmarshalWithConf("notification.email", &smtpCfg, koanf.UnmarshalConf{Tag: "json"}); err != nil {
 		log.Fatalf("error unmarshalling email notification provider config: %v", err)
 	}
-
 	emailNotifier, err := emailnotifier.New([]imodels.SMTPConfig{smtpCfg}, emailnotifier.Opts{
 		Lo:        initLogger("email-notifier"),
 		FromEmail: ko.String("notification.email.email_address"),
@@ -581,10 +588,51 @@ func initNotifier() *notifier.Service {
 	if err != nil {
 		log.Fatalf("error initializing email notifier: %v", err)
 	}
+	notifierProviders[emailNotifier.Name()] = emailNotifier
 
-	notifierProviders := map[string]notifier.Notifier{
-		emailNotifier.Name(): emailNotifier,
+	// Initialize WhatsApp notifier
+	var whatsappCfg smodels.WhatsAppNotification
+	if err := ko.UnmarshalWithConf("notification.whatsapp", &whatsappCfg, koanf.UnmarshalConf{Tag: "json"}); err != nil {
+		log.Fatalf("error unmarshalling whatsapp notification provider config: %v", err)
 	}
+	whatsappNotifier, err := whatsappnotifier.New(whatsappCfg, initLogger("whatsapp-notifier"))
+	if err != nil {
+		log.Fatalf("error initializing whatsapp notifier: %v", err)
+	}
+	notifierProviders[whatsappNotifier.Name()] = whatsappNotifier
+
+	// Initialize Telegram notifier
+	var telegramCfg smodels.TelegramNotification
+	if err := ko.UnmarshalWithConf("notification.telegram", &telegramCfg, koanf.UnmarshalConf{Tag: "json"}); err != nil {
+		log.Fatalf("error unmarshalling telegram notification provider config: %v", err)
+	}
+	telegramNotifier, err := telegramnotifier.New(telegramCfg, initLogger("telegram-notifier"))
+	if err != nil {
+		log.Fatalf("error initializing telegram notifier: %v", err)
+	}
+	notifierProviders[telegramNotifier.Name()] = telegramNotifier
+
+	// Initialize SMS notifier
+	var smsCfg smodels.SMSNotification
+	if err := ko.UnmarshalWithConf("notification.sms", &smsCfg, koanf.UnmarshalConf{Tag: "json"}); err != nil {
+		log.Fatalf("error unmarshalling sms notification provider config: %v", err)
+	}
+	smsNotifier, err := smsnotifier.New(smsCfg, initLogger("sms-notifier"))
+	if err != nil {
+		log.Fatalf("error initializing sms notifier: %v", err)
+	}
+	notifierProviders[smsNotifier.Name()] = smsNotifier
+
+	// Initialize Push notifier
+	var pushCfg smodels.PushNotification
+	if err := ko.UnmarshalWithConf("notification.push", &pushCfg, koanf.UnmarshalConf{Tag: "json"}); err != nil {
+		log.Fatalf("error unmarshalling push notification provider config: %v", err)
+	}
+	pushNotifier, err := pushnotifier.New(pushCfg, initLogger("push-notifier"))
+	if err != nil {
+		log.Fatalf("error initializing push notifier: %v", err)
+	}
+	notifierProviders[pushNotifier.Name()] = pushNotifier
 
 	return notifier.NewService(notifierProviders, ko.MustInt("notification.concurrency"), ko.MustInt("notification.queue_size"), initLogger("notifier"))
 }
@@ -784,20 +832,6 @@ func initOIDC(db *sqlx.DB, settings *setting.Manager, i18n *i18n.I18n) *oidc.Man
 }
 
 // initI18n inits i18n.
-func initI18n(fs stuffbin.FileSystem) *i18n.I18n {
-	fileName := cmp.Or(ko.String("app.lang"), defLang)
-	log.Printf("loading i18n language file: %s", fileName)
-	file, err := fs.Get("i18n/" + fileName + ".json")
-	if err != nil {
-		log.Fatalf("error reading i18n language file `%s` : %v", fileName, err)
-	}
-	i18n, err := i18n.New(file.ReadBytes())
-	if err != nil {
-		log.Fatalf("error initializing i18n: %v", err)
-	}
-	return i18n
-}
-
 // initRedis inits redis DB.
 func initRedis() *redis.Client {
 	// Load options from redis URL if set.

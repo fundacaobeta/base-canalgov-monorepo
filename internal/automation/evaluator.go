@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/abhinavxd/libredesk/internal/automation/models"
-	cmodels "github.com/abhinavxd/libredesk/internal/conversation/models"
-	umodels "github.com/abhinavxd/libredesk/internal/user/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/automation/models"
+	cmodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/conversation/models"
+	umodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/user/models"
 )
 
 // evalConversationRules evaluates a list of rules against a given conversation.

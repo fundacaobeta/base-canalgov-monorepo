@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, reactive, ref, watchEffect } from 'vue'
 import { useDebounceFn } from '@vueuse/core'
-import { CONVERSATION_LIST_TYPE, CONVERSATION_DEFAULT_STATUSES } from '@/constants/conversation'
+import { CONVERSATION_LIST_TYPE, CONVERSATION_DEFAULT_STATUSES, CONVERSATION_SORT_FIELD_MAP } from '@/constants/conversation'
 import { handleHTTPError } from '@/utils/http'
 import { computeRecipientsFromMessage } from '@/utils/email-recipients'
 import { useEmitter } from '@/composables/useEmitter'
@@ -36,53 +36,16 @@ export const useConversationStore = defineStore('conversation', () => {
     }))
   )
 
-  // TODO: Move to constants.
-  const sortFieldMap = {
-    oldest: {
-      model: 'conversations',
-      field: 'last_message_at',
-      order: 'asc'
-    },
-    newest: {
-      model: 'conversations',
-      field: 'last_message_at',
-      order: 'desc'
-    },
-    started_first: {
-      model: 'conversations',
-      field: 'created_at',
-      order: 'asc'
-    },
-    started_last: {
-      model: 'conversations',
-      field: 'created_at',
-      order: 'desc'
-    },
-    waiting_longest: {
-      model: 'conversations',
-      field: 'waiting_since',
-      order: 'asc'
-    },
-    next_sla_target: {
-      model: 'conversations',
-      field: 'next_sla_deadline_at',
-      order: 'asc'
-    },
-    priority_first: {
-      model: 'conversations',
-      field: 'priority_id',
-      order: 'desc'
-    }
-  }
+  const sortFieldMap = CONVERSATION_SORT_FIELD_MAP
 
   const sortFieldLabels = {
-    oldest: 'Oldest activity',
-    newest: 'Newest activity',
-    started_first: 'Started first',
-    started_last: 'Started last',
-    waiting_longest: 'Waiting longest',
-    next_sla_target: 'Next SLA target',
-    priority_first: 'Priority first'
+    oldest: 'conversation.sort.oldestActivity',
+    newest: 'conversation.sort.newestActivity',
+    started_first: 'conversation.sort.startedFirst',
+    started_last: 'conversation.sort.startedLast',
+    waiting_longest: 'conversation.sort.waitingLongest',
+    next_sla_target: 'conversation.sort.nextSLATarget',
+    priority_first: 'conversation.sort.priorityFirst'
   }
 
   const conversations = reactive({

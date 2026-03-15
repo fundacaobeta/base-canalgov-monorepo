@@ -2,7 +2,6 @@
   <div class="mb-5">
     <CustomBreadcrumb :links="breadcrumbLinks" />
   </div>
-  <Spinner v-if="isLoading" />
   <SLAForm
     :initial-values="slaData"
     :submitForm="submitForm"
@@ -16,16 +15,13 @@ import { onMounted, ref } from 'vue'
 import api from '@/api'
 import SLAForm from '@/features/admin/sla/SLAForm.vue'
 import { useRouter } from 'vue-router'
-import { Spinner } from '@/components/ui/spinner'
 import { CustomBreadcrumb } from '@/components/ui/breadcrumb'
-import { EMITTER_EVENTS } from '@/constants/emitterEvents.js'
-import { useEmitter } from '@/composables/useEmitter'
+import { useAdminErrorToast } from '@/composables/useAdminErrorToast'
 import { useI18n } from 'vue-i18n'
-import { handleHTTPError } from '@/utils/http'
 
 const { t } = useI18n()
 const slaData = ref({})
-const emitter = useEmitter()
+const { showErrorToast, showSuccessToast } = useAdminErrorToast()
 const isLoading = ref(false)
 const formLoading = ref(false)
 const router = useRouter()
@@ -41,25 +37,18 @@ const submitForm = async (values) => {
     formLoading.value = true
     if (props.id) {
       await api.updateSLA(props.id, values)
-      emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-        description: t('globals.messages.updatedSuccessfully', {
-          name: t('globals.terms.slaPolicy')
-        })
-      })
+      showSuccessToast(t('globals.messages.updatedSuccessfully', {
+        name: t('globals.terms.slaPolicy')
+      }))
     } else {
       await api.createSLA(values)
-      emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-        description: t('globals.messages.createdSuccessfully', {
-          name: t('globals.terms.slaPolicy')
-        })
-      })
+      showSuccessToast(t('globals.messages.createdSuccessfully', {
+        name: t('globals.terms.slaPolicy')
+      }))
       router.push({ name: 'sla-list' })
     }
   } catch (error) {
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      variant: 'destructive',
-      description: handleHTTPError(error).message
-    })
+    showErrorToast(error)
   } finally {
     formLoading.value = false
   }
@@ -81,10 +70,7 @@ onMounted(async () => {
       const resp = await api.getSLA(props.id)
       slaData.value = resp.data.data
     } catch (error) {
-      emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-        variant: 'destructive',
-        description: handleHTTPError(error).message
-      })
+      showErrorToast(error)
     } finally {
       isLoading.value = false
     }

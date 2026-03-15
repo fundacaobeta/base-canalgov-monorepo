@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	authzModels "github.com/abhinavxd/libredesk/internal/authz/models"
+	authzModels "github.com/fundacaobeta/base-canalgov-monorepo/internal/authz/models"
 	"github.com/lib/pq"
 )
 

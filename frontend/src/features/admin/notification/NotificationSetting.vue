@@ -19,16 +19,14 @@ import api from '@/api'
 import { useI18n } from 'vue-i18n'
 import NotificationsForm from './NotificationSettingForm.vue'
 import NotificationConfigShell from './NotificationConfigShell.vue'
-import { EMITTER_EVENTS } from '@/constants/emitterEvents.js'
-import { useEmitter } from '@/composables/useEmitter'
-import { handleHTTPError } from '@/utils/http'
+import { useAdminErrorToast } from '@/composables/useAdminErrorToast'
 import { Spinner } from '@/components/ui/spinner'
 import { useAppSettingsStore } from '@/stores/appSettings'
 
 const initialValues = ref({})
 const { t } = useI18n()
 const isLoading = ref(false)
-const emitter = useEmitter()
+const { showErrorToast, showSuccessToast } = useAdminErrorToast()
 const appSettingsStore = useAppSettingsStore()
 
 const statusDescription = computed(() =>
@@ -71,10 +69,7 @@ const getNotificationSettings = async () => {
       ])
     )
   } catch (error) {
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      variant: 'destructive',
-      description: handleHTTPError(error).message
-    })
+    showErrorToast(error)
   } finally {
     isLoading.value = false
   }
@@ -91,16 +86,11 @@ const submitForm = async (values) => {
       })
     )
     await api.updateEmailNotificationSettings(updatedValues)
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      description: t('admin.notification.restartApp')
-    })
+    showSuccessToast(t('admin.notification.restartApp'))
     await getNotificationSettings()
     appSettingsStore.fetchSettings()
   } catch (error) {
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      variant: 'destructive',
-      description: handleHTTPError(error).message
-    })
+    showErrorToast(error)
   }
 }
 </script>

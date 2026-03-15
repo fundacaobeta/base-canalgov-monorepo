@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/abhinavxd/libredesk/internal/conversation/models"
-	"github.com/abhinavxd/libredesk/internal/stringutil"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/conversation/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/stringutil"
 )
 
 // makeRecipients computes the recipients for a given conversation ID using the last message in the conversation.

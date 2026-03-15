@@ -1,8 +1,8 @@
 package webhook
 
 import (
-	"github.com/abhinavxd/libredesk/internal/crypto"
-	"github.com/abhinavxd/libredesk/internal/webhook/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/crypto"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/webhook/models"
 )
 
 // encryptSecret encrypts webhook secret if present.

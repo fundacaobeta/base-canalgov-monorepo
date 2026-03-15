@@ -5,14 +5,15 @@ import (
 	"slices"
 	"time"
 
-	rmodels "github.com/abhinavxd/libredesk/internal/role/models"
-	tmodels "github.com/abhinavxd/libredesk/internal/team/models"
+	rmodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/role/models"
+	tmodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/team/models"
 	"github.com/lib/pq"
 	"github.com/volatiletech/null/v9"
 )
 
 const (
 	UserModel = "user"
+	UserTableName = "users"
 
 	SystemUserEmail = "System"
 
@@ -31,17 +32,28 @@ const (
 )
 
 type UserCompact struct {
-	ID        int         `db:"id" json:"id"`
-	Type      string      `db:"type" json:"type"`
-	FirstName string      `db:"first_name" json:"first_name"`
-	LastName  string      `db:"last_name" json:"last_name"`
-	Email     null.String `db:"email" json:"email"`
-	Enabled   bool        `db:"enabled" json:"enabled"`
-	AvatarURL null.String `db:"avatar_url" json:"avatar_url"`
-	CreatedAt time.Time   `db:"created_at" json:"created_at"`
-	UpdatedAt time.Time   `db:"updated_at" json:"updated_at"`
+	ID               int             `db:"id" json:"id"`
+	Type             string          `db:"type" json:"type"`
+	FirstName        string          `db:"first_name" json:"first_name"`
+	LastName         string          `db:"last_name" json:"last_name"`
+	Email            null.String     `db:"email" json:"email"`
+	Enabled          bool            `db:"enabled" json:"enabled"`
+	AvatarURL        null.String     `db:"avatar_url" json:"avatar_url"`
+	CustomAttributes json.RawMessage `db:"custom_attributes" json:"custom_attributes"`
+	CreatedAt        time.Time       `db:"created_at" json:"created_at"`
+	UpdatedAt        time.Time       `db:"updated_at" json:"updated_at"`
 
 	Total int `db:"total" json:"-"`
+}
+
+// ContactSegment represents a dynamic group of contacts based on filters.
+type ContactSegment struct {
+	ID          int             `json:"id" db:"id"`
+	Name        string          `json:"name" db:"name"`
+	Description null.String     `json:"description" db:"description"`
+	Filters     json.RawMessage `json:"filters" db:"filters"`
+	CreatedAt   time.Time       `json:"created_at" db:"created_at"`
+	UpdatedAt   time.Time       `json:"updated_at" db:"updated_at"`
 }
 
 type User struct {
@@ -75,6 +87,8 @@ type User struct {
 	APIKey           null.String `db:"api_key" json:"api_key"`
 	APIKeyLastUsedAt null.Time   `db:"api_key_last_used_at" json:"api_key_last_used_at"`
 	APISecret        null.String `db:"api_secret" json:"-"`
+
+	Total int `db:"total" json:"-"`
 }
 
 type Note struct {

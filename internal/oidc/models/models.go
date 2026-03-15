@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/abhinavxd/libredesk/internal/stringutil"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/stringutil"
 )
 
 // providerLogos holds known provider logos.

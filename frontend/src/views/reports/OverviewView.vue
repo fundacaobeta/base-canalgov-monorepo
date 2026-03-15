@@ -1,27 +1,38 @@
 <template>
-  <div class="overflow-y-auto">
+  <div class="overflow-y-auto h-full">
     <div
-      class="p-6 w-[calc(100%-3rem)]"
+      class="p-6 w-full max-w-[1600px] mx-auto"
       :class="{ 'opacity-50 transition-opacity duration-300': isLoading }"
     >
-      <Spinner v-if="isLoading" />
+      <div v-if="isLoading" class="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
+        <Loader2 class="h-8 w-8 animate-spin text-primary" />
+      </div>
 
-      <div class="space-y-6">
-        <div class="text-sm text-gray-500 text-left">
-          {{ $t('globals.terms.lastUpdated') }}: {{ lastUpdateFormatted }}
+      <div class="space-y-8">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-3xl font-bold tracking-tight">{{ t('reports.overview.title') }}</h1>
+            <p class="text-sm text-muted-foreground">
+              {{ $t('globals.terms.lastUpdated') }}: {{ lastUpdateFormatted }}
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <Button variant="outline" size="sm" @click="loadDashboardData" :disabled="isLoading">
+              <RefreshCw class="h-4 w-4 mr-2" :class="{ 'animate-spin': isLoading }" />
+              {{ t('globals.messages.update', { name: '' }) }}
+            </Button>
+          </div>
         </div>
 
         <!-- Row 1: Open Conversations and Agent Status -->
-        <div class="flex w-full space-x-4">
+        <div class="grid gap-6 md:grid-cols-2">
           <Card
-            class="flex-1"
             :title="$t('report.openConversations')"
             :counts="cardCounts"
             :labels="conversationCountLabels"
             size="large"
           />
           <Card
-            class="flex-1"
             :title="$t('report.agentStatus')"
             :counts="agentStatusCounts"
             :labels="agentStatusLabels"
@@ -30,14 +41,14 @@
         </div>
 
         <!-- Row 2: CSAT and Message Volume -->
-        <div class="flex w-full space-x-4">
+        <div class="grid gap-6 md:grid-cols-2">
           <!-- CSAT Card -->
-          <div class="flex-1 box p-5">
-            <div class="flex justify-between items-center mb-4">
+          <div class="box p-5 flex flex-col">
+            <div class="flex justify-between items-center mb-6">
               <p class="card-title">{{ $t('report.csat.cardTitle', { days: csatDays }) }}</p>
               <DateFilter @filter-change="handleCSATFilterChange" :label="''" />
             </div>
-            <div class="grid grid-cols-3 gap-6">
+            <div class="grid grid-cols-3 gap-6 flex-1 items-center">
               <div class="metric-item">
                 <span class="metric-value">{{ formatRating(csatData.average_rating) }}</span>
                 <span class="metric-label">{{ $t('report.csat.avgRating') }}</span>
@@ -56,14 +67,14 @@
           </div>
 
           <!-- Message Volume Card -->
-          <div class="flex-1 box p-5">
-            <div class="flex justify-between items-center mb-4">
+          <div class="box p-5 flex flex-col">
+            <div class="flex justify-between items-center mb-6">
               <p class="card-title">
                 {{ $t('report.messages.cardTitle', { days: messageVolumeDays }) }}
               </p>
               <DateFilter @filter-change="handleMessageVolumeFilterChange" :label="''" />
             </div>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 flex-1 items-center">
               <div class="metric-item">
                 <span class="metric-value">{{
                   formatCompactNumber(messageVolumeData.total_messages || 0)
@@ -92,161 +103,206 @@
           </div>
         </div>
 
-        <!-- Row 3: SLA Card with Compliance Percentages -->
-        <div class="w-full rounded box p-5">
-          <div class="flex justify-between items-center mb-6">
+        <!-- Row 3: SLA Card -->
+        <div class="w-full box p-6">
+          <div class="flex justify-between items-center mb-8">
             <p class="card-title">{{ slaCardTitle }}</p>
             <DateFilter @filter-change="handleSlaFilterChange" :label="''" />
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
             <!-- First Response -->
-            <div class="space-y-4">
+            <div class="space-y-6">
               <p class="section-title">{{ $t('report.sla.firstResponse') }}</p>
-              <div class="metric-item">
-                <span class="metric-value text-green-600"
-                  >{{ slaCounts.first_response_compliance_percent || 0 }}%</span
-                >
-                <span class="metric-label">{{ $t('report.sla.compliance') }}</span>
+              <div class="flex justify-center">
+                <div class="relative flex flex-col items-center">
+                  <span class="text-4xl font-black text-green-600"
+                    >{{ slaCounts.first_response_compliance_percent || 0 }}%</span
+                  >
+                  <span class="metric-label">{{ $t('report.sla.compliance') }}</span>
+                </div>
               </div>
-              <div class="grid grid-cols-2 gap-4 text-center pt-2">
+              <div class="grid grid-cols-2 gap-4 text-center border-t border-dashed pt-4">
                 <div>
-                  <span class="text-2xl font-semibold text-green-600">{{
+                  <span class="text-xl font-bold text-green-600">{{
                     slaCounts.first_response_met_count || 0
                   }}</span>
-                  <p class="metric-label">{{ $t('report.sla.met') }}</p>
+                  <p class="text-[10px] uppercase text-muted-foreground">{{ $t('report.sla.met') }}</p>
                 </div>
                 <div>
-                  <span class="text-2xl font-semibold text-red-600">{{
+                  <span class="text-xl font-bold text-red-600">{{
                     slaCounts.first_response_breached_count || 0
                   }}</span>
-                  <p class="metric-label">{{ $t('report.sla.breached') }}</p>
+                  <p class="text-[10px] uppercase text-muted-foreground">{{ $t('report.sla.breached') }}</p>
                 </div>
               </div>
-              <div class="text-center pt-2">
-                <span class="text-lg font-medium">{{
+              <div class="text-center bg-muted/30 p-2 rounded">
+                <span class="text-sm font-bold">{{
                   formattedSlaCounts.avg_first_response_time_sec
                 }}</span>
-                <p class="text-xs text-muted-foreground">{{ $t('report.sla.avgFirstResp') }}</p>
+                <p class="text-[10px] text-muted-foreground uppercase">{{ $t('report.sla.avgFirstResp') }}</p>
               </div>
             </div>
 
             <!-- Next Response -->
-            <div class="space-y-4 border-l border-r px-8">
+            <div class="space-y-6 border-x border-dashed px-8">
               <p class="section-title">{{ $t('report.sla.nextResponse') }}</p>
-              <div class="metric-item">
-                <span class="metric-value text-green-600"
-                  >{{ slaCounts.next_response_compliance_percent || 0 }}%</span
-                >
-                <span class="metric-label">{{ $t('report.sla.compliance') }}</span>
+              <div class="flex justify-center">
+                <div class="relative flex flex-col items-center">
+                  <span class="text-4xl font-black text-green-600"
+                    >{{ slaCounts.next_response_compliance_percent || 0 }}%</span
+                  >
+                  <span class="metric-label">{{ $t('report.sla.compliance') }}</span>
+                </div>
               </div>
-              <div class="grid grid-cols-2 gap-4 text-center pt-2">
+              <div class="grid grid-cols-2 gap-4 text-center border-t border-dashed pt-4">
                 <div>
-                  <span class="text-2xl font-semibold text-green-600">{{
+                  <span class="text-xl font-bold text-green-600">{{
                     slaCounts.next_response_met_count || 0
                   }}</span>
-                  <p class="metric-label">{{ $t('report.sla.met') }}</p>
+                  <p class="text-[10px] uppercase text-muted-foreground">{{ $t('report.sla.met') }}</p>
                 </div>
                 <div>
-                  <span class="text-2xl font-semibold text-red-600">{{
+                  <span class="text-xl font-bold text-red-600">{{
                     slaCounts.next_response_breached_count || 0
                   }}</span>
-                  <p class="metric-label">{{ $t('report.sla.breached') }}</p>
+                  <p class="text-[10px] uppercase text-muted-foreground">{{ $t('report.sla.breached') }}</p>
                 </div>
               </div>
-              <div class="text-center pt-2">
-                <span class="text-lg font-medium">{{
+              <div class="text-center bg-muted/30 p-2 rounded">
+                <span class="text-sm font-bold">{{
                   formattedSlaCounts.avg_next_response_time_sec
                 }}</span>
-                <p class="text-xs text-muted-foreground">{{ $t('report.sla.avgNextResp') }}</p>
+                <p class="text-[10px] text-muted-foreground uppercase">{{ $t('report.sla.avgNextResp') }}</p>
               </div>
             </div>
 
             <!-- Resolution -->
-            <div class="space-y-4">
+            <div class="space-y-6">
               <p class="section-title">{{ $t('report.sla.resolution') }}</p>
-              <div class="metric-item">
-                <span class="metric-value text-green-600"
-                  >{{ slaCounts.resolution_compliance_percent || 0 }}%</span
-                >
-                <span class="metric-label">{{ $t('report.sla.compliance') }}</span>
+              <div class="flex justify-center">
+                <div class="relative flex flex-col items-center">
+                  <span class="text-4xl font-black text-green-600"
+                    >{{ slaCounts.resolution_compliance_percent || 0 }}%</span
+                  >
+                  <span class="metric-label">{{ $t('report.sla.compliance') }}</span>
+                </div>
               </div>
-              <div class="grid grid-cols-2 gap-4 text-center pt-2">
+              <div class="grid grid-cols-2 gap-4 text-center border-t border-dashed pt-4">
                 <div>
-                  <span class="text-2xl font-semibold text-green-600">{{
+                  <span class="text-xl font-bold text-green-600">{{
                     slaCounts.resolution_met_count || 0
                   }}</span>
-                  <p class="metric-label">{{ $t('report.sla.met') }}</p>
+                  <p class="text-[10px] uppercase text-muted-foreground">{{ $t('report.sla.met') }}</p>
                 </div>
                 <div>
-                  <span class="text-2xl font-semibold text-red-600">{{
+                  <span class="text-xl font-bold text-red-600">{{
                     slaCounts.resolution_breached_count || 0
                   }}</span>
-                  <p class="metric-label">{{ $t('report.sla.breached') }}</p>
+                  <p class="text-[10px] uppercase text-muted-foreground">{{ $t('report.sla.breached') }}</p>
                 </div>
               </div>
-              <div class="text-center pt-2">
-                <span class="text-lg font-medium">{{
+              <div class="text-center bg-muted/30 p-2 rounded">
+                <span class="text-sm font-bold">{{
                   formattedSlaCounts.avg_resolution_time_sec
                 }}</span>
-                <p class="text-xs text-muted-foreground">{{ $t('report.sla.avgResolution') }}</p>
+                <p class="text-[10px] text-muted-foreground uppercase">{{ $t('report.sla.avgResolution') }}</p>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Row 4: Tag Distribution -->
-        <div class="w-full rounded box p-5">
-          <div class="flex justify-between items-center mb-4">
-            <p class="card-title">
-              {{ $t('report.tags.cardTitle', { days: tagDistributionDays }) }}
-            </p>
-            <DateFilter @filter-change="handleTagDistributionFilterChange" :label="''" />
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Tagged percentage metric -->
-            <div class="metric-item justify-center p-4">
-              <span class="metric-value">{{ tagDistributionData.tagged_percentage || 0 }}%</span>
-              <span class="metric-label mt-2">{{ $t('report.tags.tagged') }}</span>
-              <span class="text-sm text-muted-foreground mt-1">
-                {{ tagDistributionData.tagged_conversations || 0 }} /
-                {{
-                  (tagDistributionData.tagged_conversations || 0) +
-                  (tagDistributionData.untagged_conversations || 0)
-                }}
-              </span>
+        <!-- Row 4: Tag Distribution & History -->
+        <div class="grid gap-6 md:grid-cols-3">
+          <div class="box p-5 col-span-1">
+            <div class="flex justify-between items-center mb-6">
+              <p class="card-title">{{ t('reports.overview.tagDistribution') }}</p>
+              <DateFilter @filter-change="handleTagDistributionFilterChange" :label="''" />
             </div>
-
-            <!-- Top tags list -->
-            <div class="space-y-3">
-              <p class="section-title mb-3 text-left">{{ $t('report.tags.topTags') }}</p>
-              <div
-                v-for="tag in (tagDistributionData.top_tags || []).slice(0, 5)"
-                :key="tag.tag_id"
-                class="flex justify-between items-center py-1"
-              >
-                <span class="text-sm">{{ tag.tag_name }}</span>
-                <span class="text-sm font-semibold">{{ formatCompactNumber(tag.count) }}</span>
+            <div class="space-y-4">
+              <div v-for="tag in (tagDistributionData.top_tags || []).slice(0, 6)" :key="tag.tag_id" class="space-y-1">
+                <div class="flex justify-between text-xs font-medium">
+                  <span>{{ tag.tag_name }}</span>
+                  <span>{{ tag.count }}</span>
+                </div>
+                <div class="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                  <div class="bg-primary h-full rounded-full" :style="{ width: `${(tag.count / (tagDistributionData.tagged_conversations || 1) * 100) || 0}%` }"></div>
+                </div>
               </div>
-              <p v-if="!tagDistributionData.top_tags?.length" class="text-sm text-muted-foreground">
-                {{
-                  $t('globals.messages.noResults', {
-                    item: $t('globals.terms.tags').toLowerCase()
-                  })
-                }}
+              <p v-if="!tagDistributionData.top_tags?.length" class="text-center py-10 text-muted-foreground text-sm italic">
+                {{ t('globals.messages.noData') }}
               </p>
             </div>
           </div>
+
+          <div class="box p-5 col-span-2">
+            <div class="flex justify-between items-center mb-6">
+              <p class="card-title">{{ t('reports.overview.history') }}</p>
+              <DateFilter @filter-change="handleChartFilterChange" :label="''" />
+            </div>
+            <div class="h-[250px] w-full">
+              <LineChart :data="processedLineData" />
+            </div>
+          </div>
         </div>
 
-        <!-- Row 5: Line Chart -->
-        <div class="rounded box w-full p-5">
-          <div class="flex justify-between items-center mb-4">
-            <p class="card-title">{{ $t('report.chart.title') }}</p>
-            <DateFilter @filter-change="handleChartFilterChange" :label="''" />
+        <!-- Row 5: Custom Reports (Widgets) -->
+        <div v-if="customReportsData?.length > 0" class="space-y-6 pt-8 border-t border-dashed">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-2xl font-bold tracking-tight">{{ t('globals.terms.customReports') }}</h2>
+              <p class="text-xs text-muted-foreground">{{ t('reports.overview.customDescription') }}</p>
+            </div>
+            <router-link :to="{ name: 'custom-reports' }">
+              <Button variant="outline" size="sm" class="h-8">
+                <Settings class="h-3.5 w-3.5 mr-2" />
+                {{ t('globals.terms.manage') }}
+              </Button>
+            </router-link>
           </div>
-          <LineChart :data="processedLineData" />
+          
+          <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div v-for="report in customReportsData" :key="report.id" class="box p-5 min-h-[250px] flex flex-col group hover:border-primary/30 transition-colors">
+              <div class="flex items-start justify-between mb-6">
+                <div>
+                  <p class="font-bold text-sm uppercase tracking-wider">{{ report.name }}</p>
+                  <p class="text-[10px] text-muted-foreground line-clamp-1" :title="report.description">{{ report.description }}</p>
+                </div>
+                <Badge variant="secondary" class="uppercase text-[9px] font-black tracking-tighter">{{ t('reports.custom.chartType.' + report.chart_type) }}</Badge>
+              </div>
+
+              <!-- Metric type (KPI) -->
+              <div v-if="report.chart_type === 'metric'" class="flex-1 flex items-center justify-center">
+                <div class="text-center">
+                  <div class="text-6xl font-black text-primary tracking-tighter">
+                    {{ report.results?.[0]?.value || 0 }}
+                  </div>
+                  <div class="text-[10px] font-bold uppercase text-muted-foreground mt-2 tracking-widest">
+                    {{ report.results?.[0]?.label || t('globals.terms.total') }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bar/List -->
+              <div v-else class="flex-1 space-y-3 justify-center flex flex-col">
+                <div v-for="(res, idx) in (report.results || []).slice(0, 5)" :key="idx" class="space-y-1">
+                  <div class="flex justify-between text-[11px] font-bold uppercase">
+                    <span class="text-muted-foreground truncate mr-2">{{ res.label }}</span>
+                    <span>{{ res.value }}</span>
+                  </div>
+                  <div class="w-full bg-muted/50 rounded-full h-1.5 overflow-hidden">
+                    <div class="bg-primary h-full rounded-full transition-all duration-500" :style="{ width: `${(res.value / (report.total || 1) * 100) || 0}%` }"></div>
+                  </div>
+                </div>
+                <div v-if="!report.results?.length" class="flex-1 flex items-center justify-center italic text-muted-foreground text-xs">
+                  {{ t('globals.messages.noData') }}
+                </div>
+                <div v-if="report.results?.length > 5" class="text-[9px] text-center text-muted-foreground font-bold uppercase mt-2">
+                  + {{ report.results.length - 5 }} {{ t('globals.terms.others') }}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -261,17 +317,23 @@ import { handleHTTPError } from '@/utils/http'
 import { formatDuration } from '@/utils/datetime'
 import Card from '@/features/reports/OverviewCard.vue'
 import LineChart from '@/features/reports/OverviewLineChart.vue'
-import Spinner from '@/components/ui/spinner/Spinner.vue'
 import { DateFilter } from '@/components/ui/date-filter'
 import { useI18n } from 'vue-i18n'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Loader2, RefreshCw, Settings } from 'lucide-vue-next'
+import { useCustomReports } from '@/composables/useCustomReports'
 import api from '@/api'
 
 const emitter = useEmitter()
 const { t } = useI18n()
+const { reports: customReports, fetchReports, executeReport } = useCustomReports()
+
 const isLoading = ref(false)
 const lastUpdate = ref(new Date())
 const cardCounts = ref({})
-const chartData = ref({ status_summary: [] })
+const chartData = ref({ new_conversations: [], resolved_conversations: [] })
+const customReportsData = ref([])
 let updateInterval = null
 
 const agentStatusCounts = ref({
@@ -282,77 +344,42 @@ const agentStatusCounts = ref({
 })
 
 const slaCounts = ref({
+  first_response_compliance_percent: 0,
+  next_response_compliance_percent: 0,
+  resolution_compliance_percent: 0,
+  avg_first_response_time_sec: 0,
+  avg_next_response_time_sec: 0,
+  avg_resolution_time_sec: 0,
   first_response_met_count: 0,
   first_response_breached_count: 0,
   next_response_met_count: 0,
   next_response_breached_count: 0,
   resolution_met_count: 0,
-  resolution_breached_count: 0,
-  avg_first_response_time_sec: 0,
-  avg_next_response_time_sec: 0,
-  avg_resolution_time_sec: 0,
-  first_response_compliance_percent: 0,
-  next_response_compliance_percent: 0,
-  resolution_compliance_percent: 0
+  resolution_breached_count: 0
 })
 
-// New data refs
-const csatData = ref({
-  average_rating: 0,
-  response_rate: 0,
-  total_responses: 0,
-  total_sent: 0
-})
+const csatData = ref({ average_rating: 0, response_rate: 0, total_responses: 0 })
+const messageVolumeData = ref({ total_messages: 0, incoming_messages: 0, outgoing_messages: 0, messages_per_conversation: 0 })
+const tagDistributionData = ref({ top_tags: [], tagged_conversations: 0, untagged_conversations: 0, tagged_percentage: 0 })
 
-const messageVolumeData = ref({
-  total_messages: 0,
-  incoming_messages: 0,
-  outgoing_messages: 0,
-  messages_per_conversation: 0
-})
-
-const tagDistributionData = ref({
-  top_tags: [],
-  tagged_conversations: 0,
-  untagged_conversations: 0,
-  tagged_percentage: 0
-})
-
-// Date filter state
+// Date filters
 const slaDays = ref(30)
 const chartDays = ref(90)
 const csatDays = ref(30)
 const messageVolumeDays = ref(30)
 const tagDistributionDays = ref(30)
 
-// Format helpers
-const formatRating = (value) => {
-  if (!value) return '0.0'
-  return Number(value).toFixed(1)
-}
-
-const formatPercent = (value) => {
-  if (!value) return '0%'
-  return `${Math.round(value)}%`
-}
-
-const formatCompactNumber = (value) => {
-  if (!value || value < 1000) return value
-  return new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(
-    value
-  )
-}
+const formatRating = (v) => Number(v || 0).toFixed(1)
+const formatPercent = (v) => `${Math.round(v || 0)}%`
+const formatCompactNumber = (v) => new Intl.NumberFormat('pt-BR', { notation: 'compact' }).format(v || 0)
 
 const formattedSlaCounts = computed(() => ({
-  ...slaCounts.value,
   avg_first_response_time_sec: formatDuration(slaCounts.value.avg_first_response_time_sec, false),
   avg_next_response_time_sec: formatDuration(slaCounts.value.avg_next_response_time_sec, false),
   avg_resolution_time_sec: formatDuration(slaCounts.value.avg_resolution_time_sec, false)
 }))
 
-// Dynamic SLA card title based on selected days
 const slaCardTitle = computed(() => t('report.sla.cardTitle', { days: slaDays.value }))
-
 const lastUpdateFormatted = computed(() => lastUpdate.value.toLocaleTimeString())
 
 const conversationCountLabels = computed(() => ({
@@ -371,158 +398,56 @@ const agentStatusLabels = computed(() => ({
 
 const processedLineData = computed(() => {
   const { new_conversations = [], resolved_conversations = [] } = chartData.value
-
   const dateMap = new Map()
-
-  new_conversations.forEach((item) => {
-    dateMap.set(item.date, {
-      date: item.date,
-      [t('report.chart.newConversations')]: item.count,
-      [t('report.chart.resolvedConversations')]: 0
-    })
-  })
-
-  resolved_conversations.forEach((item) => {
-    const existing = dateMap.get(item.date)
-    if (existing) {
-      existing[t('report.chart.resolvedConversations')] = item.count
-    } else {
-      dateMap.set(item.date, {
-        date: item.date,
-        [t('report.chart.newConversations')]: 0,
-        [t('report.chart.resolvedConversations')]: item.count
-      })
-    }
+  new_conversations.forEach(i => dateMap.set(i.date, { date: i.date, [t('report.chart.newConversations')]: i.count, [t('report.chart.resolvedConversations')]: 0 }))
+  resolved_conversations.forEach(i => {
+    if (dateMap.has(i.date)) dateMap.get(i.date)[t('report.chart.resolvedConversations')] = i.count
+    else dateMap.set(i.date, { date: i.date, [t('report.chart.newConversations')]: 0, [t('report.chart.resolvedConversations')]: i.count })
   })
   return Array.from(dateMap.values()).sort((a, b) => new Date(a.date) - new Date(b.date))
 })
 
-const showError = (error) => {
-  emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-    variant: 'destructive',
-    description: handleHTTPError(error).message
-  })
-}
-
 const fetchCardStats = async () => {
-  try {
-    const { data } = await api.getOverviewCounts()
-    cardCounts.value = data.data
-    agentStatusCounts.value = {
-      agents_online: data.data.agents_online || 0,
-      agents_offline: data.data.agents_offline || 0,
-      agents_away: data.data.agents_away || 0,
-      agents_reassigning: data.data.agents_reassigning || 0
-    }
-  } catch (error) {
-    showError(error)
+  const { data } = await api.getOverviewCounts()
+  cardCounts.value = data.data
+  agentStatusCounts.value = {
+    agents_online: data.data.agents_online || 0,
+    agents_offline: data.data.agents_offline || 0,
+    agents_away: data.data.agents_away || 0,
+    agents_reassigning: data.data.agents_reassigning || 0
   }
 }
 
 const fetchSLAStats = async (days = slaDays.value) => {
-  try {
-    const { data } = await api.getOverviewSLA({ days })
-    slaCounts.value = { ...slaCounts.value, ...data.data }
-  } catch (error) {
-    showError(error)
-  }
+  const { data } = await api.getOverviewSLA({ days })
+  slaCounts.value = { ...slaCounts.value, ...data.data }
 }
 
 const fetchChartData = async (days = chartDays.value) => {
-  try {
-    const { data } = await api.getOverviewCharts({ days })
-    chartData.value = {
-      new_conversations: data.data.new_conversations || [],
-      resolved_conversations: data.data.resolved_conversations || [],
-      messages_sent: data.data.messages_sent || []
-    }
-  } catch (error) {
-    showError(error)
-  }
+  const { data } = await api.getOverviewCharts({ days })
+  chartData.value = data.data
 }
 
 const fetchCSATStats = async (days = csatDays.value) => {
-  try {
-    const { data } = await api.getOverviewCSAT({ days })
-    csatData.value = { ...csatData.value, ...data.data }
-  } catch (error) {
-    showError(error)
-  }
+  const { data } = await api.getOverviewCSAT({ days })
+  csatData.value = data.data
 }
 
 const fetchMessageVolumeStats = async (days = messageVolumeDays.value) => {
-  try {
-    const { data } = await api.getOverviewMessageVolume({ days })
-    messageVolumeData.value = { ...messageVolumeData.value, ...data.data }
-  } catch (error) {
-    showError(error)
-  }
+  const { data } = await api.getOverviewMessageVolume({ days })
+  messageVolumeData.value = data.data
 }
 
 const fetchTagDistributionStats = async (days = tagDistributionDays.value) => {
-  try {
-    const { data } = await api.getOverviewTagDistribution({ days })
-    tagDistributionData.value = { ...tagDistributionData.value, ...data.data }
-  } catch (error) {
-    showError(error)
-  }
+  const { data } = await api.getOverviewTagDistribution({ days })
+  tagDistributionData.value = data.data
 }
 
-// Date filter handlers
-const handleSlaFilterChange = async (days) => {
-  slaDays.value = days
-  isLoading.value = true
-  try {
-    await fetchSLAStats(days)
-  } finally {
-    isLoading.value = false
-    lastUpdate.value = new Date()
-  }
-}
-
-const handleChartFilterChange = async (days) => {
-  chartDays.value = days
-  isLoading.value = true
-  try {
-    await fetchChartData(days)
-  } finally {
-    isLoading.value = false
-    lastUpdate.value = new Date()
-  }
-}
-
-const handleCSATFilterChange = async (days) => {
-  csatDays.value = days
-  isLoading.value = true
-  try {
-    await fetchCSATStats(days)
-  } finally {
-    isLoading.value = false
-    lastUpdate.value = new Date()
-  }
-}
-
-const handleMessageVolumeFilterChange = async (days) => {
-  messageVolumeDays.value = days
-  isLoading.value = true
-  try {
-    await fetchMessageVolumeStats(days)
-  } finally {
-    isLoading.value = false
-    lastUpdate.value = new Date()
-  }
-}
-
-const handleTagDistributionFilterChange = async (days) => {
-  tagDistributionDays.value = days
-  isLoading.value = true
-  try {
-    await fetchTagDistributionStats(days)
-  } finally {
-    isLoading.value = false
-    lastUpdate.value = new Date()
-  }
-}
+const handleSlaFilterChange = (d) => { slaDays.value = d; fetchSLAStats(d) }
+const handleChartFilterChange = (d) => { chartDays.value = d; fetchChartData(d) }
+const handleCSATFilterChange = (d) => { csatDays.value = d; fetchCSATStats(d) }
+const handleMessageVolumeFilterChange = (d) => { messageVolumeDays.value = d; fetchMessageVolumeStats(d) }
+const handleTagDistributionFilterChange = (d) => { tagDistributionDays.value = d; fetchTagDistributionStats(d) }
 
 const loadDashboardData = async () => {
   isLoading.value = true
@@ -533,58 +458,43 @@ const loadDashboardData = async () => {
       fetchChartData(),
       fetchCSATStats(),
       fetchMessageVolumeStats(),
-      fetchTagDistributionStats()
+      fetchTagDistributionStats(),
+      fetchReports()
     ])
+
+    if (customReports.value?.length > 0) {
+      const results = await Promise.all(
+        customReports.value.map(async (r) => {
+          const data = await executeReport(r.id)
+          const total = data.reduce((acc, curr) => acc + curr.value, 0)
+          return { ...r, results: data, total }
+        })
+      )
+      customReportsData.value = results
+    }
+  } catch (err) {
+    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, { variant: 'destructive', description: handleHTTPError(err).message })
   } finally {
     isLoading.value = false
     lastUpdate.value = new Date()
   }
 }
 
-const startRealtimeUpdates = () => {
-  if (updateInterval) clearInterval(updateInterval)
-  updateInterval = setInterval(loadDashboardData, 60000)
-}
-
-const stopRealtimeUpdates = () => {
-  if (updateInterval) {
-    clearInterval(updateInterval)
-    updateInterval = null
-  }
-}
-
 onMounted(() => {
   loadDashboardData()
-  startRealtimeUpdates()
+  updateInterval = setInterval(loadDashboardData, 60000)
 })
 
 onUnmounted(() => {
-  stopRealtimeUpdates()
+  if (updateInterval) clearInterval(updateInterval)
 })
 </script>
 
 <style scoped>
-.metric-value {
-  @apply text-3xl font-bold tracking-tight;
-}
-
-.metric-value {
-  @apply text-3xl font-bold tracking-tight;
-}
-
-.metric-label {
-  @apply text-xs text-muted-foreground uppercase tracking-wider;
-}
-
-.card-title {
-  @apply text-xl font-medium;
-}
-
-.metric-item {
-  @apply flex flex-col items-center gap-1 text-center;
-}
-
-.section-title {
-  @apply text-sm font-medium text-center text-muted-foreground uppercase tracking-wider;
-}
+.metric-value { @apply text-3xl font-bold tracking-tight; }
+.metric-label { @apply text-[10px] text-muted-foreground uppercase font-bold tracking-widest; }
+.card-title { @apply text-lg font-bold tracking-tight; }
+.metric-item { @apply flex flex-col items-center gap-1 text-center; }
+.section-title { @apply text-[11px] font-black text-center text-muted-foreground uppercase tracking-widest; }
+.box { @apply rounded-xl border bg-card text-card-foreground shadow-sm; }
 </style>

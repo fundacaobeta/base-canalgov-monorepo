@@ -6,11 +6,11 @@
           <FormControl>
             <div class="flex items-center space-x-2">
               <Checkbox :checked="value" @update:checked="handleChange" />
-              <Label>Habilitar comunicações oficiais</Label>
+              <Label>{{ t('admin.notification.official.enable') }}</Label>
             </div>
           </FormControl>
           <FormDescription>
-            Ative este fluxo para transformar ofícios, cartas, notificações e intimações em chamados internos.
+            {{ t('admin.notification.official.enableDescription') }}
           </FormDescription>
           <FormMessage />
         </FormItem>
@@ -19,20 +19,20 @@
 
     <div class="box p-5 space-y-5">
       <div class="space-y-1">
-        <h3 class="font-medium">Configuração padrão do chamado</h3>
+        <h3 class="font-medium">{{ t('admin.notification.official.defaultConfig') }}</h3>
         <p class="text-sm text-muted-foreground">
-          Defina os parâmetros usados quando uma comunicação oficial gerar atendimento interno.
+          {{ t('admin.notification.official.defaultConfigDescription') }}
         </p>
       </div>
 
       <div class="grid gap-5 md:grid-cols-2">
         <FormField v-slot="{ componentField }" name="inbox_id">
           <FormItem>
-            <FormLabel>Caixa de entrada</FormLabel>
+            <FormLabel>{{ t('admin.notification.official.recipientTeams') }}</FormLabel>
             <FormControl>
               <Select v-bind="componentField" v-model="componentField.modelValue">
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione a caixa de entrada" />
+                  <SelectValue :placeholder="t('globals.messages.select', { name: t('globals.terms.inbox') })" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem
@@ -46,7 +46,7 @@
               </Select>
             </FormControl>
             <FormDescription>
-              Caixa usada para concentrar os chamados gerados por esse fluxo.
+              {{ t('admin.notification.official.inboxDescription') }}
             </FormDescription>
             <FormMessage />
           </FormItem>
@@ -54,11 +54,11 @@
 
         <FormField v-slot="{ componentField }" name="priority_id">
           <FormItem>
-            <FormLabel>Prioridade padrão</FormLabel>
+            <FormLabel>{{ t('globals.terms.priority') }}</FormLabel>
             <FormControl>
               <Select v-bind="componentField" v-model="componentField.modelValue">
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione a prioridade" />
+                  <SelectValue :placeholder="t('globals.messages.select', { name: t('globals.terms.priority') })" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem
@@ -77,11 +77,11 @@
 
         <FormField v-slot="{ componentField }" name="status_id">
           <FormItem>
-            <FormLabel>Status inicial</FormLabel>
+            <FormLabel>{{ t('globals.terms.status') }}</FormLabel>
             <FormControl>
               <Select v-bind="componentField" v-model="componentField.modelValue">
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o status" />
+                  <SelectValue :placeholder="t('globals.messages.select', { name: t('globals.terms.status') })" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem
@@ -100,12 +100,12 @@
 
         <FormField v-slot="{ componentField }" name="target_sla_hours">
           <FormItem>
-            <FormLabel>SLA alvo em horas</FormLabel>
+            <FormLabel>{{ t('admin.notification.official.targetSlaHours') }}</FormLabel>
             <FormControl>
               <Input type="number" min="1" placeholder="24" v-bind="componentField" />
             </FormControl>
             <FormDescription>
-              Referência operacional para primeira análise do caso.
+              {{ t('admin.notification.official.targetSlaDescription') }}
             </FormDescription>
             <FormMessage />
           </FormItem>
@@ -113,16 +113,16 @@
 
         <FormField v-slot="{ componentField }" name="subject_prefix">
           <FormItem class="md:col-span-2">
-            <FormLabel>Prefixo do assunto</FormLabel>
+            <FormLabel>{{ t('admin.notification.official.subjectPrefix') }}</FormLabel>
             <FormControl>
               <Input
                 type="text"
-                placeholder="[Oficial] Comunicação recebida"
+                :placeholder="t('admin.notification.official.subjectPrefix')"
                 v-bind="componentField"
               />
             </FormControl>
             <FormDescription>
-              Esse texto ajuda a identificar rapidamente chamados oriundos de comunicações oficiais.
+              {{ t('admin.notification.official.subjectPrefixDescription') }}
             </FormDescription>
             <FormMessage />
           </FormItem>
@@ -130,18 +130,18 @@
 
         <FormField v-slot="{ componentField, handleChange }" name="default_types">
           <FormItem class="md:col-span-2">
-            <FormLabel>Tipos monitorados</FormLabel>
+            <FormLabel>{{ t('admin.notification.official.monitoredTypes') }}</FormLabel>
             <FormControl>
               <TagsInput :modelValue="componentField.modelValue" @update:modelValue="handleChange">
                 <TagsInputItem v-for="item in componentField.modelValue" :key="item" :value="item">
                   <TagsInputItemText />
                   <TagsInputItemDelete />
                 </TagsInputItem>
-                <TagsInputInput placeholder="Ofício" />
+                <TagsInputInput :placeholder="t('admin.notification.official.ruleTypesPlaceholder')" />
               </TagsInput>
             </FormControl>
             <FormDescription>
-              Cadastre termos usados para classificar esse tipo de comunicação.
+              {{ t('admin.notification.official.monitoredTypesDescription') }}
             </FormDescription>
             <FormMessage />
           </FormItem>
@@ -149,16 +149,16 @@
 
         <FormField v-slot="{ componentField }" name="internal_note">
           <FormItem class="md:col-span-2">
-            <FormLabel>Instruções internas</FormLabel>
+            <FormLabel>{{ t('admin.notification.official.internalInstructions') }}</FormLabel>
             <FormControl>
               <Textarea
                 class="min-h-32"
-                placeholder="Descreva como a equipe deve tratar esse tipo de expediente."
+                :placeholder="t('admin.notification.official.internalInstructionsDescription')"
                 v-bind="componentField"
               />
             </FormControl>
             <FormDescription>
-              Essas instruções servem como referência para a triagem e resposta.
+              {{ t('admin.notification.official.internalInstructionsDescription') }}
             </FormDescription>
             <FormMessage />
           </FormItem>
@@ -170,9 +170,9 @@
       <FormField name="auto_create_conversation" v-slot="{ componentField, handleChange }">
         <FormItem class="flex flex-row items-center justify-between">
           <div class="space-y-0.5">
-            <FormLabel class="text-base">Abrir chamado automaticamente</FormLabel>
+            <FormLabel class="text-base">{{ t('admin.notification.official.autoOpen') }}</FormLabel>
             <FormDescription>
-              Ao receber uma comunicação oficial, o sistema poderá abrir um chamado usando as regras abaixo.
+              {{ t('admin.notification.official.autoOpenDescription') }}
             </FormDescription>
           </div>
           <FormControl>
@@ -184,24 +184,24 @@
 
     <div class="box p-5 space-y-5">
       <div class="space-y-1">
-        <h3 class="font-medium">Regras de encaminhamento</h3>
+        <h3 class="font-medium">{{ t('admin.notification.official.routingRules') }}</h3>
         <p class="text-sm text-muted-foreground">
-          Mapeie quais tipos de comunicação devem gerar chamado para uma ou mais equipes.
+          {{ t('admin.notification.official.routingRulesDescription') }}
         </p>
       </div>
 
       <div class="grid gap-5 md:grid-cols-2">
         <div>
-          <Label>Nome da regra</Label>
+          <Label>{{ t('admin.notification.official.ruleName') }}</Label>
           <Input
             v-model="routingDraft.name"
             class="mt-2"
-            placeholder="Ex.: Jurídico e Ouvidoria"
+            :placeholder="t('admin.notification.official.ruleNamePlaceholder')"
           />
         </div>
 
         <div>
-          <Label>Tipos da regra</Label>
+          <Label>{{ t('admin.notification.official.ruleTypes') }}</Label>
           <TagsInput
             :modelValue="routingDraft.types"
             class="mt-2"
@@ -211,16 +211,16 @@
               <TagsInputItemText />
               <TagsInputItemDelete />
             </TagsInputItem>
-            <TagsInputInput placeholder="Intimação" />
+            <TagsInputInput :placeholder="t('admin.notification.official.ruleTypesPlaceholder')" />
           </TagsInput>
           <p class="mt-2 text-xs text-muted-foreground">
-            Exemplo: Ofício, Carta, Notificação extrajudicial, Intimação.
+            {{ t('admin.notification.official.ruleTypesHint') }}
           </p>
         </div>
       </div>
 
       <div>
-        <Label>Equipes destinatárias</Label>
+        <Label>{{ t('admin.notification.official.recipientTeams') }}</Label>
         <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <label
             v-for="option in teamOptions"
@@ -234,7 +234,7 @@
             <div class="space-y-1">
               <div class="text-sm font-medium">{{ option.label }}</div>
               <p class="text-xs text-muted-foreground">
-                Recebe os chamados gerados por esta regra.
+                {{ t('admin.notification.official.recipientTeamsDescription') }}
               </p>
             </div>
           </label>
@@ -243,9 +243,9 @@
 
       <div class="flex gap-3">
         <Button type="button" @click="saveRoutingRule">
-          {{ isEditingRule ? 'Salvar regra' : 'Adicionar regra' }}
+          {{ isEditingRule ? t('admin.notification.official.saveRule') : t('admin.notification.official.addRule') }}
         </Button>
-        <Button type="button" variant="outline" @click="resetRoutingDraft">Limpar</Button>
+        <Button type="button" variant="outline" @click="resetRoutingDraft">{{ t('admin.notification.official.clear') }}</Button>
       </div>
 
       <div class="space-y-4" v-if="routingRules.length">
@@ -267,13 +267,13 @@
                 </span>
               </div>
               <p class="text-sm text-muted-foreground">
-                Equipes: {{ getRuleTeamsLabel(rule.team_ids) }}
+                {{ t('globals.terms.team', 2) }}: {{ getRuleTeamsLabel(rule.team_ids) }}
               </p>
             </div>
             <div class="flex gap-2">
-              <Button type="button" variant="outline" @click="editRoutingRule(rule)">Editar</Button>
+              <Button type="button" variant="outline" @click="editRoutingRule(rule)">{{ t('admin.notification.official.edit') }}</Button>
               <Button type="button" variant="destructive" @click="removeRoutingRule(rule.id)">
-                Remover
+                {{ t('admin.notification.official.remove') }}
               </Button>
             </div>
           </div>
@@ -281,17 +281,18 @@
       </div>
 
       <div v-else class="rounded border border-dashed p-4 text-sm text-muted-foreground">
-        Nenhuma regra cadastrada ainda. Adicione pelo menos uma regra para mapear as equipes que receberão os chamados.
+        {{ t('admin.notification.official.noRules') }}
       </div>
     </div>
 
-    <Button type="submit" :isLoading="isLoading">Salvar configuração</Button>
+    <Button type="submit" :isLoading="isLoading">{{ t('admin.notification.form.saveConfig') }}</Button>
   </form>
 </template>
 
 <script setup>
 import { computed, reactive, ref, watch } from 'vue'
 import { useForm } from 'vee-validate'
+import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -351,6 +352,7 @@ const props = defineProps({
   }
 })
 
+const { t } = useI18n()
 const emitter = useEmitter()
 const isLoading = ref(false)
 
@@ -422,7 +424,7 @@ function saveRoutingRule() {
   if (!routingDraft.name.trim()) {
     emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
       variant: 'destructive',
-      description: 'Informe um nome para a regra de encaminhamento.'
+      description: t('admin.notification.official.validation.ruleNameRequired')
     })
     return
   }
@@ -430,7 +432,7 @@ function saveRoutingRule() {
   if (!routingDraft.types.length) {
     emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
       variant: 'destructive',
-      description: 'Informe ao menos um tipo de comunicação para a regra.'
+      description: t('admin.notification.official.validation.ruleTypesRequired')
     })
     return
   }
@@ -438,7 +440,7 @@ function saveRoutingRule() {
   if (!routingDraft.team_ids.length) {
     emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
       variant: 'destructive',
-      description: 'Selecione ao menos uma equipe destinatária.'
+      description: t('admin.notification.official.validation.ruleTeamsRequired')
     })
     return
   }

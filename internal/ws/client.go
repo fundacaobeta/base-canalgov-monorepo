@@ -3,11 +3,10 @@ package ws
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"sync"
 	"time"
 
-	"github.com/abhinavxd/libredesk/internal/ws/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/ws/models"
 	"github.com/fasthttp/websocket"
 )
 
@@ -120,7 +119,7 @@ func (c *Client) SendError(msg string) {
 	select {
 	case c.Send <- models.WSMessage{Data: b, MessageType: websocket.TextMessage}:
 	default:
-		log.Println("Client send channel is full. Could not send error message.")
+		c.Hub.lo.Error("Client send channel is full. Could not send error message", "client_id", c.ID)
 		c.Hub.RemoveClient(c)
 		c.close()
 	}
@@ -129,7 +128,7 @@ func (c *Client) SendError(msg string) {
 // SendMessage sends a message to client.
 func (c *Client) SendMessage(b []byte, typ byte) {
 	if c.Closed.Get() {
-		log.Println("Attempted to send message to closed client")
+		c.Hub.lo.Error("Attempted to send message to closed client", "client_id", c.ID)
 		return
 	}
 	select {

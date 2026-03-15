@@ -1,117 +1,92 @@
 <template>
-  <form @submit.prevent="onSubmit" class="space-y-6">
-    <div v-if="isResponseTemplate" class="rounded-2xl border border-border/70 bg-muted/20 p-4">
-      <div class="space-y-1">
-        <h3 class="text-base font-medium">Modelo de resposta</h3>
-        <p class="text-sm text-muted-foreground">
-          Use este modelo no composer de resposta. Ele pode ser global ou associado a uma equipe específica.
-        </p>
+  <form @submit="onSubmit" class="space-y-6">
+    <div class="box p-5 space-y-6">
+      <h3 class="text-base font-medium">{{ t('admin.template.form.header') }}</h3>
+
+      <FormField v-slot="{ componentField }" name="name">
+        <FormItem>
+          <FormLabel>{{ t('globals.terms.name') }}</FormLabel>
+          <FormControl>
+            <Input type="text" placeholder="ex: Saudação Inicial" v-bind="componentField" />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      </FormField>
+
+      <FormField v-slot="{ componentField }" name="content">
+        <FormItem>
+          <FormLabel>{{ t('globals.terms.content') }}</FormLabel>
+          <FormControl>
+            <Textarea
+              class="min-h-32"
+              placeholder="ex: Olá, como posso ajudar hoje?"
+              v-bind="componentField"
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      </FormField>
+
+      <div class="grid gap-6 md:grid-cols-2">
+        <FormField v-slot="{ componentField }" name="category_id">
+          <FormItem>
+            <FormLabel>{{ t('globals.terms.category') }}</FormLabel>
+            <FormControl>
+              <Select v-bind="componentField" v-model="componentField.modelValue">
+                <SelectTrigger>
+                  <SelectValue :placeholder="t('globals.messages.select', { name: t('globals.terms.category') })" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="cat in categories" :key="cat.id" :value="cat.id">
+                    {{ cat.name }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        </FormField>
+
+        <FormField v-slot="{ componentField }" name="team_id">
+          <FormItem>
+            <FormLabel>{{ t('admin.template.form.team') }}</FormLabel>
+            <FormControl>
+              <Select v-bind="componentField" v-model="componentField.modelValue">
+                <SelectTrigger>
+                  <SelectValue :placeholder="t('globals.messages.select', { name: t('globals.terms.team') })" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem :value="0">{{ t('admin.template.form.global') }}</SelectItem>
+                  <SelectItem v-for="team in teams" :key="team.id" :value="team.id">
+                    {{ team.name }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        </FormField>
       </div>
     </div>
 
-    <FormField v-slot="{ componentField }" name="name">
-      <FormItem v-auto-animate>
-        <FormLabel>{{ isResponseTemplate ? 'Nome do modelo' : $t('globals.terms.name') }}</FormLabel>
-        <FormControl>
-          <Input type="text" v-bind="componentField" />
-        </FormControl>
-        <FormMessage />
-      </FormItem>
-    </FormField>
-
-    <FormField v-slot="{ componentField, handleChange }" name="team_id" v-if="isResponseTemplate">
-      <FormItem>
-        <FormLabel>Equipe</FormLabel>
-        <FormControl>
-          <Select
-            :model-value="componentField.modelValue == null ? 'global' : String(componentField.modelValue)"
-            @update:model-value="(value) => handleChange(value === 'global' ? null : Number(value))"
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Modelo global" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="global">Global</SelectItem>
-              <SelectItem v-for="team in teamOptions" :key="team.value" :value="team.value">
-                {{ team.label }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </FormControl>
-        <FormDescription>
-          Se escolher uma equipe, o modelo aparece primeiro para conversas encaminhadas a ela.
-        </FormDescription>
-        <FormMessage />
-      </FormItem>
-    </FormField>
-
-    <FormField v-slot="{ componentField }" name="subject" v-if="showSubjectField">
-      <FormItem>
-        <FormLabel>{{ $t('globals.terms.subject') }}</FormLabel>
-        <FormControl>
-          <Input type="text" placeholder="" v-bind="componentField" />
-        </FormControl>
-        <FormMessage />
-      </FormItem>
-    </FormField>
-
-    <FormField v-slot="{ componentField, handleChange }" name="body">
-      <FormItem>
-        <FormLabel>{{ isResponseTemplate ? 'Conteúdo da resposta' : $t('globals.terms.body') }}</FormLabel>
-        <FormControl>
-          <CodeEditor v-model="componentField.modelValue" @update:modelValue="handleChange" />
-        </FormControl>
-        <FormDescription v-if="isOutgoingTemplate">
-          {{
-            $t('admin.template.makeSureTemplateHasContent', {
-              content: '\u007b\u007b template "content" . \u007d\u007d'
-            })
-          }}
-        </FormDescription>
-        <FormDescription v-else-if="isResponseTemplate">
-          Escreva o texto-base da resposta. O atendente ainda pode ajustar o conteúdo antes de enviar.
-        </FormDescription>
-        <FormMessage />
-      </FormItem>
-    </FormField>
-
-    <FormField name="is_default" v-slot="{ value, handleChange }">
-      <FormItem>
-        <FormControl>
-          <div class="flex items-center space-x-2">
-            <Checkbox :checked="value" @update:checked="handleChange" />
-            <Label>{{ defaultLabel }}</Label>
-          </div>
-        </FormControl>
-        <FormDescription>{{ defaultDescription }}</FormDescription>
-        <FormMessage />
-      </FormItem>
-    </FormField>
-
-    <Button type="submit" :isLoading="isLoading"> {{ submitLabel }} </Button>
+    <div class="flex items-center justify-end space-x-3">
+      <Button type="submit" :isLoading="isLoading">{{ submitLabel }}</Button>
+    </div>
   </form>
 </template>
 
 <script setup>
-import { watch, computed, onMounted } from 'vue'
-import { Button } from '@/components/ui/button'
+import { onMounted, ref, watch } from 'vue'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { createFormSchema } from './formSchema.js'
-import { vAutoAnimate } from '@formkit/auto-animate/vue'
 import {
   FormControl,
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-  FormDescription
+  FormMessage
 } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import CodeEditor from '@/components/editor/CodeEditor.vue'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Label } from '@/components/ui/label'
-import { useI18n } from 'vue-i18n'
 import {
   Select,
   SelectContent,
@@ -119,7 +94,17 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { useTeamStore } from '@/stores/team'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
+import { useAdminErrorToast } from '@/composables/useAdminErrorToast'
+import { useI18n } from 'vue-i18n'
+import api from '@/api'
+
+const { showErrorToast } = useAdminErrorToast()
+const { t } = useI18n()
+const categories = ref([])
+const teams = ref([])
 
 const props = defineProps({
   initialValues: {
@@ -133,60 +118,59 @@ const props = defineProps({
   submitLabel: {
     type: String,
     required: false,
-    default: () => ''
+    default: ''
   },
   isLoading: {
     type: Boolean,
-    required: false
+    default: false
   }
 })
-const { t } = useI18n()
-const teamStore = useTeamStore()
 
-const submitLabel = computed(() => {
-  return props.submitLabel || t('globals.messages.save')
-})
+const submitLabel = props.submitLabel || t('globals.messages.save')
 
-const form = useForm({
+const templateForm = useForm({
   validationSchema: toTypedSchema(createFormSchema(t)),
-  initialValues: props.initialValues
-})
-
-const onSubmit = form.handleSubmit((values) => {
-  props.submitForm({
-    ...values,
-    team_id: values.team_id ? Number(values.team_id) : null
-  })
-})
-
-const templateType = computed(() => form.values.type || props.initialValues?.type || 'response')
-const isResponseTemplate = computed(() => templateType.value === 'response')
-const isOutgoingTemplate = computed(() => templateType.value === 'email_outgoing')
-const showSubjectField = computed(() => templateType.value === 'email_notification')
-const teamOptions = computed(() => teamStore.options)
-const defaultLabel = computed(() =>
-  isResponseTemplate.value ? 'Usar como padrão nas respostas' : t('globals.terms.isDefault')
-)
-const defaultDescription = computed(() => {
-  if (isResponseTemplate.value) {
-    return 'Se for global, vale para todo o sistema. Se estiver vinculada a uma equipe, vira o padrão daquela equipe.'
+  initialValues: {
+    name: '',
+    content: '',
+    category_id: 0,
+    team_id: 0
   }
-  if (isOutgoingTemplate.value) {
-    return t('admin.template.onlyOneDefaultOutgoingTemplate')
-  }
-  return 'Marque apenas quando este modelo deve ser priorizado dentro do seu tipo.'
 })
 
 onMounted(() => {
-  teamStore.fetchTeams()
+  fetchCategories()
+  fetchTeams()
 })
 
-// Watch for changes in initialValues and update the form.
+const fetchCategories = async () => {
+  try {
+    const response = await api.getTemplateCategories()
+    categories.value = response.data.data
+  } catch (error) {
+    showErrorToast(error)
+  }
+}
+
+const fetchTeams = async () => {
+  try {
+    const response = await api.getTeams()
+    teams.value = response.data.data
+  } catch (error) {
+    showErrorToast(error)
+  }
+}
+
+const onSubmit = templateForm.handleSubmit(async (values) => {
+  await props.submitForm(values)
+})
+
 watch(
   () => props.initialValues,
   (newValues) => {
-    form.setValues(newValues)
+    if (!newValues || Object.keys(newValues).length === 0) return
+    templateForm.setValues(newValues)
   },
-  { deep: true }
+  { deep: true, immediate: true }
 )
 </script>

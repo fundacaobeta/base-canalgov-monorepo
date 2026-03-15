@@ -4,8 +4,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/abhinavxd/libredesk/internal/envelope"
-	smodels "github.com/abhinavxd/libredesk/internal/sla/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/envelope"
+	smodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/sla/models"
 	"github.com/valyala/fasthttp"
 	"github.com/zerodha/fastglue"
 )

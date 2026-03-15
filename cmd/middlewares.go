@@ -2,12 +2,13 @@ package main
 
 import (
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
-	amodels "github.com/abhinavxd/libredesk/internal/auth/models"
-	"github.com/abhinavxd/libredesk/internal/envelope"
-	"github.com/abhinavxd/libredesk/internal/user/models"
+	amodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/auth/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/envelope"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/user/models"
 	"github.com/valyala/fasthttp"
 	"github.com/zerodha/fastglue"
 	"github.com/zerodha/simplesessions/v3"
@@ -32,8 +33,14 @@ func authenticateUser(r *fastglue.Request, app *App) (models.User, error) {
 	// Session-based authentication - Check CSRF first.
 	method := string(r.RequestCtx.Method())
 	if method == "POST" || method == "PUT" || method == "DELETE" {
-		cookieToken := string(r.RequestCtx.Request.Header.Cookie("csrf_token"))
-		hdrToken := string(r.RequestCtx.Request.Header.Peek("X-CSRFTOKEN"))
+		cookieTokenRaw := string(r.RequestCtx.Request.Header.Cookie("csrf_token"))
+		cookieToken, _ := url.QueryUnescape(strings.Trim(cookieTokenRaw, "\""))
+
+		hdrTokenRaw := strings.TrimSpace(string(r.RequestCtx.Request.Header.Peek("X-CSRFTOKEN")))
+		if hdrTokenRaw == "" {
+			hdrTokenRaw = strings.TrimSpace(string(r.RequestCtx.Request.Header.Peek("X-CSRF-Token")))
+		}
+		hdrToken, _ := url.QueryUnescape(strings.Trim(hdrTokenRaw, "\""))
 
 		// Match CSRF token from cookie and header.
 		if cookieToken == "" || hdrToken == "" || cookieToken != hdrToken {

@@ -359,5 +359,29 @@ SELECT
             ELSE 0
         END
     ) AS result
-FROM
+    FROM
     tagging;
+
+    -- name: get-custom-reports
+    SELECT id, name, description, chart_type, metric_type, filters, created_at, updated_at, created_by_id
+    FROM custom_reports
+    ORDER BY name ASC;
+
+    -- name: get-custom-report
+    SELECT id, name, description, chart_type, metric_type, filters, created_at, updated_at, created_by_id
+    FROM custom_reports
+    WHERE id = $1;
+
+    -- name: insert-custom-report
+    INSERT INTO custom_reports (name, description, chart_type, metric_type, filters, created_by_id)
+    VALUES ($1, $2, $3, $4, $5, $6)
+    RETURNING id, name, description, chart_type, metric_type, filters, created_at, updated_at, created_by_id;
+
+    -- name: update-custom-report
+    UPDATE custom_reports
+    SET name = $2, description = $3, chart_type = $4, metric_type = $5, filters = $6, updated_at = NOW()
+    WHERE id = $1
+    RETURNING id, name, description, chart_type, metric_type, filters, created_at, updated_at, created_by_id;
+
+    -- name: delete-custom-report
+    DELETE FROM custom_reports WHERE id = $1;

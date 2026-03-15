@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/abhinavxd/libredesk/internal/conversation/models"
-	imodels "github.com/abhinavxd/libredesk/internal/inbox/models"
-	"github.com/abhinavxd/libredesk/internal/stringutil"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/conversation/models"
+	imodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/inbox/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/stringutil"
 	"github.com/knadh/smtppool"
 )
 

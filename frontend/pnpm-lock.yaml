@@ -192,6 +192,9 @@ importers:
       vitest:
         specifier: ^3.2.2
         version: 3.2.2(@types/node@22.10.5)(sass@1.83.1)(stylus@0.57.0)
+      vue-grab:
+        specifier: ^0.0.4
+        version: 0.0.4
 
 packages:
 
@@ -3455,6 +3458,9 @@ packages:
     engines: {node: ^14.17.0 || >=16.0.0}
     peerDependencies:
       eslint: '>=6.0.0'
+
+  vue-grab@0.0.4:
+    resolution: {integrity: sha512-Ol6pLJu9x502+W8y1t/OwELNG5o4ZJgdN3pkyhwTWrRHUaD+bQMOrEDZY+18xxo9T6vBYeKCanNqBwHtRVvaNw==}
 
   vue-i18n@9.14.5:
     resolution: {integrity: sha512-0jQ9Em3ymWngyiIkj0+c/k7WgaPO+TNzjKSNq9BvBQaKJECqn9cd9fL4tkDhB5G1QBskGl9YxxbDAhgbFtpe2g==}
@@ -7083,6 +7089,8 @@ snapshots:
       semver: 7.6.3
     transitivePeerDependencies:
       - supports-color
+
+  vue-grab@0.0.4: {}
 
   vue-i18n@9.14.5(vue@3.5.13(typescript@5.7.3)):
     dependencies:

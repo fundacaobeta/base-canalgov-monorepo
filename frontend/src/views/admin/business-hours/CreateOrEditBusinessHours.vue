@@ -19,14 +19,12 @@ import BusinessHoursForm from '@/features/admin/business-hours/BusinessHoursForm
 import { useRouter } from 'vue-router'
 import { Spinner } from '@/components/ui/spinner'
 import { CustomBreadcrumb } from '@/components/ui/breadcrumb'
-import { EMITTER_EVENTS } from '@/constants/emitterEvents.js'
-import { useEmitter } from '@/composables/useEmitter'
-import { handleHTTPError } from '@/utils/http'
+import { useAdminErrorToast } from '@/composables/useAdminErrorToast'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 const businessHours = ref({})
-const emitter = useEmitter()
+const { showErrorToast, showSuccessToast } = useAdminErrorToast()
 const isLoading = ref(false)
 const formLoading = ref(false)
 const router = useRouter()
@@ -42,25 +40,18 @@ const submitForm = async (values) => {
     formLoading.value = true
     if (props.id) {
       await api.updateBusinessHours(props.id, values)
-      emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-        description: t('globals.messages.updatedSuccessfully', {
-          name: t('globals.terms.businessHour', 2)
-        })
-      })
+      showSuccessToast(t('globals.messages.updatedSuccessfully', {
+        name: t('globals.terms.businessHour', 2)
+      }))
     } else {
       await api.createBusinessHours(values)
-      emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-        description: t('globals.messages.createdSuccessfully', {
-          name: t('globals.terms.businessHour', 2)
-        })
-      })
+      showSuccessToast(t('globals.messages.createdSuccessfully', {
+        name: t('globals.terms.businessHour', 2)
+      }))
       router.push({ name: 'business-hours-list' })
     }
   } catch (error) {
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      variant: 'destructive',
-      description: handleHTTPError(error).message
-    })
+    showErrorToast(error)
   } finally {
     formLoading.value = false
   }
@@ -86,10 +77,7 @@ onMounted(async () => {
       const resp = await api.getBusinessHours(props.id)
       businessHours.value = resp.data.data
     } catch (error) {
-      emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-        variant: 'destructive',
-        description: handleHTTPError(error).message
-      })
+      showErrorToast(error)
     } finally {
       isLoading.value = false
     }

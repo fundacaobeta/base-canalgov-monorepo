@@ -4,8 +4,9 @@ package ws
 import (
 	"sync"
 
-	"github.com/abhinavxd/libredesk/internal/ws/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/ws/models"
 	"github.com/fasthttp/websocket"
+	"github.com/zerodha/logf"
 )
 
 // Hub maintains the set of registered websockets clients.
@@ -15,6 +16,7 @@ type Hub struct {
 	clientsMutex sync.Mutex
 
 	userStore userStore
+	lo        logf.Logger
 }
 
 type userStore interface {
@@ -22,11 +24,12 @@ type userStore interface {
 }
 
 // NewHub creates a new websocket hub.
-func NewHub(userStore userStore) *Hub {
+func NewHub(userStore userStore, lo logf.Logger) *Hub {
 	return &Hub{
 		clients:      make(map[int][]*Client, 10000),
 		clientsMutex: sync.Mutex{},
 		userStore:    userStore,
+		lo:           lo,
 	}
 }
 

@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"time"
 
-	cmodels "github.com/abhinavxd/libredesk/internal/conversation/models"
-	wsmodels "github.com/abhinavxd/libredesk/internal/ws/models"
+	cmodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/conversation/models"
+	wsmodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/ws/models"
 )
 
 // BroadcastNewMessage broadcasts a new message to all users.

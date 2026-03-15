@@ -1,8 +1,8 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import { createI18n } from 'vue-i18n'
 import { useAppSettingsStore } from './stores/appSettings'
-import router from './router'
+import { createAppRouter } from './router'
+import i18n, { setupI18n } from './plugins/i18n'
 import mitt from 'mitt'
 import api from './api'
 import './assets/styles/main.scss'
@@ -26,17 +26,12 @@ async function initApp () {
   if (config['app.favicon_url'])
     setFavicon(config['app.favicon_url'])
 
-  // Initialize i18n.
-  const i18nConfig = {
-    legacy: false,
-    locale: lang,
-    fallbackLocale: 'pt-BR',
-    messages: {
-      [lang]: langMessages.data
-    }
-  }
+  // Configure the i18n singleton with the loaded messages before mounting.
+  setupI18n(lang, langMessages.data)
 
-  const i18n = createI18n(i18nConfig)
+  // Create the router with locale-aware URL paths.
+  const router = createAppRouter(lang)
+
   const app = createApp(Root)
   const pinia = createPinia()
   app.use(pinia)

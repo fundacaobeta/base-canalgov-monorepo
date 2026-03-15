@@ -18,9 +18,7 @@ import api from '@/api'
 import OIDCForm from '@/features/admin/oidc/OIDCForm.vue'
 import { Spinner } from '@/components/ui/spinner'
 import { CustomBreadcrumb } from '@/components/ui/breadcrumb'
-import { EMITTER_EVENTS } from '@/constants/emitterEvents.js'
-import { useEmitter } from '@/composables/useEmitter'
-import { handleHTTPError } from '@/utils/http'
+import { useAdminErrorToast } from '@/composables/useAdminErrorToast'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
@@ -29,7 +27,7 @@ const { t } = useI18n()
 const oidc = ref({
   provider: 'Google'
 })
-const emitter = useEmitter()
+const { showErrorToast, showSuccessToast } = useAdminErrorToast()
 const isLoading = ref(false)
 const formLoading = ref(false)
 const props = defineProps({
@@ -57,15 +55,9 @@ const submitForm = async (values) => {
         name: t('globals.terms.provider')
       })
     }
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      title: 'Success',
-      description: toastDescription
-    })
+    showSuccessToast(toastDescription)
   } catch (error) {
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      variant: 'destructive',
-      description: handleHTTPError(error).message
-    })
+    showErrorToast(error)
   } finally {
     formLoading.value = false
   }
@@ -91,10 +83,7 @@ onMounted(async () => {
       const resp = await api.getOIDC(props.id)
       oidc.value = resp.data.data
     } catch (error) {
-      emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-        variant: 'destructive',
-        description: handleHTTPError(error).message
-      })
+      showErrorToast(error)
     } finally {
       isLoading.value = false
     }

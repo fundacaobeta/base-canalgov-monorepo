@@ -1,10 +1,10 @@
 import { computed } from 'vue'
-import { useUsersStore } from '@/stores/users'
+import { useAgentsStore } from '@/stores/agents'
 import { FIELD_TYPE, FIELD_OPERATORS } from '@/constants/filterConfig'
 import { useI18n } from 'vue-i18n'
 
 export function useActivityLogFilters () {
-    const uStore = useUsersStore()
+    const uStore = useAgentsStore()
     const { t } = useI18n()
     const activityLogListFilters = computed(() => ({
         actor_id: {

@@ -1,85 +1,41 @@
 <template>
-  <DropdownMenu>
-    <DropdownMenuTrigger as-child>
-      <Button variant="ghost" class="w-8 h-8 p-0">
-        <span class="sr-only"></span>
-        <MoreHorizontal class="w-4 h-4" />
-      </Button>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent>
-      <DropdownMenuItem @click="editMacro">{{ $t('globals.messages.edit') }}</DropdownMenuItem>
-      <DropdownMenuItem @click="() => (isDeleteOpen = true)">
-        {{ $t('globals.messages.delete') }}
-      </DropdownMenuItem>
-    </DropdownMenuContent>
-  </DropdownMenu>
-
-  <AlertDialog :open="isDeleteOpen" @update:open="isDeleteOpen = $event">
-    <AlertDialogContent>
-      <AlertDialogHeader>
-        <AlertDialogTitle>{{ $t('globals.messages.areYouAbsolutelySure') }}</AlertDialogTitle>
-        <AlertDialogDescription>
-          {{ $t('globals.messages.deletionConfirmation', { name: $t('globals.terms.macro') }) }}
-        </AlertDialogDescription>
-      </AlertDialogHeader>
-      <AlertDialogFooter>
-        <AlertDialogCancel>{{ $t('globals.messages.cancel') }}</AlertDialogCancel>
-        <AlertDialogAction @click="handleDelete">{{
-          $t('globals.messages.delete')
-        }}</AlertDialogAction>
-      </AlertDialogFooter>
-    </AlertDialogContent>
-  </AlertDialog>
+  <DataTableRowActions
+    :entity-name="t('globals.terms.macro')"
+    @edit="editMacro"
+    @delete="handleDelete"
+  />
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { MoreHorizontal } from 'lucide-vue-next'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle
-} from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
-import { useEmitter } from '@/composables/useEmitter'
-import { EMITTER_EVENTS } from '@/constants/emitterEvents.js'
 import { useRouter } from 'vue-router'
+import DataTableRowActions from '@/components/admin/DataTableRowActions.vue'
+import { useAdminListRefresh } from '@/composables/useAdminListRefresh'
+import { useAdminErrorToast } from '@/composables/useAdminErrorToast'
 import { useMacroStore } from '@/stores/macro'
+import { useI18n } from 'vue-i18n'
 import api from '@/api/index.js'
 
+const { t } = useI18n()
 const router = useRouter()
-const emit = useEmitter()
 const macroStore = useMacroStore()
-const isDeleteOpen = ref(false)
+const { emitRefresh } = useAdminListRefresh('macros', () => {})
+const { showErrorToast } = useAdminErrorToast()
 
 const props = defineProps({
-  macro: {
-    type: Object,
-    required: true
-  }
+  macro: { type: Object, required: true }
 })
 
 const handleDelete = async () => {
-  await api.deleteMacro(props.macro.id)
-  
-  await macroStore.loadMacros(true)
-  
-  isDeleteOpen.value = false
-  emit.emit(EMITTER_EVENTS.REFRESH_LIST, { model: 'macros' })
+  try {
+    await api.deleteMacro(props.macro.id)
+    await macroStore.loadMacros(true)
+    emitRefresh()
+  } catch (error) {
+    showErrorToast(error)
+  }
 }
 
 const editMacro = () => {
-  router.push({ path: `/admin/conversations/macros/${props.macro.id}/edit` })
+  router.push({ name: 'edit-macro', params: { id: props.macro.id } })
 }
 </script>

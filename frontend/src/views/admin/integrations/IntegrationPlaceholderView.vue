@@ -9,15 +9,15 @@
 
     <div class="grid gap-4 md:grid-cols-2">
       <div class="box p-5">
-        <h3 class="font-medium">Status da integração</h3>
+        <h3 class="font-medium">{{ t('admin.integration.status.title') }}</h3>
         <p class="mt-2 text-sm text-muted-foreground">
-          Estrutura inicial criada para a integração de {{ title.toLowerCase() }}.
+          {{ t('admin.integration.status.description', { title: title.toLowerCase() }) }}
         </p>
       </div>
       <div class="box p-5">
-        <h3 class="font-medium">Próximos passos</h3>
+        <h3 class="font-medium">{{ t('admin.integration.nextSteps.title') }}</h3>
         <p class="mt-2 text-sm text-muted-foreground">
-          Configure credenciais, webhooks ou endpoints específicos conforme a sua operação.
+          {{ t('admin.integration.nextSteps.description') }}
         </p>
       </div>
     </div>
@@ -25,6 +25,9 @@
 </template>
 
 <script setup>
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
+
 defineProps({
   title: {
     type: String,

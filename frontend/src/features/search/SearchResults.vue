@@ -33,7 +33,7 @@
                   name: 'inbox-conversation',
                   params: {
                     uuid: type === 'conversations' ? item.uuid : item.conversation_uuid,
-                    type: 'assigned'
+                    type: inboxTypeParam('assigned')
                   }
                 }"
                 class="block"
@@ -98,6 +98,9 @@ import { computed, ref, watch } from 'vue'
 import { ChevronRightIcon, ClockIcon } from 'lucide-vue-next'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import DateTimeMeta from '@/components/datetime/DateTimeMeta.vue'
+import { useInboxTypes } from '@/composables/useInboxTypes'
+
+const { toParam: inboxTypeParam } = useInboxTypes()
 
 const props = defineProps({
   results: {

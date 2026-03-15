@@ -85,7 +85,7 @@
 
           <div class="flex items-center justify-between">
             <router-link
-              to="/reset-password"
+              :to="{ name: 'reset-password' }"
               class="text-sm text-primary hover:text-primary/80 transition-all duration-200 ease-in-out"
             >
               {{ t('auth.forgotPassword') }}

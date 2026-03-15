@@ -1,15 +1,15 @@
 <template>
   <form class="space-y-6" @submit.prevent="onSubmit">
     <div class="rounded-2xl border border-border/70 bg-muted/20 p-4">
-      <h3 class="font-medium">E-mail gerenciado pelo CanalGov</h3>
+      <h3 class="font-medium">{{ t('admin.inbox.form.managedEmail') }}</h3>
       <p class="mt-1 text-sm text-muted-foreground">
-        O CanalGov provisiona o endereço da caixa. Mensagens recebidas nesse endereço entram no fluxo de atendimento.
+        {{ t('admin.inbox.form.managedEmailDescription') }}
       </p>
     </div>
 
     <FormField v-slot="{ componentField }" name="name">
       <FormItem>
-        <FormLabel>Nome da caixa</FormLabel>
+        <FormLabel>{{ t('admin.inbox.form.mailboxName') }}</FormLabel>
         <FormControl>
           <Input v-bind="componentField" placeholder="Ouvidoria" />
         </FormControl>
@@ -20,22 +20,22 @@
     <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,1fr)]">
       <FormField v-slot="{ componentField }" name="managed_local_part">
         <FormItem>
-          <FormLabel>Nome do e-mail</FormLabel>
+          <FormLabel>{{ t('admin.inbox.form.emailName') }}</FormLabel>
           <FormControl>
             <Input v-bind="componentField" placeholder="ouvidoria" />
           </FormControl>
-          <FormDescription>Parte antes do `@`.</FormDescription>
+          <FormDescription>{{ t('admin.inbox.form.emailPartDescription') }}</FormDescription>
           <FormMessage />
         </FormItem>
       </FormField>
 
       <FormField v-slot="{ componentField, handleChange }" name="managed_domain_id">
         <FormItem>
-          <FormLabel>Domínio</FormLabel>
+          <FormLabel>{{ t('admin.inbox.form.domain') }}</FormLabel>
           <FormControl>
             <Select v-bind="componentField" @update:model-value="handleChange">
               <SelectTrigger>
-                <SelectValue placeholder="Selecione um domínio" />
+                <SelectValue :placeholder="t('admin.inbox.form.selectDomain')" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem v-for="domain in domainOptions" :key="domain.id" :value="domain.id">
@@ -50,25 +50,25 @@
     </div>
 
     <div class="rounded-xl border border-border/70 p-4">
-      <div class="text-sm font-medium">Endereço gerado</div>
-      <div class="mt-2 font-mono text-sm">{{ managedEmailAddress || 'Preencha o nome e selecione um domínio' }}</div>
+      <div class="text-sm font-medium">{{ t('admin.inbox.form.generatedAddress') }}</div>
+      <div class="mt-2 font-mono text-sm">{{ managedEmailAddress || t('admin.inbox.form.fillNameAndSelectDomain') }}</div>
     </div>
 
     <FormField v-slot="{ componentField, handleChange }" name="delivery_provider">
       <FormItem>
-        <FormLabel>Provedor de entrega</FormLabel>
+        <FormLabel>{{ t('admin.inbox.form.deliveryProvider') }}</FormLabel>
         <FormControl>
           <Select v-bind="componentField" @update:model-value="handleChange">
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="canalgov_managed">CanalGov gerenciado</SelectItem>
-              <SelectItem value="ses">AWS SES</SelectItem>
-              <SelectItem value="sns">AWS SNS</SelectItem>
-              <SelectItem value="self_hosted">Servidor próprio</SelectItem>
-              <SelectItem value="docker_mailserver">Servidor via Docker</SelectItem>
-              <SelectItem value="custom">Customizado</SelectItem>
+              <SelectItem value="canalgov_managed">{{ t('admin.inbox.form.provider.canalgov') }}</SelectItem>
+              <SelectItem value="ses">{{ t('admin.inbox.form.provider.ses') }}</SelectItem>
+              <SelectItem value="sns">{{ t('admin.inbox.form.provider.sns') }}</SelectItem>
+              <SelectItem value="self_hosted">{{ t('admin.inbox.form.provider.self_hosted') }}</SelectItem>
+              <SelectItem value="docker_mailserver">{{ t('admin.inbox.form.provider.docker') }}</SelectItem>
+              <SelectItem value="custom">{{ t('admin.inbox.form.provider.custom') }}</SelectItem>
             </SelectContent>
           </Select>
         </FormControl>
@@ -77,7 +77,7 @@
 
     <FormField v-slot="{ componentField }" name="provider_config">
       <FormItem>
-        <FormLabel>Configuração adicional do provedor</FormLabel>
+        <FormLabel>{{ t('admin.inbox.form.providerConfig') }}</FormLabel>
         <FormControl>
           <Textarea
             v-bind="componentField"
@@ -85,7 +85,7 @@
             placeholder='{"region":"us-east-1","topic_arn":"","bucket":""}'
           />
         </FormControl>
-        <FormDescription>JSON opcional para integrações como AWS SES, SNS ou infraestrutura própria.</FormDescription>
+        <FormDescription>{{ t('admin.inbox.form.providerConfigDescription') }}</FormDescription>
         <FormMessage />
       </FormItem>
     </FormField>
@@ -94,7 +94,7 @@
       <FormField v-slot="{ componentField, handleChange }" name="enabled">
         <FormItem class="box flex flex-row items-center justify-between p-4">
           <div>
-            <FormLabel class="text-base">Habilitada</FormLabel>
+            <FormLabel class="text-base">{{ t('admin.inbox.form.enabled') }}</FormLabel>
           </div>
           <FormControl>
             <Switch :checked="componentField.modelValue" @update:checked="handleChange" />
@@ -105,7 +105,7 @@
       <FormField v-slot="{ componentField, handleChange }" name="csat_enabled">
         <FormItem class="box flex flex-row items-center justify-between p-4">
           <div>
-            <FormLabel class="text-base">CSAT</FormLabel>
+            <FormLabel class="text-base">{{ t('admin.inbox.form.csat') }}</FormLabel>
           </div>
           <FormControl>
             <Switch :checked="componentField.modelValue" @update:checked="handleChange" />
@@ -114,7 +114,7 @@
       </FormField>
     </div>
 
-    <Button type="submit" :is-loading="isLoading" :disabled="isLoading">Salvar</Button>
+    <Button type="submit" :is-loading="isLoading" :disabled="isLoading">{{ t('globals.messages.save') }}</Button>
   </form>
 </template>
 
@@ -124,6 +124,7 @@ import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import * as z from 'zod'
 import api from '@/api'
+import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -143,9 +144,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { useEmitter } from '@/composables/useEmitter'
-import { EMITTER_EVENTS } from '@/constants/emitterEvents'
-import { handleHTTPError } from '@/utils/http'
+import { useAdminErrorToast } from '@/composables/useAdminErrorToast'
 
 const props = defineProps({
   initialValues: {
@@ -162,18 +161,19 @@ const props = defineProps({
   }
 })
 
-const emitter = useEmitter()
+const { t } = useI18n()
+const { showErrorToast } = useAdminErrorToast()
 const domains = ref([])
 
 const form = useForm({
   validationSchema: toTypedSchema(z.object({
-    name: z.string().min(1, 'Obrigatório'),
-    managed_local_part: z.string().min(1, 'Obrigatório'),
-    managed_domain_id: z.string().min(1, 'Obrigatório'),
-    delivery_provider: z.string().min(1, 'Obrigatório'),
+    name: z.string().min(1, t('admin.inbox.form.validation.required')),
+    managed_local_part: z.string().min(1, t('admin.inbox.form.validation.required')),
+    managed_domain_id: z.string().min(1, t('admin.inbox.form.validation.required')),
+    delivery_provider: z.string().min(1, t('admin.inbox.form.validation.required')),
     provider_config: z.string().default('{}').refine((value) => {
       try { JSON.parse(value || '{}'); return true } catch { return false }
-    }, 'Informe um JSON válido'),
+    }, t('admin.inbox.form.validation.invalidJson')),
     enabled: z.boolean().default(true),
     csat_enabled: z.boolean().default(false)
   })),
@@ -197,10 +197,7 @@ const fetchDomains = async () => {
       if (defaultDomain) form.setFieldValue('managed_domain_id', defaultDomain.id)
     }
   } catch (error) {
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      variant: 'destructive',
-      description: handleHTTPError(error).message
-    })
+    showErrorToast(error)
   }
 }
 

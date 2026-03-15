@@ -4,7 +4,7 @@ WORKDIR /app/frontend
 ENV CYPRESS_INSTALL_BINARY=0
 
 COPY frontend/package.json frontend/pnpm-lock.yaml ./
-RUN corepack enable && pnpm install --frozen-lockfile
+RUN corepack enable && pnpm install
 
 COPY frontend/ ./
 RUN pnpm build

@@ -6,11 +6,11 @@
           <FormControl>
             <div class="flex items-center space-x-2">
               <Checkbox :checked="value" @update:checked="handleChange" />
-              <Label>Habilitar notificações por e-mail</Label>
+              <Label>{{ t('admin.notification.form.enableEmail') }}</Label>
             </div>
           </FormControl>
           <FormDescription>
-            Ative o envio de alertas internos por SMTP para atribuições, SLA e eventos importantes.
+            {{ t('admin.notification.form.enableEmailDescription') }}
           </FormDescription>
           <FormMessage />
         </FormItem>
@@ -19,9 +19,9 @@
 
     <div class="box p-5 space-y-5">
       <div class="space-y-1">
-        <h3 class="font-medium">Conexão SMTP</h3>
+        <h3 class="font-medium">{{ t('admin.notification.form.smtpConnection') }}</h3>
         <p class="text-sm text-muted-foreground">
-          Dados de autenticação e transporte usados para conexão com o provedor de e-mail.
+          {{ t('admin.notification.form.smtpDescription') }}
         </p>
       </div>
 
@@ -76,10 +76,10 @@
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem value="plain">Plain</SelectItem>
-                    <SelectItem value="login">Login</SelectItem>
+                    <SelectItem value="plain">{{ t('globals.auth.plain') }}</SelectItem>
+                    <SelectItem value="login">{{ t('globals.auth.login') }}</SelectItem>
                     <SelectItem value="cram">CRAM-MD5</SelectItem>
-                    <SelectItem value="none">Nenhum</SelectItem>
+                    <SelectItem value="none">{{ t('globals.auth.none') }}</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -90,7 +90,7 @@
 
         <FormField v-slot="{ componentField }" name="tls_type">
           <FormItem>
-            <FormLabel>TLS</FormLabel>
+            <FormLabel>{{ t('globals.terms.tls') }}</FormLabel>
             <FormControl>
               <Select v-bind="componentField" v-model="componentField.modelValue">
                 <SelectTrigger>
@@ -98,9 +98,9 @@
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem value="none">Off</SelectItem>
-                    <SelectItem value="tls">SSL/TLS</SelectItem>
-                    <SelectItem value="starttls">STARTTLS</SelectItem>
+                    <SelectItem value="none">{{ t('globals.tls.none') }}</SelectItem>
+                    <SelectItem value="tls">{{ t('globals.tls.ssl_tls') }}</SelectItem>
+                    <SelectItem value="starttls">{{ t('globals.tls.starttls') }}</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -113,9 +113,9 @@
 
     <div class="box p-5 space-y-5">
       <div class="space-y-1">
-        <h3 class="font-medium">Identidade do remetente</h3>
+        <h3 class="font-medium">{{ t('admin.notification.form.senderIdentity') }}</h3>
         <p class="text-sm text-muted-foreground">
-          Endereço exibido nas notificações e hostname usado na negociação SMTP.
+          {{ t('admin.notification.form.senderIdentityDescription') }}
         </p>
       </div>
 
@@ -150,9 +150,9 @@
 
     <div class="box p-5 space-y-5">
       <div class="space-y-1">
-        <h3 class="font-medium">Desempenho e resiliência</h3>
+        <h3 class="font-medium">{{ t('admin.notification.form.performanceResilience') }}</h3>
         <p class="text-sm text-muted-foreground">
-          Limites de conexão, tempo de espera e política de retentativas do envio.
+          {{ t('admin.notification.form.performanceResilienceDescription') }}
         </p>
       </div>
 

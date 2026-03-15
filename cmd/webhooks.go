@@ -4,9 +4,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/abhinavxd/libredesk/internal/envelope"
-	"github.com/abhinavxd/libredesk/internal/stringutil"
-	"github.com/abhinavxd/libredesk/internal/webhook/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/envelope"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/stringutil"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/webhook/models"
 	"github.com/valyala/fasthttp"
 	"github.com/zerodha/fastglue"
 )

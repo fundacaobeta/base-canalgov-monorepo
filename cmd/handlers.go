@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/abhinavxd/libredesk/internal/envelope"
-	"github.com/abhinavxd/libredesk/internal/ws"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/envelope"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/ws"
 	"github.com/valyala/fasthttp"
 	"github.com/zerodha/fastglue"
 )
@@ -149,6 +149,8 @@ func initHandlers(g *fastglue.Fastglue, hub *ws.Hub) {
 	// Contacts.
 	g.GET("/api/v1/contacts", perm(handleGetContacts, "contacts:read_all"))
 	g.GET("/api/v1/contacts/{id}", perm(handleGetContact, "contacts:read"))
+	g.GET("/api/v1/contacts/{id}/conversations", perm(handleGetContactConversations, "contacts:read"))
+	g.GET("/api/v1/contacts/{id}/stats", perm(handleGetContactStats, "contacts:read"))
 	g.PUT("/api/v1/contacts/{id}", perm(handleUpdateContact, "contacts:write"))
 	g.PUT("/api/v1/contacts/{id}/block", perm(handleBlockContact, "contacts:block"))
 
@@ -203,6 +205,18 @@ func initHandlers(g *fastglue.Fastglue, hub *ws.Hub) {
 	g.PUT("/api/v1/webhooks/{id}/toggle", perm(handleToggleWebhook, "webhooks:manage"))
 	g.POST("/api/v1/webhooks/{id}/test", perm(handleTestWebhook, "webhooks:manage"))
 
+	// Contact segments (Admin).
+	g.GET("/api/v1/admin/contact-segments", perm(handleGetContactSegments, "general_settings:manage"))
+	g.POST("/api/v1/admin/contact-segments", perm(handleCreateContactSegment, "general_settings:manage"))
+	g.GET("/api/v1/admin/contact-segments/{id}", perm(handleGetContactSegment, "general_settings:manage"))
+	g.PUT("/api/v1/admin/contact-segments/{id}", perm(handleUpdateContactSegment, "general_settings:manage"))
+	g.DELETE("/api/v1/admin/contact-segments/{id}", perm(handleDeleteContactSegment, "general_settings:manage"))
+
+	// Messaging channel webhooks (Public).
+	g.GET("/api/v1/webhooks/whatsapp", handleWhatsAppWebhookVerification)
+	g.POST("/api/v1/webhooks/whatsapp", handleWhatsAppWebhook)
+	g.POST("/api/v1/webhooks/telegram", handleTelegramWebhook)
+
 	// Reports.
 	g.GET("/api/v1/reports/overview/sla", perm(handleOverviewSLA, "reports:manage"))
 	g.GET("/api/v1/reports/overview/counts", perm(handleOverviewCounts, "reports:manage"))
@@ -211,12 +225,26 @@ func initHandlers(g *fastglue.Fastglue, hub *ws.Hub) {
 	g.GET("/api/v1/reports/overview/messages", perm(handleOverviewMessageVolume, "reports:manage"))
 	g.GET("/api/v1/reports/overview/tags", perm(handleOverviewTagDistribution, "reports:manage"))
 
+	// Custom reports.
+	g.GET("/api/v1/reports/custom", perm(handleGetCustomReports, "reports:manage"))
+	g.POST("/api/v1/reports/custom", perm(handleCreateCustomReport, "reports:manage"))
+	g.GET("/api/v1/reports/custom/{id}", perm(handleGetCustomReport, "reports:manage"))
+	g.PUT("/api/v1/reports/custom/{id}", perm(handleUpdateCustomReport, "reports:manage"))
+	g.DELETE("/api/v1/reports/custom/{id}", perm(handleDeleteCustomReport, "reports:manage"))
+	g.GET("/api/v1/reports/custom/{id}/execute", perm(handleExecuteCustomReport, "reports:manage"))
+
 	// Templates.
 	g.GET("/api/v1/templates", perm(handleGetTemplates, "templates:manage"))
 	g.GET("/api/v1/templates/{id}", perm(handleGetTemplate, "templates:manage"))
 	g.POST("/api/v1/templates", perm(handleCreateTemplate, "templates:manage"))
 	g.PUT("/api/v1/templates/{id}", perm(handleUpdateTemplate, "templates:manage"))
 	g.DELETE("/api/v1/templates/{id}", perm(handleDeleteTemplate, "templates:manage"))
+
+	// Template categories.
+	g.GET("/api/v1/admin/template-categories", perm(handleGetTemplateCategories, "templates:manage"))
+	g.POST("/api/v1/admin/template-categories", perm(handleCreateTemplateCategory, "templates:manage"))
+	g.PUT("/api/v1/admin/template-categories/{id}", perm(handleUpdateTemplateCategory, "templates:manage"))
+	g.DELETE("/api/v1/admin/template-categories/{id}", perm(handleDeleteTemplateCategory, "templates:manage"))
 
 	// Business hours.
 	g.GET("/api/v1/business-hours", auth(handleGetBusinessHours))
@@ -262,6 +290,7 @@ func initHandlers(g *fastglue.Fastglue, hub *ws.Hub) {
 
 	// Frontend pages.
 	g.GET("/", notAuthPage(serveIndexPage))
+	// English routes.
 	g.GET("/inboxes/{all:*}", authPage(serveIndexPage))
 	g.GET("/teams/{all:*}", authPage(serveIndexPage))
 	g.GET("/views/{all:*}", authPage(serveIndexPage))
@@ -271,6 +300,13 @@ func initHandlers(g *fastglue.Fastglue, hub *ws.Hub) {
 	g.GET("/account/{all:*}", authPage(serveIndexPage))
 	g.GET("/reset-password", notAuthPage(serveIndexPage))
 	g.GET("/set-password", notAuthPage(serveIndexPage))
+	// Portuguese (pt-BR) routes.
+	g.GET("/caixas/{all:*}", authPage(serveIndexPage))
+	g.GET("/contatos/{all:*}", authPage(serveIndexPage))
+	g.GET("/relatorios/{all:*}", authPage(serveIndexPage))
+	g.GET("/conta/{all:*}", authPage(serveIndexPage))
+	g.GET("/recuperar-senha", notAuthPage(serveIndexPage))
+	g.GET("/definir-senha", notAuthPage(serveIndexPage))
 	// FIXME: Don't need three separate routes for the same thing.
 	g.GET("/assets/{all:*}", serveFrontendStaticFiles)
 	g.GET("/images/{all:*}", serveFrontendStaticFiles)

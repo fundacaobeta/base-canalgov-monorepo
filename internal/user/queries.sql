@@ -1,6 +1,6 @@
 -- name: get-users-compact
 -- TODO: Remove hardcoded `type` of user in some queries in this file.
-SELECT COUNT(*) OVER() as total, users.id, users.avatar_url, users.type, users.created_at, users.updated_at, users.first_name, users.last_name, users.email, users.enabled
+SELECT COUNT(*) OVER() as total, users.id, users.avatar_url, users.type, users.created_at, users.updated_at, users.first_name, users.last_name, users.email, users.enabled, users.custom_attributes
 FROM users
 WHERE users.email != 'System' AND users.deleted_at IS NULL AND type = ANY($1)
 
@@ -44,6 +44,7 @@ SELECT
     u.api_key,
     u.api_key_last_used_at,
     u.api_secret,
+    u.custom_attributes,
     array_agg(DISTINCT r.name) FILTER (WHERE r.name IS NOT NULL) AS roles,
     COALESCE(
         (SELECT json_agg(json_build_object('id', t.id, 'name', t.name, 'emoji', t.emoji))
@@ -238,6 +239,7 @@ SELECT
     u.api_key,
     u.api_key_last_used_at,
     u.api_secret,
+    u.custom_attributes,
     array_agg(DISTINCT r.name) FILTER (WHERE r.name IS NOT NULL) AS roles,
     COALESCE(
         (SELECT json_agg(json_build_object('id', t.id, 'name', t.name, 'emoji', t.emoji))
@@ -267,4 +269,29 @@ WHERE id = $1;
 -- name: update-api-key-last-used
 UPDATE users 
 SET api_key_last_used_at = now()
+WHERE id = $1;
+
+-- name: get-contact-segments
+SELECT id, name, description, filters, created_at, updated_at
+FROM contact_segments
+ORDER BY name ASC;
+
+-- name: get-contact-segment
+SELECT id, name, description, filters, created_at, updated_at
+FROM contact_segments
+WHERE id = $1;
+
+-- name: insert-contact-segment
+INSERT INTO contact_segments (name, description, filters)
+VALUES ($1, $2, $3)
+RETURNING id, name, description, filters, created_at, updated_at;
+
+-- name: update-contact-segment
+UPDATE contact_segments
+SET name = $2, description = $3, filters = $4, updated_at = now()
+WHERE id = $1
+RETURNING id, name, description, filters, created_at, updated_at;
+
+-- name: delete-contact-segment
+DELETE FROM contact_segments
 WHERE id = $1;

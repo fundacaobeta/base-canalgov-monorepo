@@ -8,14 +8,14 @@ import (
 	"strconv"
 	"strings"
 
-	amodels "github.com/abhinavxd/libredesk/internal/auth/models"
-	"github.com/abhinavxd/libredesk/internal/envelope"
-	"github.com/abhinavxd/libredesk/internal/image"
-	mmodels "github.com/abhinavxd/libredesk/internal/media/models"
-	notifier "github.com/abhinavxd/libredesk/internal/notification"
-	"github.com/abhinavxd/libredesk/internal/stringutil"
-	tmpl "github.com/abhinavxd/libredesk/internal/template"
-	"github.com/abhinavxd/libredesk/internal/user/models"
+	amodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/auth/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/envelope"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/image"
+	mmodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/media/models"
+	notifier "github.com/fundacaobeta/base-canalgov-monorepo/internal/notification"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/stringutil"
+	tmpl "github.com/fundacaobeta/base-canalgov-monorepo/internal/template"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/user/models"
 	realip "github.com/ferluci/fast-realip"
 	"github.com/valyala/fasthttp"
 	"github.com/volatiletech/null/v9"
@@ -222,7 +222,7 @@ func handleCreateAgent(r *fastglue.Request) error {
 
 		if err := app.notifier.Send(notifier.Message{
 			RecipientEmails: []string{req.Email},
-			Subject:         app.i18n.T("globals.messages.welcomeToLibredesk"),
+			Subject:         app.i18n.T("globals.messages.welcomeToCanalGov"),
 			Content:         content,
 			Provider:        notifier.ProviderEmail,
 		}); err != nil {

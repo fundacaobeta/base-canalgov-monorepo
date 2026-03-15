@@ -1,18 +1,18 @@
 <template>
   <NotificationConfigShell
-    :title="config.title"
-    :description="config.description"
-    :status-label="config.statusLabel"
-    :status-description="form.enabled ? 'Canal habilitado para uso operacional.' : 'Canal desabilitado ou ainda não configurado.'"
-    :help-items="config.helpItems"
+    :title="translatedConfig.title"
+    :description="translatedConfig.description"
+    :status-label="translatedConfig.statusLabel"
+    :status-description="form.enabled ? translatedConfig.statusEnabled : translatedConfig.statusDisabled"
+    :help-items="translatedConfig.helpItems"
   >
     <form class="space-y-6" @submit.prevent="saveConfig">
           <div class="box p-5">
             <div class="flex items-center justify-between gap-6">
               <div class="space-y-1">
-                <h3 class="font-medium">Habilitar canal</h3>
+                <h3 class="font-medium">{{ $t('admin.notification.channel.enableChannel') }}</h3>
                 <p class="text-sm text-muted-foreground">
-                  Ative este canal para preparar o atendimento e as notificações.
+                  {{ $t('admin.notification.channel.enableChannelDescription') }}
                 </p>
               </div>
               <Switch v-model:checked="form.enabled" />
@@ -20,7 +20,7 @@
           </div>
 
           <div
-            v-for="section in config.sections"
+            v-for="section in translatedConfig.sections"
             :key="section.title"
             class="box p-6 space-y-5"
           >
@@ -75,10 +75,10 @@
 
           <div class="box p-5">
             <div class="space-y-3">
-              <h3 class="font-medium">Eventos cobertos</h3>
+              <h3 class="font-medium">{{ $t('admin.notification.channel.coveredEvents') }}</h3>
               <div class="flex flex-wrap gap-2">
                 <span
-                  v-for="event in config.events"
+                  v-for="event in translatedConfig.events"
                   :key="event"
                   class="rounded-full border bg-background px-3 py-1 text-xs"
                 >
@@ -88,13 +88,14 @@
             </div>
           </div>
 
-      <Button type="submit" :isLoading="isSaving">Salvar configuração</Button>
+      <Button type="submit" :isLoading="isSaving">{{ $t('globals.messages.save') }}</Button>
     </form>
   </NotificationConfigShell>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/api'
 import NotificationConfigShell from '@/features/admin/notification/NotificationConfigShell.vue'
 import { Button } from '@/components/ui/button'
@@ -108,9 +109,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { useEmitter } from '@/composables/useEmitter'
-import { EMITTER_EVENTS } from '@/constants/emitterEvents'
-import { handleHTTPError } from '@/utils/http'
+import { useAdminErrorToast } from '@/composables/useAdminErrorToast'
 
 const props = defineProps({
   channel: {
@@ -119,35 +118,36 @@ const props = defineProps({
   }
 })
 
-const emitter = useEmitter()
+const { t } = useI18n()
+const { showErrorToast, showSuccessToast } = useAdminErrorToast()
 const isSaving = ref(false)
 const isLoading = ref(false)
 
 const channelConfigs = {
   whatsapp: {
     title: 'WhatsApp',
-    description: 'Configure credenciais, identificação do número e webhook do provedor de WhatsApp.',
-    help: 'Use esta tela para preparar integração com provedores como Meta Cloud API, Z-API, Gupshup ou gateways próprios.',
-    help2: 'Defina credenciais, URL base e eventos para envio e recebimento de mensagens operacionais.',
+    descriptionKey: 'admin.notification.whatsapp.description',
+    statusLabelKey: 'admin.notification.whatsapp.statusLabel',
+    statusEnabledKey: 'admin.notification.whatsapp.statusEnabled',
+    statusDisabledKey: 'admin.notification.whatsapp.statusDisabled',
     helpItems: [
       {
-        title: 'Provedor',
-        description: 'Mapeie o provedor oficial do canal e valide o identificador do número ou instância conectada.'
+        titleKey: 'admin.notification.whatsapp.help1.title',
+        descriptionKey: 'admin.notification.whatsapp.help1.description'
       },
       {
-        title: 'Webhook',
-        description: 'Mantenha token de verificação e URL base consistentes para recebimento de eventos.'
+        titleKey: 'admin.notification.whatsapp.help2.title',
+        descriptionKey: 'admin.notification.whatsapp.help2.description'
       },
       {
-        title: 'Operação',
-        description: 'Defina mensagem ou template inicial para padronizar a primeira resposta do atendimento.'
+        titleKey: 'admin.notification.whatsapp.help3.title',
+        descriptionKey: 'admin.notification.whatsapp.help3.description'
       },
       {
-        title: 'Governança',
-        description: 'Use fila padrão para orientar triagem de mensagens quando o canal começar a operar.'
+        titleKey: 'admin.notification.whatsapp.help4.title',
+        descriptionKey: 'admin.notification.whatsapp.help4.description'
       }
     ],
-    statusLabel: 'Canal de atendimento via WhatsApp',
     defaults: {
       enabled: false,
       provider: 'meta',
@@ -160,65 +160,70 @@ const channelConfigs = {
       department_hint: ''
     },
     secretFields: ['access_token', 'webhook_verify_token'],
-    events: ['Mensagem recebida', 'Mensagem enviada', 'Confirmação de leitura', 'Falha de envio'],
+    events: [
+      'admin.notification.whatsapp.event1',
+      'admin.notification.whatsapp.event2',
+      'admin.notification.whatsapp.event3',
+      'admin.notification.whatsapp.event4'
+    ],
     sections: [
       {
-        title: 'Identificação do canal',
-        description: 'Dados básicos da conta e do número conectado.',
+        titleKey: 'admin.notification.whatsapp.section1.title',
+        descriptionKey: 'admin.notification.whatsapp.section1.description',
         fields: [
           {
             key: 'provider',
-            label: 'Provedor',
+            labelKey: 'admin.notification.channel.provider',
             type: 'select',
-            placeholder: 'Selecione o provedor',
+            placeholderKey: 'admin.notification.channel.selectProvider',
             options: [
               { value: 'meta', label: 'Meta Cloud API' },
               { value: 'zapi', label: 'Z-API' },
               { value: 'gupshup', label: 'Gupshup' },
-              { value: 'custom', label: 'Customizado' }
+              { value: 'custom', label: 'globals.terms.custom' }
             ]
           },
-          { key: 'display_name', label: 'Nome exibido', placeholder: 'CanalGov Atendimento' },
-          { key: 'phone_number_id', label: 'ID do número / instância', placeholder: '1234567890' },
-          { key: 'department_hint', label: 'Fila padrão', placeholder: 'Atendimento digital' }
+          { key: 'display_name', labelKey: 'admin.notification.whatsapp.fields.displayName', placeholder: 'CanalGov Atendimento' },
+          { key: 'phone_number_id', labelKey: 'admin.notification.whatsapp.fields.phoneNumberId', placeholder: '1234567890' },
+          { key: 'department_hint', labelKey: 'admin.notification.whatsapp.fields.departmentHint', placeholder: 'Atendimento digital' }
         ]
       },
       {
-        title: 'Credenciais e webhook',
-        description: 'Informações técnicas para autenticação e processamento.',
+        titleKey: 'admin.notification.whatsapp.section2.title',
+        descriptionKey: 'admin.notification.whatsapp.section2.description',
         fields: [
-          { key: 'access_token', label: 'Token de acesso', type: 'password', placeholder: '••••••••••••••••' },
-          { key: 'base_url', label: 'URL base da API', placeholder: 'https://graph.facebook.com/v20.0' },
-          { key: 'webhook_verify_token', label: 'Token de verificação do webhook', placeholder: 'canalgov-whatsapp-verify' },
-          { key: 'default_template', label: 'Template inicial', type: 'textarea', fullWidth: true, placeholder: 'Mensagem padrão de confirmação ou recepção.' }
+          { key: 'access_token', labelKey: 'admin.notification.whatsapp.fields.accessToken', type: 'password', placeholder: '••••••••••••••••' },
+          { key: 'base_url', labelKey: 'admin.notification.whatsapp.fields.baseUrl', placeholder: 'https://graph.facebook.com/v20.0' },
+          { key: 'webhook_verify_token', labelKey: 'admin.notification.whatsapp.fields.webhookVerifyToken', placeholder: 'canalgov-whatsapp-verify' },
+          { key: 'default_template', labelKey: 'admin.notification.whatsapp.fields.defaultTemplate', type: 'textarea', fullWidth: true, placeholder: 'Mensagem padrão de confirmação ou recepção.' }
         ]
       }
     ]
   },
   telegram: {
     title: 'Telegram',
-    description: 'Configure bots, chats e webhook para operação via Telegram.',
-    help: 'Use o bot do Telegram para receber mensagens, notificar equipes e automatizar respostas transacionais.',
-    help2: 'Mapeie grupos, canais ou chats específicos para o fluxo operacional desejado.',
+    descriptionKey: 'admin.notification.telegram.description',
+    statusLabelKey: 'admin.notification.telegram.statusLabel',
+    statusEnabledKey: 'admin.notification.channel.statusEnabled',
+    statusDisabledKey: 'admin.notification.channel.statusDisabled',
     helpItems: [
       {
-        title: 'Bot',
-        description: 'Garanta que o token e o nome do bot correspondam ao ambiente configurado.'
+        titleKey: 'admin.notification.telegram.help1.title',
+        descriptionKey: 'admin.notification.telegram.help1.description'
       },
       {
-        title: 'Destino',
-        description: 'Use chat padrão ou grupos específicos para separar notificações internas e atendimento.'
+        titleKey: 'admin.notification.telegram.help2.title',
+        descriptionKey: 'admin.notification.telegram.help2.description'
       },
       {
-        title: 'Webhook',
-        description: 'Restrinja os updates permitidos ao necessário para reduzir ruído operacional.'
+        titleKey: 'admin.notification.telegram.help3.title',
+        descriptionKey: 'admin.notification.telegram.help3.description'
       },
       {
-        title: 'Mensagem',
-        description: 'Padronize a resposta inicial do bot para orientar a abertura de atendimento.'
+        titleKey: 'admin.notification.telegram.help4.title',
+        descriptionKey: 'admin.notification.telegram.help4.description'
       }
     ],
-    statusLabel: 'Canal de atendimento via Telegram',
     defaults: {
       enabled: false,
       bot_name: '',
@@ -229,52 +234,57 @@ const channelConfigs = {
       default_message: ''
     },
     secretFields: ['bot_token'],
-    events: ['Mensagem recebida', 'Comando do bot', 'Callback de botão', 'Notificação de fila'],
+    events: [
+      'admin.notification.telegram.event1',
+      'admin.notification.telegram.event2',
+      'admin.notification.telegram.event3',
+      'admin.notification.telegram.event4'
+    ],
     sections: [
       {
-        title: 'Bot e destino',
-        description: 'Dados do bot e do chat padrão.',
+        titleKey: 'admin.notification.telegram.section1.title',
+        descriptionKey: 'admin.notification.telegram.section1.description',
         fields: [
-          { key: 'bot_name', label: 'Nome do bot', placeholder: 'CanalGov Bot' },
-          { key: 'default_chat_id', label: 'Chat ID padrão', placeholder: '-1001234567890' }
+          { key: 'bot_name', labelKey: 'admin.notification.telegram.fields.botName', placeholder: 'CanalGov Bot' },
+          { key: 'default_chat_id', labelKey: 'admin.notification.telegram.fields.defaultChatId', placeholder: '-1001234567890' }
         ]
       },
       {
-        title: 'Conectividade',
-        description: 'Credenciais e eventos do webhook.',
+        titleKey: 'admin.notification.telegram.section2.title',
+        descriptionKey: 'admin.notification.telegram.section2.description',
         fields: [
-          { key: 'bot_token', label: 'Token do bot', type: 'password', placeholder: '••••••••••••••••' },
-          { key: 'webhook_url', label: 'URL do webhook', placeholder: 'https://seu-dominio.exemplo.com/telegram/webhook' },
-          { key: 'allowed_updates', label: 'Eventos permitidos', placeholder: 'message,callback_query' },
-          { key: 'default_message', label: 'Mensagem padrão', type: 'textarea', fullWidth: true, placeholder: 'Mensagem inicial enviada pelo bot.' }
+          { key: 'bot_token', labelKey: 'admin.notification.telegram.fields.botToken', type: 'password', placeholder: '••••••••••••••••' },
+          { key: 'webhook_url', labelKey: 'admin.notification.telegram.fields.webhookUrl', placeholder: 'https://seu-dominio.exemplo.com/telegram/webhook' },
+          { key: 'allowed_updates', labelKey: 'admin.notification.telegram.fields.allowedUpdates', placeholder: 'message,callback_query' },
+          { key: 'default_message', labelKey: 'admin.notification.telegram.fields.defaultMessage', type: 'textarea', fullWidth: true, placeholder: 'Mensagem inicial enviada pelo bot.' }
         ]
       }
     ]
   },
   sms: {
     title: 'SMS',
-    description: 'Configure provedores, credenciais e remetente padrão para envio por SMS.',
-    help: 'Ideal para alertas críticos, autenticação, cobranças ou comunicação com usuários sem app dedicado.',
-    help2: 'Defina URL base, chave da API, remetente e regras de fallback por operadora ou país.',
+    descriptionKey: 'admin.notification.sms.description',
+    statusLabelKey: 'admin.notification.sms.statusLabel',
+    statusEnabledKey: 'admin.notification.channel.statusEnabled',
+    statusDisabledKey: 'admin.notification.channel.statusDisabled',
     helpItems: [
       {
-        title: 'Remetente',
-        description: 'Cadastre um sender ID reconhecível para facilitar a identificação da mensagem pelo cidadão.'
+        titleKey: 'admin.notification.sms.help1.title',
+        descriptionKey: 'admin.notification.sms.help1.description'
       },
       {
-        title: 'Credenciais',
-        description: 'Separe chave e segredo por ambiente para evitar envio acidental em produção.'
+        titleKey: 'admin.notification.sms.help2.title',
+        descriptionKey: 'admin.notification.sms.help2.description'
       },
       {
-        title: 'Fallback',
-        description: 'Configure DDI padrão e texto base para suportar alertas transacionais rápidos.'
+        titleKey: 'admin.notification.sms.help3.title',
+        descriptionKey: 'admin.notification.sms.help3.description'
       },
       {
-        title: 'Uso',
-        description: 'Priorize SMS para eventos críticos, autenticação e comunicações sem dependência de aplicativo.'
+        titleKey: 'admin.notification.sms.help4.title',
+        descriptionKey: 'admin.notification.sms.help4.description'
       }
     ],
-    statusLabel: 'Canal de atendimento e alerta por SMS',
     defaults: {
       enabled: false,
       provider: 'twilio',
@@ -286,64 +296,69 @@ const channelConfigs = {
       default_message: ''
     },
     secretFields: ['api_key', 'api_secret'],
-    events: ['Disparo de alerta', 'Confirmação transacional', 'Retentativa de SLA', 'Fallback operacional'],
+    events: [
+      'admin.notification.sms.event1',
+      'admin.notification.sms.event2',
+      'admin.notification.sms.event3',
+      'admin.notification.sms.event4'
+    ],
     sections: [
       {
-        title: 'Provedor e remetente',
-        description: 'Dados básicos do provedor de SMS.',
+        titleKey: 'admin.notification.sms.section1.title',
+        descriptionKey: 'admin.notification.sms.section1.description',
         fields: [
           {
             key: 'provider',
-            label: 'Provedor',
+            labelKey: 'admin.notification.channel.provider',
             type: 'select',
-            placeholder: 'Selecione o provedor',
+            placeholderKey: 'admin.notification.channel.selectProvider',
             options: [
               { value: 'twilio', label: 'Twilio' },
               { value: 'zenvia', label: 'Zenvia' },
               { value: 'totalvoice', label: 'TotalVoice' },
-              { value: 'custom', label: 'Customizado' }
+              { value: 'custom', label: 'globals.terms.custom' }
             ]
           },
-          { key: 'sender_id', label: 'Sender ID', placeholder: 'CANALGOV' }
+          { key: 'sender_id', labelKey: 'admin.notification.sms.fields.senderId', placeholder: 'CANALGOV' }
         ]
       },
       {
-        title: 'Credenciais e padrão de envio',
-        description: 'Autenticação e comportamento padrão do canal.',
+        titleKey: 'admin.notification.sms.section2.title',
+        descriptionKey: 'admin.notification.sms.section2.description',
         fields: [
-          { key: 'api_key', label: 'Chave da API', type: 'password', placeholder: '••••••••••••••••' },
-          { key: 'api_secret', label: 'Segredo da API', type: 'password', placeholder: '••••••••••••••••' },
-          { key: 'base_url', label: 'URL base da API', placeholder: 'https://api.provedor.exemplo.com' },
-          { key: 'fallback_country_code', label: 'DDI padrão', placeholder: '55' },
-          { key: 'default_message', label: 'Mensagem padrão', type: 'textarea', fullWidth: true, placeholder: 'Texto base usado para alertas e confirmações.' }
+          { key: 'api_key', labelKey: 'admin.notification.sms.fields.apiKey', type: 'password', placeholder: '••••••••••••••••' },
+          { key: 'api_secret', labelKey: 'admin.notification.sms.fields.apiSecret', type: 'password', placeholder: '••••••••••••••••' },
+          { key: 'base_url', labelKey: 'admin.notification.sms.fields.baseUrl', placeholder: 'https://api.provedor.exemplo.com' },
+          { key: 'fallback_country_code', labelKey: 'admin.notification.sms.fields.fallbackCountryCode', placeholder: '55' },
+          { key: 'default_message', labelKey: 'admin.notification.sms.fields.defaultMessage', type: 'textarea', fullWidth: true, placeholder: 'Texto base usado para alertas e confirmações.' }
         ]
       }
     ]
   },
   push: {
     title: 'Notificação push',
-    description: 'Configure o envio de notificações push para aplicativos móveis e portais web.',
-    help: 'Use push para avisos operacionais, atualização de protocolos, menções e alertas de SLA.',
-    help2: 'Defina credenciais do provedor, app alvo, segmentos e payload padrão.',
+    descriptionKey: 'admin.notification.push.description',
+    statusLabelKey: 'admin.notification.push.statusLabel',
+    statusEnabledKey: 'admin.notification.channel.statusEnabled',
+    statusDisabledKey: 'admin.notification.channel.statusDisabled',
     helpItems: [
       {
-        title: 'Aplicação',
-        description: 'Associe corretamente app ID e project ID para evitar envio ao app errado.'
+        titleKey: 'admin.notification.push.help1.title',
+        descriptionKey: 'admin.notification.push.help1.description'
       },
       {
-        title: 'Entrega',
-        description: 'Defina tópico padrão e URL de clique para levar o usuário ao fluxo correto.'
+        titleKey: 'admin.notification.push.help2.title',
+        descriptionKey: 'admin.notification.push.help2.description'
       },
       {
-        title: 'Payload',
-        description: 'Use um template simples e previsível para padronizar alertas operacionais.'
+        titleKey: 'admin.notification.push.help3.title',
+        descriptionKey: 'admin.notification.push.help3.description'
       },
       {
-        title: 'Segmentação',
-        description: 'Combine push com menções, SLA e atualizações de protocolo para uma experiência mais útil.'
+        titleKey: 'admin.notification.push.help4.title',
+        descriptionKey: 'admin.notification.push.help4.description'
       }
     ],
-    statusLabel: 'Canal de notificação push',
     defaults: {
       enabled: false,
       provider: 'firebase',
@@ -355,35 +370,40 @@ const channelConfigs = {
       payload_template: '{\n  "title": "Novo alerta",\n  "body": "Você recebeu uma nova atualização."\n}'
     },
     secretFields: ['api_key'],
-    events: ['Nova atribuição', 'Menção em conversa', 'Violação de SLA', 'Atualização de protocolo'],
+    events: [
+      'admin.notification.push.event1',
+      'admin.notification.push.event2',
+      'admin.notification.push.event3',
+      'admin.notification.push.event4'
+    ],
     sections: [
       {
-        title: 'Aplicação e provedor',
-        description: 'Dados do app e do projeto de push.',
+        titleKey: 'admin.notification.push.section1.title',
+        descriptionKey: 'admin.notification.push.section1.description',
         fields: [
           {
             key: 'provider',
-            label: 'Provedor',
+            labelKey: 'admin.notification.channel.provider',
             type: 'select',
-            placeholder: 'Selecione o provedor',
+            placeholderKey: 'admin.notification.channel.selectProvider',
             options: [
               { value: 'firebase', label: 'Firebase Cloud Messaging' },
               { value: 'onesignal', label: 'OneSignal' },
-              { value: 'custom', label: 'Customizado' }
+              { value: 'custom', label: 'globals.terms.custom' }
             ]
           },
-          { key: 'app_id', label: 'ID da aplicação', placeholder: 'canalgov.app' },
-          { key: 'project_id', label: 'ID do projeto', placeholder: 'canalgov-prod' },
-          { key: 'topic_default', label: 'Tópico padrão', placeholder: 'atendimento-geral' }
+          { key: 'app_id', labelKey: 'admin.notification.push.fields.appId', placeholder: 'canalgov.app' },
+          { key: 'project_id', labelKey: 'admin.notification.push.fields.projectId', placeholder: 'canalgov-prod' },
+          { key: 'topic_default', labelKey: 'admin.notification.push.fields.topicDefault', placeholder: 'atendimento-geral' }
         ]
       },
       {
-        title: 'Entrega e payload',
-        description: 'Credenciais e estrutura de notificação.',
+        titleKey: 'admin.notification.push.section2.title',
+        descriptionKey: 'admin.notification.push.section2.description',
         fields: [
-          { key: 'api_key', label: 'Chave / token do servidor', type: 'password', placeholder: '••••••••••••••••' },
-          { key: 'click_action_url', label: 'URL ao clicar', placeholder: 'https://portal.exemplo.com/chamados' },
-          { key: 'payload_template', label: 'Payload padrão', type: 'textarea', fullWidth: true, placeholder: '{ "title": "Novo alerta" }' }
+          { key: 'api_key', labelKey: 'admin.notification.push.fields.apiKey', type: 'password', placeholder: '••••••••••••••••' },
+          { key: 'click_action_url', labelKey: 'admin.notification.push.fields.clickActionUrl', placeholder: 'https://portal.exemplo.com/chamados' },
+          { key: 'payload_template', labelKey: 'admin.notification.push.fields.payloadTemplate', type: 'textarea', fullWidth: true, placeholder: '{ "title": "Novo alerta" }' }
         ]
       }
     ]
@@ -392,6 +412,39 @@ const channelConfigs = {
 
 const config = computed(() => channelConfigs[props.channel])
 const form = reactive({ ...config.value.defaults })
+
+const translatedConfig = computed(() => {
+  const c = config.value
+  return {
+    title: c.title,
+    description: t(c.descriptionKey),
+    statusLabel: t(c.statusLabelKey),
+    statusEnabled: t(c.statusEnabledKey),
+    statusDisabled: t(c.statusDisabledKey),
+    helpItems: c.helpItems.map(item => ({
+      title: t(item.titleKey),
+      description: t(item.descriptionKey)
+    })),
+    events: c.events.map(key => t(key)),
+    sections: c.sections.map(section => ({
+      title: t(section.titleKey),
+      description: t(section.descriptionKey),
+      fields: section.fields.map(field => ({
+        ...field,
+        label: t(field.labelKey),
+        placeholder: field.placeholderKey ? t(field.placeholderKey) : field.placeholder,
+        help: field.helpKey ? t(field.helpKey) : undefined,
+        options: field.options
+          ? field.options.map(opt =>
+              opt.label.startsWith('globals.')
+                ? { ...opt, label: t(opt.label) }
+                : opt
+            )
+          : undefined
+      }))
+    }))
+  }
+})
 
 const channelAPI = {
   whatsapp: {
@@ -422,10 +475,7 @@ async function loadConfig() {
     const response = await channelAPI[props.channel].get()
     Object.assign(form, config.value.defaults, normalizeResponse(response?.data?.data))
   } catch (error) {
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      variant: 'destructive',
-      description: handleHTTPError(error).message
-    })
+    showErrorToast(error)
   } finally {
     isLoading.value = false
   }
@@ -452,15 +502,10 @@ async function saveConfig() {
     )
 
     await channelAPI[props.channel].update(payload)
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      description: `${config.value.title} configurado com sucesso.`
-    })
+    showSuccessToast(t('admin.notification.channel.savedSuccess', { title: config.value.title }))
     await loadConfig()
   } catch (error) {
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      variant: 'destructive',
-      description: handleHTTPError(error).message
-    })
+    showErrorToast(error)
   } finally {
     isSaving.value = false
   }

@@ -156,7 +156,7 @@ import { Input } from '@/components/ui/input'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import ActionBuilder from '@/features/admin/macros/ActionBuilder.vue'
 import { useConversationFilters } from '@/composables/useConversationFilters'
-import { useUsersStore } from '@/stores/users'
+import { useAgentsStore } from '@/stores/agents'
 import { useTeamStore } from '@/stores/team'
 import { getTextFromHTML } from '@/utils/strings.js'
 import { createFormSchema } from './formSchema.js'
@@ -176,7 +176,7 @@ import Editor from '@/components/editor/TextEditor.vue'
 const { macroActions } = useConversationFilters()
 const { t } = useI18n()
 const formLoading = ref(false)
-const uStore = useUsersStore()
+const uStore = useAgentsStore()
 const tStore = useTeamStore()
 const props = defineProps({
   initialValues: {

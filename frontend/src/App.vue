@@ -10,7 +10,7 @@
                 <SidebarMenuItem>
                   <Tooltip>
                     <TooltipTrigger as-child>
-                      <SidebarMenuButton asChild :isActive="route.path.startsWith('/inboxes')">
+                      <SidebarMenuButton asChild :isActive="route.matched.some(r => r.meta?.area === 'inboxes')">
                         <router-link :to="{ name: 'inboxes' }">
                           <Inbox />
                         </router-link>
@@ -24,7 +24,7 @@
                 <SidebarMenuItem v-if="userStore.can('contacts:read_all')">
                   <Tooltip>
                     <TooltipTrigger as-child>
-                      <SidebarMenuButton asChild :isActive="route.path.startsWith('/contacts')">
+                      <SidebarMenuButton asChild :isActive="route.matched.some(r => r.meta?.area === 'contacts')">
                         <router-link :to="{ name: 'contacts' }">
                           <BookUser />
                         </router-link>
@@ -38,7 +38,7 @@
                 <SidebarMenuItem v-if="userStore.hasReportTabPermissions">
                   <Tooltip>
                     <TooltipTrigger as-child>
-                      <SidebarMenuButton asChild :isActive="route.path.startsWith('/reports')">
+                      <SidebarMenuButton asChild :isActive="route.matched.some(r => r.meta?.area === 'reports')">
                         <router-link :to="{ name: 'reports' }">
                           <FileLineChart />
                         </router-link>
@@ -52,7 +52,7 @@
                 <SidebarMenuItem v-if="userStore.hasAdminTabPermissions">
                   <Tooltip>
                     <TooltipTrigger as-child>
-                      <SidebarMenuButton asChild :isActive="route.path.startsWith('/admin')">
+                      <SidebarMenuButton asChild :isActive="route.matched.some(r => r.meta?.area === 'admin')">
                         <router-link
                           :to="{
                             name: userStore.can('general_settings:manage') ? 'general' : 'admin'
@@ -104,7 +104,7 @@
       >
         <div class="flex flex-col h-full rounded-lg overflow-hidden bg-background">
           <!-- Show admin banner only in admin routes -->
-          <AdminBanner v-if="route.path.startsWith('/admin')" />
+          <AdminBanner v-if="route.matched.some(r => r.meta?.area === 'admin')" />
 
           <!-- Common header for all pages -->
           <PageHeader />
@@ -128,13 +128,15 @@
 import { onMounted, ref } from 'vue'
 import { RouterView } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { useAppSettingsStore } from '@/stores/appSettings'
 import { initWS } from '@/websocket.js'
 import { EMITTER_EVENTS } from '@/constants/emitterEvents.js'
+import { REFRESH_MODEL } from '@/constants/conversation'
 import { useEmitter } from '@/composables/useEmitter'
 import { handleHTTPError } from '@/utils/http'
 import { useConversationStore } from './stores/conversation'
 import { useInboxStore } from '@/stores/inbox'
-import { useUsersStore } from '@/stores/users'
+import { useAgentsStore } from '@/stores/agents'
 import { useTeamStore } from '@/stores/team'
 import { useSlaStore } from '@/stores/sla'
 import { useMacroStore } from '@/stores/macro'
@@ -171,8 +173,9 @@ import NotificationBell from '@/components/sidebar/NotificationBell.vue'
 const route = useRoute()
 const emitter = useEmitter()
 const userStore = useUserStore()
+const appSettingsStore = useAppSettingsStore()
 const conversationStore = useConversationStore()
-const usersStore = useUsersStore()
+const usersStore = useAgentsStore()
 const teamStore = useTeamStore()
 const inboxStore = useInboxStore()
 const slaStore = useSlaStore()
@@ -202,11 +205,12 @@ const initStores = async () => {
   }
   await Promise.allSettled([
     getUserViews(),
+    appSettingsStore.fetchPublicConfig(),
     sharedViewStore.loadSharedViews(),
     conversationStore.fetchStatuses(),
     conversationStore.fetchPriorities(),
     conversationStore.fetchAllDrafts(),
-    usersStore.fetchUsers(),
+    usersStore.fetchAgents(),
     teamStore.fetchTeams(),
     inboxStore.fetchInboxes(),
     slaStore.fetchSlas(),
@@ -268,8 +272,7 @@ const listenViewRefresh = () => {
 
 const refreshViews = (data) => {
   openCreateViewForm.value = false
-  // TODO: move model to constants.
-  if (data?.model === 'view') {
+  if (data?.model === REFRESH_MODEL.VIEW) {
     getUserViews()
   }
 }

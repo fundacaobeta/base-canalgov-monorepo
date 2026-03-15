@@ -4,10 +4,10 @@ import (
 	"math/rand"
 	"net/textproto"
 
-	"github.com/abhinavxd/libredesk/internal/attachment"
-	"github.com/abhinavxd/libredesk/internal/inbox/channel/email"
-	"github.com/abhinavxd/libredesk/internal/inbox/models"
-	notifier "github.com/abhinavxd/libredesk/internal/notification"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/attachment"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/inbox/channel/email"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/inbox/models"
+	notifier "github.com/fundacaobeta/base-canalgov-monorepo/internal/notification"
 	"github.com/knadh/smtppool"
 	"github.com/zerodha/logf"
 )

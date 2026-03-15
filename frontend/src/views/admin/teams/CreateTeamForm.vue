@@ -8,42 +8,29 @@
 <script setup>
 import { ref } from 'vue'
 import TeamForm from '@/features/admin/teams/TeamForm.vue'
-import { EMITTER_EVENTS } from '@/constants/emitterEvents.js'
-import { useEmitter } from '@/composables/useEmitter'
-import { handleHTTPError } from '@/utils/http'
 import { CustomBreadcrumb } from '@/components/ui/breadcrumb'
 import { useRouter } from 'vue-router'
+import { useAdminErrorToast } from '@/composables/useAdminErrorToast'
 import { useI18n } from 'vue-i18n'
 import api from '@/api'
 
 const formLoading = ref(false)
 const router = useRouter()
-const emitter = useEmitter()
 const { t } = useI18n()
+const { showErrorToast, showSuccessToast } = useAdminErrorToast()
 const breadcrumbLinks = [
-  { path: 'team-list', label: 'Equipes' },
-  { path: '', label: 'Nova equipe' }
+  { path: 'team-list', label: t('admin.teams.title') },
+  { path: '', label: t('globals.messages.new', { name: t('globals.terms.team') }) }
 ]
 
-const submitForm = (values) => {
-  createTeam(values)
-}
-
-const createTeam = async (values) => {
+const submitForm = async (values) => {
+  formLoading.value = true
   try {
-    formLoading.value = true
     await api.createTeam(values)
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      title: t('globals.terms.success'),
-      description: t('globals.messages.teamCreated')
-    })
+    showSuccessToast(t('globals.messages.teamCreated'))
     router.push({ name: 'team-list' })
   } catch (error) {
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      title: t('globals.terms.error'),
-      variant: 'destructive',
-      description: handleHTTPError(error).message
-    })
+    showErrorToast(error)
   } finally {
     formLoading.value = false
   }

@@ -1,23 +1,47 @@
 <template>
-  <AdminPageWithHelp>
-    <template #content>
-      <router-view />
-    </template>
+  <div>
+    <AdminPageHeader
+      :title="$t('admin.inbox.title')"
+      :description="$t('admin.inbox.description')"
+      :breadcrumbs="[{ label: $t('globals.terms.administration'), to: '/admin' }, { label: $t('admin.inbox.title') }]"
+    >
+      <template v-if="route.name === 'inbox-list'" #actions>
+        <RouterLink :to="{ name: 'new-inbox' }">
+          <Button>
+            <Plus class="h-4 w-4 mr-1.5" aria-hidden="true" />
+            {{ $t('globals.messages.new', { name: $t('globals.terms.inbox') }) }}
+          </Button>
+        </RouterLink>
+      </template>
+    </AdminPageHeader>
 
-    <template #help>
-      <div class="native-html">
-        <p>Conecte sua conta de e-mail Google ou Microsoft, ou configure IMAP e SMTP manualmente.</p>
-        <p>Cada caixa de entrada adicionada cria um novo canal de e-mail para receber mensagens dos clientes.</p>
-        <p>
-          <a href="https://docs.libredesk.io/configuration/connecting-inboxes" target="_blank">
-            Saiba mais
-          </a>
-        </p>
-      </div>
-    </template>
-  </AdminPageWithHelp>
+    <AdminPageWithHelp>
+      <template #content>
+        <router-view />
+      </template>
+
+      <template #help>
+        <p>{{ $t('admin.inbox.help') }}</p>
+        <p>{{ $t('admin.inbox.help2') }}</p>
+        <a
+          href="https://docs.canalgov.io/configuration/connecting-inboxes"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="link-style"
+        >
+          Saiba mais
+        </a>
+      </template>
+    </AdminPageWithHelp>
+  </div>
 </template>
 
 <script setup>
+import { Plus } from 'lucide-vue-next'
+import { useRoute } from 'vue-router'
 import AdminPageWithHelp from '@/layouts/admin/AdminPageWithHelp.vue'
+import AdminPageHeader from '@/components/layout/AdminPageHeader.vue'
+import { Button } from '@/components/ui/button'
+
+const route = useRoute()
 </script>

@@ -12,9 +12,9 @@
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectItem value="Google"> Google </SelectItem>
-                <SelectItem value="Microsoft"> Microsoft </SelectItem>
-                <SelectItem value="Custom"> Custom </SelectItem>
+                <SelectItem value="Google"> {{ $t('admin.oidc.provider.google') }} </SelectItem>
+                <SelectItem value="Microsoft"> {{ $t('admin.oidc.provider.microsoft') }} </SelectItem>
+                <SelectItem value="Custom"> {{ $t('admin.oidc.provider.custom') }} </SelectItem>
               </SelectGroup>
             </SelectContent>
           </Select>

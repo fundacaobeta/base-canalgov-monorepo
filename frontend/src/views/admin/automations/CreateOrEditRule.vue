@@ -190,7 +190,7 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { createFormSchema } from '@/features/admin/automation/formSchema.js'
 import { EMITTER_EVENTS } from '@/constants/emitterEvents.js'
 import { useEmitter } from '@/composables/useEmitter'
-import { handleHTTPError } from '@/utils/http'
+import { useAdminErrorToast } from '@/composables/useAdminErrorToast'
 import { SelectTag } from '@/components/ui/select'
 import { OPERATOR } from '@/constants/filterConfig'
 import { useI18n } from 'vue-i18n'
@@ -220,6 +220,7 @@ const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const emitter = useEmitter()
+const { showErrorToast, showSuccessToast } = useAdminErrorToast()
 const rule = ref({
   id: 0,
   name: '',
@@ -387,16 +388,11 @@ const handleSave = async (values) => {
       await api.createAutomationRule(updatedRule)
       router.push({ name: 'automations' })
     }
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      description: t('globals.messages.savedSuccessfully', {
-        name: t('globals.terms.rule')
-      })
-    })
+    showSuccessToast(t('globals.messages.savedSuccessfully', {
+      name: t('globals.terms.rule')
+    }))
   } catch (error) {
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      variant: 'destructive',
-      description: handleHTTPError(error).message
-    })
+    showErrorToast(error)
   } finally {
     isLoading.value = false
   }
@@ -474,10 +470,7 @@ onMounted(async () => {
       }
       form.setValues(resp.data.data)
     } catch (error) {
-      emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-        variant: 'destructive',
-        description: handleHTTPError(error).message
-      })
+      showErrorToast(error)
     } finally {
       isLoading.value = false
     }

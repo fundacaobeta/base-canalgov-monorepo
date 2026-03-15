@@ -72,12 +72,12 @@
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectItem value="text"> Text </SelectItem>
-                <SelectItem value="number"> Number </SelectItem>
-                <SelectItem value="checkbox"> Checkbox </SelectItem>
-                <SelectItem value="date"> Date </SelectItem>
-                <SelectItem value="link"> Link </SelectItem>
-                <SelectItem value="list"> List </SelectItem>
+                <SelectItem value="text"> {{ $t('admin.customAttributes.type.text') }} </SelectItem>
+                <SelectItem value="number"> {{ $t('admin.customAttributes.type.number') }} </SelectItem>
+                <SelectItem value="checkbox"> {{ $t('admin.customAttributes.type.checkbox') }} </SelectItem>
+                <SelectItem value="date"> {{ $t('admin.customAttributes.type.date') }} </SelectItem>
+                <SelectItem value="link"> {{ $t('admin.customAttributes.type.link') }} </SelectItem>
+                <SelectItem value="list"> {{ $t('admin.customAttributes.type.list') }} </SelectItem>
               </SelectGroup>
             </SelectContent>
           </Select>

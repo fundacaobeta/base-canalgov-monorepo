@@ -67,11 +67,11 @@
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="email">E-mail</SelectItem>
-                  <SelectItem value="official">Comunicado oficial</SelectItem>
-                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                  <SelectItem value="telegram">Telegram</SelectItem>
-                  <SelectItem value="sms">SMS</SelectItem>
+                  <SelectItem value="email">{{ $t('globals.terms.email') }}</SelectItem>
+                  <SelectItem value="official">{{ $t('globals.terms.officialCommunication') }}</SelectItem>
+                  <SelectItem value="whatsapp">{{ $t('globals.terms.whatsapp') }}</SelectItem>
+                  <SelectItem value="telegram">{{ $t('globals.terms.telegram') }}</SelectItem>
+                  <SelectItem value="sms">{{ $t('globals.terms.sms') }}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -147,27 +147,27 @@ const enabledResponseChannels = useStorage('replyBoxEnabledResponseChannels', [
 const channelOptions = computed(() => [
   {
     value: 'email',
-    label: 'E-mail',
+    label: t('globals.terms.email'),
     description: t('account.preferences.channelDescription.email')
   },
   {
     value: 'official',
-    label: 'Comunicado oficial',
+    label: t('globals.terms.officialCommunication'),
     description: t('account.preferences.channelDescription.official')
   },
   {
     value: 'whatsapp',
-    label: 'WhatsApp',
+    label: t('globals.terms.whatsapp'),
     description: t('account.preferences.channelDescription.whatsapp')
   },
   {
     value: 'telegram',
-    label: 'Telegram',
+    label: t('globals.terms.telegram'),
     description: t('account.preferences.channelDescription.telegram')
   },
   {
     value: 'sms',
-    label: 'SMS',
+    label: t('globals.terms.sms'),
     description: t('account.preferences.channelDescription.sms')
   }
 ])

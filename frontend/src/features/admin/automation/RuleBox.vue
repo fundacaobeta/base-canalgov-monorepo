@@ -154,8 +154,8 @@
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem value="true">True</SelectItem>
-                    <SelectItem value="false">False</SelectItem>
+                    <SelectItem value="true">{{ $t('globals.terms.true') }}</SelectItem>
+                    <SelectItem value="false">{{ $t('globals.terms.false') }}</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>

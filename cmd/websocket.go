@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 
-	amodels "github.com/abhinavxd/libredesk/internal/auth/models"
-	"github.com/abhinavxd/libredesk/internal/ws"
-	wsmodels "github.com/abhinavxd/libredesk/internal/ws/models"
+	amodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/auth/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/ws"
+	wsmodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/ws/models"
 	"github.com/fasthttp/websocket"
 	"github.com/valyala/fasthttp"
 	"github.com/zerodha/fastglue"

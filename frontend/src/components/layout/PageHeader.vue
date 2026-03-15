@@ -15,8 +15,10 @@ import { computed } from 'vue'
 import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 const route = useRoute()
-const title = computed(() => route.meta.title || '')
+const { t } = useI18n()
+const title = computed(() => (route.meta.title ? t(route.meta.title) : ''))
 const isHidden = computed(() => route.meta.hidePageHeader === true)
 </script>

@@ -16,7 +16,7 @@
         name: 'inbox-conversation',
         params: {
           uuid: conversation.uuid,
-          type: 'assigned'
+          type: inboxTypeParam('assigned')
         }
       }"
       class="block p-2 rounded hover:bg-muted"
@@ -77,6 +77,8 @@ import { useConversationStore } from '@/stores/conversation'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { formatFullTimestamp } from '@/utils/datetime'
 import DateTimeMeta from '@/components/datetime/DateTimeMeta.vue'
+import { useInboxTypes } from '@/composables/useInboxTypes'
 
 const conversationStore = useConversationStore()
+const { toParam: inboxTypeParam } = useInboxTypes()
 </script>

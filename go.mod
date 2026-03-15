@@ -1,4 +1,4 @@
-module github.com/abhinavxd/libredesk
+module github.com/fundacaobeta/base-canalgov-monorepo
 
 go 1.25.0
 
@@ -43,6 +43,7 @@ require (
 	golang.org/x/crypto v0.45.0
 	golang.org/x/mod v0.29.0
 	golang.org/x/oauth2 v0.27.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -79,5 +80,4 @@ require (
 	golang.org/x/net v0.47.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
 	golang.org/x/text v0.31.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

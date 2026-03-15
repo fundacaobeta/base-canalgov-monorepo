@@ -8,9 +8,9 @@ import (
 	"strings"
 	"sync"
 
-	cmodels "github.com/abhinavxd/libredesk/internal/conversation/models"
-	"github.com/abhinavxd/libredesk/internal/envelope"
-	umodels "github.com/abhinavxd/libredesk/internal/user/models"
+	cmodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/conversation/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/envelope"
+	umodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/user/models"
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
 	"github.com/knadh/go-i18n"
@@ -38,7 +38,7 @@ const casbinModel = `
 	e = some(where (p.eft == allow))
 
 	[matchers]
-	m = r.sub == p.sub && r.obj == p.obj && r.act == p.act
+	m = r.sub == p.sub && (p.obj == "*" || r.obj == p.obj) && (p.act == "*" || r.act == p.act)
 `
 
 // NewEnforcer initializes a new Enforcer with the hardcoded model
@@ -76,9 +76,16 @@ func (e *Enforcer) LoadPermissions(user umodels.User) error {
 	var policies [][]string
 	userID := strconv.Itoa(user.ID)
 	for _, perm := range user.Permissions {
+		if perm == "*" {
+			// Super admin wildcard.
+			policies = append(policies, []string{userID, "*", "*"})
+			continue
+		}
+
 		parts := strings.Split(perm, ":")
 		if len(parts) != 2 {
-			return fmt.Errorf("invalid permission format: %s", perm)
+			e.lo.Warn("ignoring invalid permission format", "permission", perm, "user_id", user.ID)
+			continue
 		}
 		policies = append(policies, []string{userID, parts[0], parts[1]})
 	}
@@ -148,57 +155,58 @@ func (e *Enforcer) EnforceConversationAccess(user umodels.User, conversation cmo
 			e.lo.Error("error enforcing permission", "user_id", user.ID, "conversation_id", conversation.ID, "error", err)
 			return false, envelope.NewError(envelope.GeneralError, e.i18n.Ts("globals.messages.errorChecking", "name", "{globals.terms.permission}"), nil)
 		}
-		if !allowed {
-			e.lo.Debug("permission denied", "user_id", user.ID, "action", action, "conversation_id", conversation.ID)
-		}
 		return allowed, nil
 	}
 
-	// Check `read` permission
-	if allowed, err := checkPermission("read"); err != nil || !allowed {
-		return allowed, err
+	// Check basic `read` permission
+	readAllowed, err := checkPermission("read")
+	if err != nil {
+		return false, err
+	}
+	if !readAllowed {
+		return false, nil
 	}
 
-	// Check `read_all` permission
-	if allowed, err := checkPermission("read_all"); err != nil || allowed {
-		return allowed, err
+	// 1. User has the "read_all" permission, allowing access to all conversations.
+	if allowed, _ := checkPermission("read_all"); allowed {
+		return true, nil
 	}
 
-	// Check `read_assigned` permission for user-assigned conversations
+	// 2. User has the "read_assigned" permission and is the assigned user.
 	if conversation.AssignedUserID.Int == user.ID {
-		if allowed, err := checkPermission("read_assigned"); err != nil || allowed {
-			return allowed, err
+		if allowed, _ := checkPermission("read_assigned"); allowed {
+			return true, nil
 		}
 	}
 
-	// Check `read_team_all` permission for all team conversations (superset - includes assigned to teammates)
+	// 3. User has the "read_team_all" permission and is part of the assigned team.
 	if conversation.AssignedTeamID.Int > 0 && slices.Contains(user.Teams.IDs(), conversation.AssignedTeamID.Int) {
-		if allowed, err := checkPermission("read_team_all"); err != nil || allowed {
-			return allowed, err
+		if allowed, _ := checkPermission("read_team_all"); allowed {
+			return true, nil
 		}
 	}
 
-	// Check `read_team_inbox` permission for team-assigned conversations (no user assigned)
+	// 4. User has the "read_team_inbox" permission and is part of the assigned team, with the conversation NOT assigned to any user.
 	if conversation.AssignedTeamID.Int > 0 && slices.Contains(user.Teams.IDs(), conversation.AssignedTeamID.Int) && conversation.AssignedUserID.Int == 0 {
-		if allowed, err := checkPermission("read_team_inbox"); err != nil || allowed {
-			return allowed, err
+		if allowed, _ := checkPermission("read_team_inbox"); allowed {
+			return true, nil
 		}
 	}
 
-	// Check `read_unassigned` permission for unassigned conversations
+	// 5. User has the "read_unassigned" permission and the conversation is not assigned to any user or team.
 	if conversation.AssignedUserID.Int == 0 && conversation.AssignedTeamID.Int == 0 {
-		if allowed, err := checkPermission("read_unassigned"); err != nil || allowed {
-			return allowed, err
+		if allowed, _ := checkPermission("read_unassigned"); allowed {
+			return true, nil
 		}
 	}
+
 	return false, nil
 }
 
 // EnforceMediaAccess checks for read access on linked model to media.
 func (e *Enforcer) EnforceMediaAccess(user umodels.User, model string) (bool, error) {
 	switch model {
-	// TODO: Pick this table / model name from the package/models/models.go
-	case "messages":
+	case cmodels.MessageTableName:
 		allowed, err := e.Enforce(user, model, "read")
 		if err != nil {
 			e.lo.Error("error enforcing permission", "user_id", user.ID, "model", model, "error", err)

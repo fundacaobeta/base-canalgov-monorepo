@@ -112,27 +112,40 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
 
-    --primary: 240 5.9% 10%;
+    /* Gov.BR brand blue — white-label customizable */
+    --primary: 220 79% 39%;
     --primary-foreground: 0 0% 98%;
 
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 10% 25%;
 
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 8% 46%;
 
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
+    --accent: 220 14% 93%;
+    --accent-foreground: 220 10% 20%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 4 82% 56%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
-    --radius: 0.5rem;
+    --success: 128 43% 30%;
+    --success-foreground: 0 0% 98%;
+    --success-bg: 128 50% 95%;
+
+    --warning: 38 92% 40%;
+    --warning-foreground: 0 0% 98%;
+    --warning-bg: 45 95% 94%;
+
+    --info: 220 79% 39%;
+    --info-foreground: 0 0% 98%;
+    --info-bg: 220 80% 96%;
+
+    --border: 220 13% 90%;
+    --input: 220 13% 90%;
+    --ring: 220 79% 39%;
+    --radius: 0.375rem;
     --private: 35 90% 94%;
-    --canvas: 240 5% 90%;
+    --canvas: 220 10% 91%;
   }
 
   .dark {
@@ -270,7 +283,75 @@
 // Components
 @layer components {
   .link-style {
-    @apply text-blue-500 hover:underline;
+    @apply text-primary hover:underline;
+  }
+
+  /* ─── Page Header ───────────────────────────────────── */
+  .page-header {
+    @apply mb-6 pb-5 border-b border-border;
+  }
+  .page-header-inner {
+    @apply flex items-start justify-between gap-4;
+  }
+  .page-title {
+    @apply text-xl font-semibold tracking-tight text-foreground;
+  }
+  .page-description {
+    @apply mt-0.5 text-sm text-muted-foreground leading-relaxed;
+  }
+
+  /* ─── Section divider ───────────────────────────────── */
+  .form-section {
+    @apply space-y-4 pt-6 first:pt-0;
+  }
+  .form-section-title {
+    @apply text-sm font-semibold text-foreground uppercase tracking-wider pb-2
+           border-b border-border mb-4;
+  }
+
+  /* ─── Status badges ─────────────────────────────────── */
+  .badge-success {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5
+           text-xs font-medium border
+           bg-[hsl(var(--success-bg))] text-[hsl(var(--success))]
+           border-[hsl(128_30%_82%)];
+  }
+  .badge-warning {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5
+           text-xs font-medium border
+           bg-[hsl(var(--warning-bg))] text-[hsl(var(--warning))]
+           border-[hsl(38_70%_78%)];
+  }
+  .badge-info {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5
+           text-xs font-medium border
+           bg-[hsl(var(--info-bg))] text-[hsl(var(--info))]
+           border-[hsl(220_60%_82%)];
+  }
+  .badge-neutral {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5
+           text-xs font-medium border
+           bg-muted text-muted-foreground border-border;
+  }
+
+  /* ─── Help panel ────────────────────────────────────── */
+  .help-panel {
+    @apply rounded-lg border border-border bg-card p-4 space-y-3;
+    border-left: 3px solid hsl(var(--primary) / 0.4);
+  }
+  .help-panel-title {
+    @apply text-xs font-semibold uppercase tracking-wider text-primary/70 mb-3;
+  }
+  .help-item {
+    @apply flex gap-3 text-sm text-muted-foreground leading-relaxed;
+  }
+  .help-item-icon {
+    @apply mt-0.5 h-4 w-4 shrink-0 text-primary;
+  }
+
+  /* ─── Admin content area ────────────────────────────── */
+  .admin-content {
+    @apply max-w-5xl;
   }
 }
 

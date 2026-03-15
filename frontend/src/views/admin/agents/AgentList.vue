@@ -1,6 +1,5 @@
 <template>
-  <Spinner v-if="isLoading" />
-  <div :class="{ 'transition-opacity duration-300 opacity-50': isLoading }">
+  <div>
     <div class="flex justify-end mb-5 gap-2">
       <Importer
         entity-key="globals.terms.agent"
@@ -8,63 +7,39 @@
         :get-status-fn="api.getAgentImportStatus"
         @import-complete="getData"
       />
-      <router-link :to="{ name: 'new-agent' }">
-        <Button>{{
-          $t('globals.messages.new', {
-            name: $t('globals.terms.agent', 1)
-          })
-        }}</Button>
-      </router-link>
     </div>
-    <div>
-      <DataTable :columns="createColumns(t)" :data="data" :loading="isLoading" />
-    </div>
+    <DataTable :columns="createColumns(t)" :data="data" :loading="isLoading" />
   </div>
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue'
+import { ref } from 'vue'
 import { createColumns } from '@/features/admin/agents/dataTableColumns.js'
-import { Button } from '@/components/ui/button'
 import DataTable from '@/components/datatable/DataTable.vue'
-import { handleHTTPError } from '@/utils/http'
-import { Spinner } from '@/components/ui/spinner'
-import { useEmitter } from '@/composables/useEmitter'
-import { EMITTER_EVENTS } from '@/constants/emitterEvents.js'
-import { useUsersStore } from '@/stores/users'
+import { useAgentsStore } from '@/stores/agents'
 import { useI18n } from 'vue-i18n'
 import Importer from '@/components/importer/Importer.vue'
+import { useAdminListRefresh } from '@/composables/useAdminListRefresh'
+import { useAdminErrorToast } from '@/composables/useAdminErrorToast'
 import api from '@/api'
 
 const isLoading = ref(false)
-const usersStore = useUsersStore()
+const usersStore = useAgentsStore()
 const { t } = useI18n()
 const data = ref([])
-const emitter = useEmitter()
-
-onMounted(async () => {
-  getData()
-  emitter.on(EMITTER_EVENTS.REFRESH_LIST, (data) => {
-    if (data?.model === 'agent') getData()
-  })
-})
-
-onUnmounted(() => {
-  emitter.off(EMITTER_EVENTS.REFRESH_LIST)
-})
+const { showErrorToast } = useAdminErrorToast()
 
 const getData = async () => {
+  isLoading.value = true
   try {
-    isLoading.value = true
-    await usersStore.fetchUsers(true)
-    data.value = usersStore.users
+    await usersStore.fetchAgents(true)
+    data.value = usersStore.agents
   } catch (error) {
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      variant: 'destructive',
-      description: handleHTTPError(error).message
-    })
+    showErrorToast(error)
   } finally {
     isLoading.value = false
   }
 }
+
+useAdminListRefresh('agent', getData)
 </script>

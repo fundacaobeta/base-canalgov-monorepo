@@ -16,14 +16,14 @@
     <Collapsible v-model:open="helpOpen" class="box p-5">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div class="space-y-1">
-          <h3 class="font-medium">Ajuda integrada</h3>
+          <h3 class="font-medium">{{ $t('admin.notification.integratedHelp') }}</h3>
           <p class="text-sm text-muted-foreground">
-            Referências rápidas para configurar este canal com segurança e consistência operacional.
+            {{ $t('admin.notification.helpDescription') }}
           </p>
         </div>
         <CollapsibleTrigger as-child>
           <Button type="button" variant="outline">
-            {{ helpOpen ? 'Ocultar ajuda' : 'Abrir ajuda' }}
+            {{ helpOpen ? $t('admin.notification.hideHelp') : $t('admin.notification.showHelp') }}
           </Button>
         </CollapsibleTrigger>
       </div>

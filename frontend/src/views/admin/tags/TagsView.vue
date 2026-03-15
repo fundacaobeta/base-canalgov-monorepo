@@ -1,49 +1,42 @@
 <template>
   <div>
-    <Spinner v-if="isLoading" />
+    <AdminPageHeader
+      :title="t('globals.terms.tag', 2)"
+      :description="t('admin.tags.description', 'Categorize conversas para organizar e filtrar atendimentos.')"
+      :breadcrumbs="[{ label: $t('globals.terms.administration'), to: '/admin' }, { label: t('globals.terms.tag', 2) }]"
+    >
+      <template #actions>
+        <Dialog v-model:open="dialogOpen">
+          <DialogTrigger as-child>
+            <Button>
+              <Plus class="h-4 w-4 mr-1.5" aria-hidden="true" />
+              {{ t('globals.messages.new', { name: t('globals.terms.tag') }) }}
+            </Button>
+          </DialogTrigger>
+          <DialogContent class="sm:max-w-[440px]">
+            <DialogHeader>
+              <DialogTitle>{{ t('globals.messages.new', { name: t('globals.terms.tag') }) }}</DialogTitle>
+              <DialogDescription>{{ t('admin.conversationTags.new.description') }}</DialogDescription>
+            </DialogHeader>
+            <TagsForm @submit.prevent="onSubmit">
+              <template #footer>
+                <DialogFooter class="mt-6 gap-2">
+                  <Button variant="outline" type="button" @click="dialogOpen = false">
+                    {{ t('globals.messages.cancel') }}
+                  </Button>
+                  <Button type="submit">{{ t('globals.messages.save') }}</Button>
+                </DialogFooter>
+              </template>
+            </TagsForm>
+          </DialogContent>
+        </Dialog>
+      </template>
+    </AdminPageHeader>
+
     <AdminPageWithHelp>
       <template #content>
-        <div :class="{ 'transition-opacity duration-300 opacity-50': isLoading }">
-          <div class="flex justify-between mb-5">
-            <div class="flex justify-end mb-4 w-full">
-              <Dialog v-model:open="dialogOpen">
-                <DialogTrigger as-child>
-                  <Button class="ml-auto">{{
-                    t('globals.messages.new', {
-                      name: t('globals.terms.tag')
-                    })
-                  }}</Button>
-                </DialogTrigger>
-                <DialogContent class="sm:max-w-[425px]">
-                  <DialogHeader>
-                    <DialogTitle class="mb-1">
-                      {{
-                        t('globals.messages.new', {
-                          name: t('globals.terms.tag')
-                        })
-                      }}
-                    </DialogTitle>
-                    <DialogDescription>
-                      {{ t('admin.conversationTags.new.description') }}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <TagsForm @submit.prevent="onSubmit">
-                    <template #footer>
-                      <DialogFooter class="mt-10">
-                        <Button type="submit">{{ t('globals.messages.save') }}</Button>
-                      </DialogFooter>
-                    </template>
-                  </TagsForm>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </div>
-          <div>
-            <DataTable :columns="createColumns(t)" :data="tags" :loading="isLoading" />
-          </div>
-        </div>
+        <DataTable :columns="createColumns(t)" :data="tags" :loading="isLoading" />
       </template>
-
       <template #help>
         <p>{{ t('admin.tags.help') }}</p>
       </template>
@@ -52,70 +45,55 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
+import { Plus } from 'lucide-vue-next'
 import DataTable from '@/components/datatable/DataTable.vue'
 import AdminPageWithHelp from '@/layouts/admin/AdminPageWithHelp.vue'
-import { Spinner } from '@/components/ui/spinner'
+import AdminPageHeader from '@/components/layout/AdminPageHeader.vue'
 import { createColumns } from '@/features/admin/tags/dataTableColumns.js'
 import { Button } from '@/components/ui/button'
-
 import TagsForm from '@/features/admin/tags/TagsForm.vue'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
+  Dialog, DialogContent, DialogDescription,
+  DialogFooter, DialogHeader, DialogTitle, DialogTrigger
 } from '@/components/ui/dialog'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
-import { createFormSchema } from '../../../features/admin/tags/formSchema.js'
-import { useEmitter } from '@/composables/useEmitter'
-import { EMITTER_EVENTS } from '@/constants/emitterEvents.js'
-import { handleHTTPError } from '@/utils/http'
+import { createFormSchema } from '@/features/admin/tags/formSchema.js'
+import { useAdminListRefresh } from '@/composables/useAdminListRefresh'
+import { useAdminErrorToast } from '@/composables/useAdminErrorToast'
 import { useI18n } from 'vue-i18n'
 import api from '@/api'
 
 const { t } = useI18n()
 const isLoading = ref(false)
 const tags = ref([])
-const emitter = useEmitter()
 const dialogOpen = ref(false)
-
-onMounted(() => {
-  getTags()
-  emitter.on(EMITTER_EVENTS.REFRESH_LIST, (data) => {
-    if (data?.model === 'tags') getTags()
-  })
-})
-
-const form = useForm({
-  validationSchema: toTypedSchema(createFormSchema(t))
-})
+const { showErrorToast, showSuccessToast } = useAdminErrorToast()
 
 const getTags = async () => {
   isLoading.value = true
-  const resp = await api.getTags()
-  tags.value = resp.data.data
-  isLoading.value = false
+  try {
+    const resp = await api.getTags()
+    tags.value = resp.data.data
+  } finally {
+    isLoading.value = false
+  }
 }
+
+useAdminListRefresh('tags', getTags)
+
+const form = useForm({ validationSchema: toTypedSchema(createFormSchema(t)) })
 
 const onSubmit = form.handleSubmit(async (values) => {
   isLoading.value = true
   try {
     await api.createTag(values)
     dialogOpen.value = false
-    getTags()
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      description: t('globals.messages.createdSuccessfully', { name: t('globals.terms.tag') }),
-    })
+    showSuccessToast(t('globals.messages.createdSuccessfully', { name: t('globals.terms.tag') }))
+    await getTags()
   } catch (error) {
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      variant: 'destructive',
-      description: handleHTTPError(error).message
-    })
+    showErrorToast(error)
   } finally {
     isLoading.value = false
   }

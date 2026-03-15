@@ -1,0 +1,9 @@
+{
+  "activityLog.type.agentLogin": "Login do agente",
+  "activityLog.type.agentLogout": "Logout do agente",
+  "activityLog.type.agentAway": "Agente ausente",
+  "activityLog.type.agentAwayReassigned": "Agente ausente com redistribuição",
+  "activityLog.type.agentOnline": "Agente online",
+  "activityLog.type.agentPasswordSet": "Senha do agente definida",
+  "activityLog.type.agentRolePermissionsChanged": "Permissões da função do agente alteradas"
+}

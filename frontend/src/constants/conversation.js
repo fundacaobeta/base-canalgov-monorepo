@@ -20,3 +20,17 @@ export const MACRO_CONTEXT = {
   REPLY: 'reply',
   NEW_CONVERSATION: 'new-conversation'
 }
+
+export const CONVERSATION_SORT_FIELD_MAP = {
+  oldest: { model: 'conversations', field: 'last_message_at', order: 'asc' },
+  newest: { model: 'conversations', field: 'last_message_at', order: 'desc' },
+  started_first: { model: 'conversations', field: 'created_at', order: 'asc' },
+  started_last: { model: 'conversations', field: 'created_at', order: 'desc' },
+  waiting_longest: { model: 'conversations', field: 'waiting_since', order: 'asc' },
+  next_sla_target: { model: 'conversations', field: 'next_sla_deadline_at', order: 'asc' },
+  priority_first: { model: 'conversations', field: 'priority_id', order: 'desc' }
+}
+
+export const REFRESH_MODEL = {
+  VIEW: 'view'
+}

@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/abhinavxd/libredesk/internal/automation/models"
-	cmodels "github.com/abhinavxd/libredesk/internal/conversation/models"
-	umodels "github.com/abhinavxd/libredesk/internal/user/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/automation/models"
+	cmodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/conversation/models"
+	umodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/user/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/volatiletech/null/v9"
@@ -1114,7 +1114,7 @@ func TestMockVerificationPrecision(t *testing.T) {
 	}
 	
 	conversation := createTestConversation(func(c *cmodels.Conversation) {
-		c.Contact.Email = null.StringFrom("libredesk.io@gmail.com")
+		c.Contact.Email = null.StringFrom("canalgov.io@gmail.com")
 	})
 	
 	// Set up precise expectation
@@ -1128,7 +1128,7 @@ func TestMockVerificationPrecision(t *testing.T) {
 				{
 					LogicalOp: models.OperatorOR,
 					Rules: []models.RuleDetail{
-						{Field: models.ContactEmail, Operator: models.RuleOperatorEquals, Value: "libredesk.io@gmail.com", FieldType: models.FieldTypeConversationField},
+						{Field: models.ContactEmail, Operator: models.RuleOperatorEquals, Value: "canalgov.io@gmail.com", FieldType: models.FieldTypeConversationField},
 					},
 				},
 			},

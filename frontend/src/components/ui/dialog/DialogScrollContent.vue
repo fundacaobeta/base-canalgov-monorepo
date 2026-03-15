@@ -8,6 +8,8 @@ import {
   useForwardPropsEmits
 } from 'radix-vue'
 import { cn } from '@/lib/utils'
+import { Cross2Icon } from '@radix-icons/vue'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps({
   forceMount: { type: Boolean, required: false },
@@ -25,6 +27,8 @@ const emits = defineEmits([
   'openAutoFocus',
   'closeAutoFocus'
 ])
+
+const { t } = useI18n();
 
 const delegatedProps = computed(() => {
   const { class: _, ...delegated } = props
@@ -67,7 +71,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
           class="absolute top-4 right-4 p-0.5 transition-colors rounded-md hover:bg-secondary"
         >
           <Cross2Icon class="w-4 h-4" />
-          <span class="sr-only">Close</span>
+          <span class="sr-only">{{ t('globals.ui.close') }}</span>
         </DialogClose>
       </DialogContent>
     </DialogOverlay>

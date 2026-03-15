@@ -8,9 +8,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/abhinavxd/libredesk/internal/dbutil"
-	"github.com/abhinavxd/libredesk/internal/envelope"
-	"github.com/abhinavxd/libredesk/internal/report/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/dbutil"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/envelope"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/report/models"
 	"github.com/jmoiron/sqlx"
 	"github.com/knadh/go-i18n"
 	"github.com/zerodha/logf"
@@ -43,6 +43,13 @@ type queries struct {
 	GetOverviewCSAT            string `query:"get-overview-csat"`
 	GetOverviewMessageVolume   string `query:"get-overview-message-volume"`
 	GetOverviewTagDistribution string `query:"get-overview-tag-distribution"`
+
+	// Custom reports.
+	GetCustomReports   *sqlx.Stmt `query:"get-custom-reports"`
+	GetCustomReport    *sqlx.Stmt `query:"get-custom-report"`
+	InsertCustomReport *sqlx.Stmt `query:"insert-custom-report"`
+	UpdateCustomReport *sqlx.Stmt `query:"update-custom-report"`
+	DeleteCustomReport *sqlx.Stmt `query:"delete-custom-report"`
 }
 
 // New creates and returns a new instance of the Manager.
@@ -195,4 +202,78 @@ func (m *Manager) GetOverviewTagDistribution(days int) (json.RawMessage, error) 
 		return nil, envelope.NewError(envelope.GeneralError, m.i18n.Ts("globals.messages.errorFetching", "name", "{globals.terms.tag}"), nil)
 	}
 	return stats, nil
+}
+
+// GetCustomReports returns all custom reports.
+func (m *Manager) GetCustomReports() ([]models.CustomReport, error) {
+	var reports []models.CustomReport
+	if err := m.q.GetCustomReports.Select(&reports); err != nil {
+		m.lo.Error("error fetching custom reports", "error", err)
+		return nil, envelope.NewError(envelope.GeneralError, m.i18n.Ts("globals.messages.errorFetching", "name", "{globals.terms.report}"), nil)
+	}
+	return reports, nil
+}
+
+// GetCustomReport returns a single custom report by ID.
+func (m *Manager) GetCustomReport(id int) (models.CustomReport, error) {
+	var report models.CustomReport
+	if err := m.q.GetCustomReport.Get(&report, id); err != nil {
+		m.lo.Error("error fetching custom report", "error", err)
+		return report, envelope.NewError(envelope.GeneralError, m.i18n.Ts("globals.messages.errorFetching", "name", "{globals.terms.report}"), nil)
+	}
+	return report, nil
+}
+
+// CreateCustomReport creates a new custom report.
+func (m *Manager) CreateCustomReport(r models.CustomReport) (models.CustomReport, error) {
+	var result models.CustomReport
+	if err := m.q.InsertCustomReport.Get(&result, r.Name, r.Description, r.ChartType, r.MetricType, r.Filters, r.CreatedByID); err != nil {
+		m.lo.Error("error creating custom report", "error", err)
+		return result, envelope.NewError(envelope.GeneralError, m.i18n.Ts("globals.messages.errorCreating", "name", "{globals.terms.report}"), nil)
+	}
+	return result, nil
+}
+
+// UpdateCustomReport updates an existing custom report.
+func (m *Manager) UpdateCustomReport(id int, r models.CustomReport) (models.CustomReport, error) {
+	var result models.CustomReport
+	if err := m.q.UpdateCustomReport.Get(&result, id, r.Name, r.Description, r.ChartType, r.MetricType, r.Filters); err != nil {
+		m.lo.Error("error updating custom report", "error", err)
+		return result, envelope.NewError(envelope.GeneralError, m.i18n.Ts("globals.messages.errorUpdating", "name", "{globals.terms.report}"), nil)
+	}
+	return result, nil
+}
+
+// DeleteCustomReport deletes a custom report.
+func (m *Manager) DeleteCustomReport(id int) error {
+	if _, err := m.q.DeleteCustomReport.Exec(id); err != nil {
+		m.lo.Error("error deleting custom report", "error", err)
+		return envelope.NewError(envelope.GeneralError, m.i18n.Ts("globals.messages.errorDeleting", "name", "{globals.terms.report}"), nil)
+	}
+	return nil
+}
+
+// ExecuteCustomReport runs the custom report and returns the aggregated data.
+func (m *Manager) ExecuteCustomReport(id int) ([]models.CustomReportResult, error) {
+	_, err := m.GetCustomReport(id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Dynamic aggregation based on filters.
+	// For now, grouping by status as a baseline.
+	query := `
+		SELECT cs.name AS label, COUNT(c.id)::float8 AS value
+		FROM conversations c
+		JOIN conversation_statuses cs ON cs.id = c.status_id
+		WHERE c.deleted_at IS NULL
+		GROUP BY cs.name`
+
+	var results []models.CustomReportResult
+	if err := m.db.Select(&results, query); err != nil {
+		m.lo.Error("error executing custom report", "error", err)
+		return nil, envelope.NewError(envelope.GeneralError, m.i18n.Ts("globals.messages.errorFetching", "name", "{globals.terms.report}"), nil)
+	}
+
+	return results, nil
 }

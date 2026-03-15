@@ -1,0 +1,9 @@
+{
+  "activityLog.type.agentLogin": "Agent login",
+  "activityLog.type.agentLogout": "Agent logout",
+  "activityLog.type.agentAway": "Agent away",
+  "activityLog.type.agentAwayReassigned": "Agent away reassigned",
+  "activityLog.type.agentOnline": "Agent online",
+  "activityLog.type.agentPasswordSet": "Agent password set",
+  "activityLog.type.agentRolePermissionsChanged": "Agent role permissions changed"
+}

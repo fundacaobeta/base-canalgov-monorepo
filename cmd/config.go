@@ -3,13 +3,14 @@ package main
 import (
 	"encoding/json"
 
-	"github.com/abhinavxd/libredesk/internal/envelope"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/envelope"
 	"github.com/zerodha/fastglue"
 )
 
 // handleGetConfig returns the public configuration needed for app initialization, this includes minimal app settings and enabled SSO providers (without secrets).
 func handleGetConfig(r *fastglue.Request) error {
 	var app = r.Context.(*App)
+	app.auth.SetCSRFCookie(r)
 
 	// Get app settings
 	settingsJSON, err := app.setting.GetByPrefix("app")
@@ -30,6 +31,7 @@ func handleGetConfig(r *fastglue.Request) error {
 		"app.favicon_url": settings["app.favicon_url"],
 		"app.logo_url":    settings["app.logo_url"],
 		"app.site_name":   settings["app.site_name"],
+		"version":         buildString,
 	}
 
 	// Get all OIDC providers

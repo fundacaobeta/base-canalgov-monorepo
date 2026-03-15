@@ -59,23 +59,23 @@ import { CheckCircle, Circle } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { useInboxStore } from '@/stores/inbox'
-import { useUsersStore } from '@/stores/users'
+import { useAgentsStore } from '@/stores/agents'
 
 const router = useRouter()
 const inboxStore = useInboxStore()
-const usersStore = useUsersStore()
+const usersStore = useAgentsStore()
 const isLoading = ref(true)
 
 onMounted(async () => {
   try {
-    await Promise.all([inboxStore.fetchInboxes(), usersStore.fetchUsers()])
+    await Promise.all([inboxStore.fetchInboxes(), usersStore.fetchAgents()])
   } finally {
     isLoading.value = false
   }
 })
 
 const hasInboxes = computed(() => inboxStore.inboxes.length > 0)
-const hasAgents = computed(() => usersStore.users.length > 0)
+const hasAgents = computed(() => usersStore.agents.length > 0)
 const showGettingStarted = computed(() => !hasInboxes.value || !hasAgents.value)
 </script>
 

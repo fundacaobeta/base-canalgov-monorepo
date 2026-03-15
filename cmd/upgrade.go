@@ -1,16 +1,17 @@
 // Copyright Kailash Nadh (https://github.com/knadh/listmonk)
 // SPDX-License-Identifier: AGPL-3.0
-// Adapted from listmonk for Libredesk.
+// Adapted from listmonk for CanalGov.
 
 package main
 
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
-	"github.com/abhinavxd/libredesk/internal/dbutil"
-	"github.com/abhinavxd/libredesk/internal/migrations"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/dbutil"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/migrations"
 	"github.com/jmoiron/sqlx"
 	"github.com/knadh/koanf/v2"
 	"github.com/knadh/stuffbin"
@@ -43,6 +44,11 @@ var migList = []migFunc{
 		{"v1.0.2", migrations.V1_0_2},
 		{"v1.0.3", migrations.V1_0_3},
 		{"v1.0.4", migrations.V1_0_4},
+		{"v1.0.5", migrations.V1_0_5},
+		{"v1.0.6", migrations.V1_0_6},
+		{"v1.0.7", migrations.V1_0_7},
+		{"v1.0.8", migrations.V1_0_8},
+		{"v1.0.9", migrations.V1_0_9},
 	}
 
 // upgrade upgrades the database to the current version by running SQL migration files
@@ -153,6 +159,12 @@ func checkPendingUpgrade(db *sqlx.DB) {
 	var vers []string
 	for _, m := range toRun {
 		vers = append(vers, m.version)
+	}
+
+	if os.Getenv("CANALGOV_AUTO_UPGRADE") == "true" {
+		log.Printf("automatically applying %d pending database upgrade(s): %v. Last upgrade was %s.", len(toRun), vers, lastVer)
+		upgrade(db, initFS(), false)
+		return
 	}
 
 	log.Fatalf(`there are %d pending database upgrade(s): %v. The last upgrade was %s. Backup the database and run canalgov --upgrade`,

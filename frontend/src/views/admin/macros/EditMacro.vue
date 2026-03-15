@@ -9,9 +9,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import api from '@/api'
-import { EMITTER_EVENTS } from '@/constants/emitterEvents.js'
-import { useEmitter } from '@/composables/useEmitter'
-import { handleHTTPError } from '@/utils/http'
+import { useAdminErrorToast } from '@/composables/useAdminErrorToast'
 import MacroForm from '@/features/admin/macros/MacroForm.vue'
 import { CustomBreadcrumb } from '@/components/ui/breadcrumb'
 import { useI18n } from 'vue-i18n'
@@ -22,7 +20,7 @@ const macro = ref({})
 const { t } = useI18n()
 const isLoading = ref(false)
 const formLoading = ref(false)
-const emitter = useEmitter()
+const { showErrorToast, showSuccessToast } = useAdminErrorToast()
 const macroStore = useMacroStore()
 
 const breadcrumbLinks = [
@@ -38,20 +36,15 @@ const updateMacro = async (payload) => {
   try {
     formLoading.value = true
     await api.updateMacro(macro.value.id, payload)
-    
+
     // Reload macros from server
     await macroStore.loadMacros(true)
-    
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      description: t('globals.messages.updatedSuccessfully', {
-        name: t('globals.terms.macro')
-      })
-    })
+
+    showSuccessToast(t('globals.messages.updatedSuccessfully', {
+      name: t('globals.terms.macro')
+    }))
   } catch (error) {
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      variant: 'destructive',
-      description: handleHTTPError(error).message
-    })
+    showErrorToast(error)
   } finally {
     formLoading.value = false
   }
@@ -63,10 +56,7 @@ onMounted(async () => {
     const resp = await api.getMacro(props.id)
     macro.value = resp.data.data
   } catch (error) {
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      variant: 'destructive',
-      description: handleHTTPError(error).message
-    })
+    showErrorToast(error)
   } finally {
     isLoading.value = false
   }

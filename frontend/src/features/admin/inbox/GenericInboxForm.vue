@@ -3,13 +3,13 @@
     <div class="rounded-2xl border border-border/70 bg-muted/20 p-4">
       <h3 class="font-medium">{{ channelLabel }}</h3>
       <p class="mt-1 text-sm text-muted-foreground">
-        Canal operacional sem configuração técnica obrigatória. Use o JSON adicional para registrar credenciais, IDs externos ou metadados.
+        {{ t('admin.inbox.form.genericChannelDescription') }}
       </p>
     </div>
 
     <FormField v-slot="{ componentField }" name="name">
       <FormItem>
-        <FormLabel>Nome</FormLabel>
+        <FormLabel>{{ t('globals.terms.name') }}</FormLabel>
         <FormControl>
           <Input v-bind="componentField" />
         </FormControl>
@@ -19,15 +19,15 @@
 
     <FormField v-slot="{ componentField }" name="from">
       <FormItem>
-        <FormLabel>Identificador de origem</FormLabel>
+        <FormLabel>{{ t('admin.inbox.form.sourceIdentifier') }}</FormLabel>
         <FormControl>
           <Input
             v-bind="componentField"
-            :placeholder="channel === 'none' ? 'Opcional' : 'Ex.: número, bot, sender id ou endereço de referência'"
+            :placeholder="channel === 'none' ? t('globals.terms.optional') : t('admin.inbox.form.sourceIdentifierPlaceholder')"
           />
         </FormControl>
         <FormDescription>
-          Campo opcional para identificar a origem visível deste canal.
+          {{ t('admin.inbox.form.sourceIdentifierDescription') }}
         </FormDescription>
         <FormMessage />
       </FormItem>
@@ -36,8 +36,8 @@
     <FormField v-slot="{ componentField, handleChange }" name="enabled">
       <FormItem class="box flex flex-row items-center justify-between p-4">
         <div class="space-y-0.5">
-          <FormLabel class="text-base">Habilitada</FormLabel>
-          <FormDescription>A caixa de entrada fica disponível para uso operacional.</FormDescription>
+          <FormLabel class="text-base">{{ t('globals.terms.enabled') }}</FormLabel>
+          <FormDescription>{{ t('admin.inbox.form.enabledDescription') }}</FormDescription>
         </div>
         <FormControl>
           <Switch :checked="componentField.modelValue" @update:checked="handleChange" />
@@ -48,8 +48,8 @@
     <FormField v-slot="{ componentField, handleChange }" name="csat_enabled">
       <FormItem class="box flex flex-row items-center justify-between p-4">
         <div class="space-y-0.5">
-          <FormLabel class="text-base">CSAT</FormLabel>
-          <FormDescription>Ativa pesquisa de satisfação quando este fluxo fizer sentido.</FormDescription>
+          <FormLabel class="text-base">{{ t('admin.inbox.csatSurveys') }}</FormLabel>
+          <FormDescription>{{ t('admin.inbox.form.csatDescription') }}</FormDescription>
         </div>
         <FormControl>
           <Switch :checked="componentField.modelValue" @update:checked="handleChange" />
@@ -59,16 +59,16 @@
 
     <FormField v-slot="{ componentField }" name="extra_config">
       <FormItem>
-        <FormLabel>Configurações adicionais</FormLabel>
+        <FormLabel>{{ t('admin.inbox.form.extraConfig') }}</FormLabel>
         <FormControl>
           <Textarea
             v-bind="componentField"
             class="min-h-40 font-mono text-xs"
-            placeholder='{"provider":"meta","phone_number_id":"","token":""}'
+            :placeholder="t('admin.inbox.form.extraConfigPlaceholder')"
           />
         </FormControl>
         <FormDescription>
-          Informe um JSON válido. Isso permite adicionar mais dados de configuração sem depender de um formulário fixo.
+          {{ t('admin.inbox.form.extraConfigDescription') }}
         </FormDescription>
         <FormMessage />
       </FormItem>
@@ -85,6 +85,7 @@ import { computed, watch } from 'vue'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import * as z from 'zod'
+import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -125,9 +126,11 @@ const props = defineProps({
   }
 })
 
+const { t } = useI18n()
+
 const schema = toTypedSchema(
   z.object({
-    name: z.string().min(1, 'Obrigatório'),
+    name: z.string().min(1, t('admin.inbox.form.validation.required')),
     from: z.string().optional().default(''),
     enabled: z.boolean().optional().default(true),
     csat_enabled: z.boolean().optional().default(false),
@@ -142,7 +145,7 @@ const schema = toTypedSchema(
         } catch {
           return false
         }
-      }, 'Informe um JSON válido')
+      }, t('admin.inbox.form.validation.invalidJson'))
   })
 )
 
@@ -157,7 +160,7 @@ const form = useForm({
   }
 })
 
-const submitLabel = computed(() => props.submitLabel || 'Salvar')
+const submitLabel = computed(() => props.submitLabel || t('globals.messages.save'))
 
 const onSubmit = form.handleSubmit((values) => {
   props.submitForm({

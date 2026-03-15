@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import { useConversationStore } from '@/stores/conversation'
 import { useInboxStore } from '@/stores/inbox'
-import { useUsersStore } from '@/stores/users'
+import { useAgentsStore } from '@/stores/agents'
 import { useTeamStore } from '@/stores/team'
 import { useSlaStore } from '@/stores/sla'
 import { useCustomAttributeStore } from '@/stores/customAttributes'
@@ -12,7 +12,7 @@ import { useI18n } from 'vue-i18n'
 export function useConversationFilters () {
     const cStore = useConversationStore()
     const iStore = useInboxStore()
-    const uStore = useUsersStore()
+    const uStore = useAgentsStore()
     const tStore = useTeamStore()
     const slaStore = useSlaStore()
     const customAttributeStore = useCustomAttributeStore()

@@ -37,7 +37,7 @@
           <div class="min-w-0 flex-1 space-y-2">
             <div class="flex flex-wrap items-center gap-2">
               <span class="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                Canal
+                {{ t('replyBox.channel') }}
               </span>
               <div class="flex flex-wrap gap-2">
                 <button
@@ -64,7 +64,7 @@
                 class="font-medium text-foreground underline-offset-4 hover:underline"
                 @click="showChannelSettings = !showChannelSettings"
               >
-                {{ showChannelSettings ? 'Ocultar meios' : 'Escolher meios visíveis' }}
+                {{ showChannelSettings ? t('replyBox.hideChannels') : t('replyBox.showChannels') }}
               </button>
               <button
                 v-if="selectedResponseChannel === 'email'"
@@ -79,15 +79,15 @@
 
           <div class="w-full xl:w-[320px]">
             <label class="mb-2 block text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-              Modelo
+              {{ t('replyBox.template') }}
             </label>
             <div class="flex gap-2">
               <Select v-model="selectedTemplateId">
                 <SelectTrigger class="bg-background">
-                  <SelectValue placeholder="Escrever uma nova mensagem" />
+                  <SelectValue :placeholder="t('replyBox.newMessage')" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="new-message">Escrever uma nova mensagem</SelectItem>
+                  <SelectItem value="new-message">{{ t('replyBox.newMessage') }}</SelectItem>
                   <SelectItem
                     v-for="template in responseTemplates"
                     :key="template.id"
@@ -104,7 +104,7 @@
                 class="shrink-0"
                 @click="clearSelectedTemplate"
               >
-                Limpar
+                {{ t('replyBox.clear') }}
               </Button>
             </div>
             <p class="mt-2 text-xs text-muted-foreground">
@@ -136,7 +136,7 @@
 
         <div class="flex items-start justify-between gap-3 border-t border-border/60 pt-3">
           <div class="space-y-1">
-            <div class="text-sm font-medium">Meio ativo: {{ selectedResponseChannelLabel }}</div>
+            <div class="text-sm font-medium">{{ t('replyBox.activeChannel') }}: {{ selectedResponseChannelLabel }}</div>
             <p class="text-xs text-muted-foreground">{{ selectedChannelHint }}</p>
           </div>
         </div>
@@ -145,7 +145,7 @@
           <CollapsibleContent>
             <div class="grid gap-3 border-t border-border/60 pt-3">
               <div class="grid gap-2">
-                <label class="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">TO</label>
+                <label class="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">{{ t('globals.emails.to') }}</label>
                 <Input
                   v-model="to"
                   type="text"
@@ -156,7 +156,7 @@
 
               <div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
                 <div class="grid gap-2">
-                  <label class="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">CC</label>
+                  <label class="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">{{ t('globals.emails.cc') }}</label>
                   <Input
                     v-model="cc"
                     type="text"
@@ -167,13 +167,13 @@
 
                 <div class="flex items-end">
                   <Button type="button" size="sm" variant="ghost" @click="toggleBcc">
-                    {{ showBcc ? 'Ocultar BCC' : 'Adicionar BCC' }}
+                    {{ showBcc ? t('replyBox.hideBcc') : t('replyBox.addBcc') }}
                   </Button>
                 </div>
               </div>
 
               <div v-if="showBcc" class="grid gap-2">
-                <label class="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">BCC</label>
+                <label class="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">{{ t('globals.emails.bcc') }}</label>
                 <Input
                   v-model="bcc"
                   type="text"
@@ -269,7 +269,7 @@ import ReplyBoxMenuBar from '@/features/conversation/ReplyBoxMenuBar.vue'
 import { useI18n } from 'vue-i18n'
 import { validateEmail } from '@/utils/strings'
 import { useMacroStore } from '@/stores/macro'
-import { useUsersStore } from '@/stores/users'
+import { useAgentsStore } from '@/stores/agents'
 import { useTeamStore } from '@/stores/team'
 
 const messageType = defineModel('messageType', { default: 'reply' })
@@ -330,7 +330,7 @@ const emit = defineEmits([
 ])
 
 const macroStore = useMacroStore()
-const usersStore = useUsersStore()
+const usersStore = useAgentsStore()
 const teamStore = useTeamStore()
 const conversationStore = useConversationStore()
 const emitter = useEmitter()
@@ -341,40 +341,40 @@ const showChannelSettings = ref(false)
 const showEmailEnvelope = ref(false)
 const selectedTemplateId = ref('new-message')
 
-const allResponseChannels = [
+const allResponseChannels = computed(() => [
   {
     value: 'email',
-    label: 'E-mail',
-    description: 'Ideal para respostas com destinatários, cópia e trilha formal.'
+    label: t('globals.terms.email'),
+    description: t('replyBox.channels.email.description')
   },
   {
     value: 'whatsapp',
-    label: 'WhatsApp',
-    description: 'Útil para continuidade rápida do atendimento em canal conversacional.'
+    label: t('globals.terms.whatsapp'),
+    description: t('replyBox.channels.whatsapp.description')
   },
   {
     value: 'telegram',
-    label: 'Telegram',
-    description: 'Adequado para fluxos com bot, grupo ou comunicação transacional.'
+    label: t('globals.terms.telegram'),
+    description: t('replyBox.channels.telegram.description')
   },
   {
     value: 'sms',
-    label: 'SMS',
-    description: 'Indicado para mensagens curtas, alertas e confirmações objetivas.'
+    label: t('globals.terms.sms'),
+    description: t('replyBox.channels.sms.description')
   },
   {
     value: 'official_communication',
-    label: 'Comunicado oficial',
-    description: 'Canal formal para respostas institucionais e linguagem padronizada.'
+    label: t('globals.terms.officialCommunication'),
+    description: t('replyBox.channels.official.description')
   }
-]
+])
 
 const visibleResponseChannels = computed(() =>
-  allResponseChannels.filter((channel) => enabledResponseChannels.value.includes(channel.value))
+  allResponseChannels.value.filter((channel) => enabledResponseChannels.value.includes(channel.value))
 )
 
 const selectedChannel = computed(() => {
-  return allResponseChannels.find((channel) => channel.value === selectedResponseChannel.value) || allResponseChannels[0]
+  return allResponseChannels.value.find((channel) => channel.value === selectedResponseChannel.value) || allResponseChannels.value[0]
 })
 
 const selectedResponseChannelLabel = computed(() => selectedChannel.value.label)
@@ -382,17 +382,17 @@ const selectedChannelDescription = computed(() => selectedChannel.value.descript
 
 const selectedChannelHint = computed(() => {
   if (selectedResponseChannel.value === 'email') {
-    return 'Abra os destinatários apenas quando precisar revisar ou ajustar TO, CC e BCC.'
+    return t('replyBox.hints.email')
   }
   if (selectedResponseChannel.value === 'official_communication') {
-    return 'Use preferencialmente um modelo do sistema para manter tom e estrutura institucionais.'
+    return t('replyBox.hints.official')
   }
-  return 'O meio fica registrado no composer para orientar a redação, mesmo sem alterar o envio técnico nesta etapa.'
+  return t('replyBox.hints.generic')
 })
 
 const templateSummary = computed(() => {
   if (selectedTemplateId.value === 'new-message') {
-    return 'Selecione um modelo salvo ou escreva uma resposta nova.'
+    return t('replyBox.templates.newMessageSummary')
   }
 
   const selectedTemplate = props.responseTemplates.find(
@@ -400,26 +400,26 @@ const templateSummary = computed(() => {
   )
 
   if (!selectedTemplate) {
-    return 'Selecione um modelo salvo ou escreva uma resposta nova.'
+    return t('replyBox.templates.newMessageSummary')
   }
 
   return selectedTemplate.team_name
-    ? `Modelo priorizado da equipe ${selectedTemplate.team_name}.`
-    : 'Modelo global disponível para todo o workspace.'
+    ? t('replyBox.templates.teamTemplate', { name: selectedTemplate.team_name })
+    : t('replyBox.templates.globalTemplate')
 })
 
 const emailSummary = computed(() => {
   if (to.value || cc.value || bcc.value) {
-    return 'Revisar destinatários'
+    return t('replyBox.revisingRecipients')
   }
-  return showEmailEnvelope.value ? 'Ocultar destinatários' : 'Adicionar destinatários'
+  return showEmailEnvelope.value ? t('replyBox.hideRecipients') : t('replyBox.addRecipients')
 })
 
 const editorPlaceholder = computed(() => {
   if (messageType.value === 'private_note') {
-    return 'Escreva uma mensagem privada para o time. Use @ para mencionar pessoas ou equipes.'
+    return t('replyBox.placeholders.privateNote')
   }
-  return `Responda por ${selectedResponseChannelLabel.value.toLowerCase()} ou selecione um modelo do sistema.`
+  return t('replyBox.placeholders.reply', { channel: selectedResponseChannelLabel.value.toLowerCase() })
 })
 
 const getSuggestions = async (query) => {
@@ -427,11 +427,11 @@ const getSuggestions = async (query) => {
     return []
   }
 
-  await Promise.all([usersStore.fetchUsers(), teamStore.fetchTeams()])
+  await Promise.all([usersStore.fetchAgents(), teamStore.fetchTeams()])
 
   const q = query.toLowerCase()
 
-  const users = usersStore.users
+  const users = usersStore.agents
     .filter((user) => user.enabled)
     .filter((user) => `${user.first_name} ${user.last_name}`.toLowerCase().includes(q))
     .map((user) => ({

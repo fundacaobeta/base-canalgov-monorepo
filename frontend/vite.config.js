@@ -3,6 +3,13 @@ import autoprefixer from 'autoprefixer'
 import tailwind from 'tailwindcss'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import { vueGrab } from 'vue-grab/plugins/vite'
+
+// Allow overriding backend target via env var for Docker dev setup.
+// In Docker: VITE_API_TARGET=http://backend:9000
+// Locally:   defaults to http://127.0.0.1:9000
+const apiTarget = process.env.VITE_API_TARGET || 'http://127.0.0.1:9000'
+const wsTarget  = process.env.VITE_WS_TARGET  || 'ws://127.0.0.1:9000'
 
 export default defineConfig({
   css: {
@@ -13,19 +20,10 @@ export default defineConfig({
   server: {
     port: 8000,
     proxy: {
-      '/api': {
-        target: 'http://127.0.0.1:9000',
-      },
-      '/logout': {
-        target: 'http://127.0.0.1:9000',
-      },
-      '/uploads': {
-        target: 'http://127.0.0.1:9000',
-      },
-      '/ws': {
-        target: 'ws://127.0.0.1:9000',
-        ws: true,
-      },
+      '/api':     { target: apiTarget, changeOrigin: true },
+      '/logout':  { target: apiTarget, changeOrigin: true },
+      '/uploads': { target: apiTarget, changeOrigin: true },
+      '/ws':      { target: wsTarget,  ws: true, changeOrigin: true },
     },
   },
   build: {
@@ -48,6 +46,7 @@ export default defineConfig({
   },
   plugins: [
     vue(),
+    vueGrab(),
   ],
   resolve: {
     alias: {

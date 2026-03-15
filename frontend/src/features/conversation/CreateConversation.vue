@@ -249,7 +249,7 @@ import { MACRO_CONTEXT } from '@/constants/conversation'
 import { useEmitter } from '@/composables/useEmitter'
 import { handleHTTPError } from '@/utils/http'
 import { useInboxStore } from '@/stores/inbox'
-import { useUsersStore } from '@/stores/users'
+import { useAgentsStore } from '@/stores/agents'
 import { useTeamStore } from '@/stores/team'
 import {
   Select,
@@ -274,7 +274,7 @@ const dialogOpen = defineModel({
 
 const inboxStore = useInboxStore()
 const { t } = useI18n()
-const uStore = useUsersStore()
+const uStore = useAgentsStore()
 const teamStore = useTeamStore()
 const emitter = useEmitter()
 const loading = ref(false)

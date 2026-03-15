@@ -5,10 +5,10 @@ import (
 	"slices"
 	"strconv"
 
-	amodels "github.com/abhinavxd/libredesk/internal/auth/models"
-	autoModels "github.com/abhinavxd/libredesk/internal/automation/models"
-	"github.com/abhinavxd/libredesk/internal/envelope"
-	"github.com/abhinavxd/libredesk/internal/macro/models"
+	amodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/auth/models"
+	autoModels "github.com/fundacaobeta/base-canalgov-monorepo/internal/automation/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/envelope"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/macro/models"
 	"github.com/valyala/fasthttp"
 	"github.com/zerodha/fastglue"
 )

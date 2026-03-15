@@ -26,7 +26,7 @@ type Filter struct {
 	Model    string `json:"model"`
 	Field    string `json:"field"`
 	Operator string `json:"operator"`
-	Value    string `json:"value"`
+	Value    any    `json:"value"`
 }
 
 // AllowedFields is a map of model names to a list of allowed fields for that model.
@@ -104,6 +104,7 @@ func buildWhereClause(filters []Filter, existingArgs []interface{}, allowedField
 		}
 
 		field := fmt.Sprintf("%s.%s", f.Model, f.Field)
+		valStr := fmt.Sprintf("%v", f.Value)
 
 		switch f.Operator {
 		case "equals":
@@ -119,10 +120,20 @@ func buildWhereClause(filters []Filter, existingArgs []interface{}, allowedField
 		case "not set":
 			conditions = append(conditions, field+" IS NULL")
 		case "in":
-			var arr []string
-			if err := json.Unmarshal([]byte(f.Value), &arr); err != nil {
-				return "", nil, fmt.Errorf("invalid array format for 'in' operator: %v", err)
+			var arr []any
+			switch v := f.Value.(type) {
+			case string:
+				if err := json.Unmarshal([]byte(v), &arr); err != nil {
+					// If it's just a plain string, maybe it's a single value or comma separated? 
+					// But usually 'in' expects a JSON array.
+					return "", nil, fmt.Errorf("invalid array format for 'in' operator: %v", err)
+				}
+			case []any:
+				arr = v
+			default:
+				return "", nil, fmt.Errorf("invalid type for 'in' operator: %T", f.Value)
 			}
+
 			placeholders := make([]string, len(arr))
 			for i, v := range arr {
 				placeholders[i] = fmt.Sprintf("$%d", paramCount)
@@ -131,7 +142,7 @@ func buildWhereClause(filters []Filter, existingArgs []interface{}, allowedField
 			}
 			conditions = append(conditions, field+" IN ("+strings.Join(placeholders, ",")+")")
 		case "between":
-			values := strings.Split(f.Value, ",")
+			values := strings.Split(valStr, ",")
 			if len(values) != 2 {
 				return "", nil, fmt.Errorf("between requires 2 values")
 			}
@@ -140,7 +151,7 @@ func buildWhereClause(filters []Filter, existingArgs []interface{}, allowedField
 			paramCount += 2
 		case "ilike":
 			conditions = append(conditions, field+fmt.Sprintf(" ILIKE $%d", paramCount))
-			args = append(args, "%"+f.Value+"%")
+			args = append(args, "%"+valStr+"%")
 			paramCount++
 		default:
 			return "", nil, fmt.Errorf("invalid operator: %s", f.Operator)

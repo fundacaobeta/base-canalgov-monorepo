@@ -293,7 +293,7 @@ import {
   Bell,
   SlidersHorizontal
 } from 'lucide-vue-next'
-import { useUsersStore } from '@/stores/users'
+import { useAgentsStore } from '@/stores/agents'
 import {
   FormControl,
   FormField,
@@ -333,7 +333,7 @@ const props = defineProps({
   }
 })
 
-const usersStore = useUsersStore()
+const usersStore = useAgentsStore()
 const submitLabel = computed(() => {
   return (
     props.submitLabel ||

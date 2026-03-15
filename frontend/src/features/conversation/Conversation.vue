@@ -16,7 +16,7 @@
                 class="flex items-center space-x-1 cursor-pointer border px-2 py-1 rounded text-sm"
                 v-if="!conversationStore.conversation.loading"
               >
-                <span class="font-medium inline-block">Ações</span>
+                <span class="font-medium inline-block">{{ $t('globals.terms.actions') }}</span>
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
@@ -140,9 +140,9 @@ const buildPayload = (action) => {
 const executeIntegrationAction = async (action) => {
   if (!action.url) {
     emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      variant: 'warning',
-      description: 'Configure a URL da ação em Administração > Integrações > Ações.'
-    })
+      variant: 'destructive',
+      description: t('admin.integration.actions.notConfiguredWarning')
+      })
     return
   }
 

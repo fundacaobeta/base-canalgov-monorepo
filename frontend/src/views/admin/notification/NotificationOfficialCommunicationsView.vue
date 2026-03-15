@@ -1,9 +1,9 @@
 <template>
   <div :class="{ 'opacity-50 transition-opacity duration-300': isLoading }">
     <NotificationConfigShell
-      title="Comunicações oficiais"
-      description="Centralize ofícios, cartas, notificações e intimações como chamados internos com regras claras de triagem e encaminhamento."
-      status-label="Fluxo de comunicações oficiais"
+      :title="$t('admin.notification.officialCommunications.title')"
+      :description="$t('admin.notification.officialCommunications.description')"
+      :status-label="$t('admin.notification.officialCommunications.statusLabel')"
       :status-description="statusDescription"
       :help-items="helpItems"
     >
@@ -22,18 +22,18 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/api'
 import { Spinner } from '@/components/ui/spinner'
 import OfficialCommunicationsForm from '@/features/admin/notification/OfficialCommunicationsForm.vue'
 import NotificationConfigShell from '@/features/admin/notification/NotificationConfigShell.vue'
-import { useEmitter } from '@/composables/useEmitter'
-import { EMITTER_EVENTS } from '@/constants/emitterEvents'
+import { useAdminErrorToast } from '@/composables/useAdminErrorToast'
 import { useConversationStore } from '@/stores/conversation'
 import { useInboxStore } from '@/stores/inbox'
 import { useTeamStore } from '@/stores/team'
-import { handleHTTPError } from '@/utils/http'
 
-const emitter = useEmitter()
+const { t } = useI18n()
+const { showErrorToast, showSuccessToast } = useAdminErrorToast()
 const teamStore = useTeamStore()
 const inboxStore = useInboxStore()
 const conversationStore = useConversationStore()
@@ -60,28 +60,28 @@ const priorityOptions = computed(() => conversationStore.priorityOptions)
 const statusOptions = computed(() => conversationStore.statusOptionsNoSnooze)
 const statusDescription = computed(() =>
   initialValues.value.enabled
-    ? 'Fluxo habilitado para gerar e encaminhar chamados conforme as regras cadastradas.'
-    : 'Fluxo desabilitado ou ainda sem política de encaminhamento definida.'
+    ? t('admin.notification.officialCommunications.statusEnabled')
+    : t('admin.notification.officialCommunications.statusDisabled')
 )
 
-const helpItems = [
+const helpItems = computed(() => [
   {
-    title: 'Classificação',
-    description: 'Cadastre os tipos de comunicação mais comuns para padronizar a triagem administrativa e jurídica.'
+    title: t('admin.notification.officialCommunications.help1.title'),
+    description: t('admin.notification.officialCommunications.help1.description')
   },
   {
-    title: 'Encaminhamento',
-    description: 'Cada regra pode enviar o mesmo chamado para uma ou várias equipes, conforme a natureza do expediente.'
+    title: t('admin.notification.officialCommunications.help2.title'),
+    description: t('admin.notification.officialCommunications.help2.description')
   },
   {
-    title: 'Operação',
-    description: 'Defina prioridade, status inicial e caixa de entrada padrão para reduzir trabalho manual.'
+    title: t('admin.notification.officialCommunications.help3.title'),
+    description: t('admin.notification.officialCommunications.help3.description')
   },
   {
-    title: 'Evolução',
-    description: 'A configuração salva nesta fase já prepara o modelo que pode ser conectado depois ao backend de abertura automática.'
+    title: t('admin.notification.officialCommunications.help4.title'),
+    description: t('admin.notification.officialCommunications.help4.description')
   }
-]
+])
 
 onMounted(async () => {
   isLoading.value = true
@@ -99,10 +99,7 @@ onMounted(async () => {
       ...normalizeResponse(response?.data?.data)
     }
   } catch (error) {
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      variant: 'destructive',
-      description: handleHTTPError(error).message
-    })
+    showErrorToast(error)
   } finally {
     isLoading.value = false
   }
@@ -118,14 +115,9 @@ async function submitForm(values) {
     )
     await api.updateOfficialCommunicationsNotificationSettings(payload)
     initialValues.value = { ...values }
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      description: 'Configuração de comunicações oficiais salva com sucesso.'
-    })
+    showSuccessToast(t('admin.notification.officialCommunications.savedSuccess'))
   } catch (error) {
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      variant: 'destructive',
-      description: handleHTTPError(error).message
-    })
+    showErrorToast(error)
     throw error
   }
 }

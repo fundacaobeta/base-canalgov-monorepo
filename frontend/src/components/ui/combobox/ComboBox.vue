@@ -14,7 +14,7 @@
     <PopoverContent class="p-0">
       <Command>
         <CommandInput class="h-9" :placeholder="placeholder" />
-        <CommandEmpty>Not found.</CommandEmpty>
+        <CommandEmpty>{{ t('globals.ui.notFound') }}</CommandEmpty>
         <CommandList>
           <CommandGroup>
             <CommandItem
@@ -51,6 +51,7 @@ import {
   CommandItem,
   CommandList
 } from '@/components/ui/command'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps({
   items: {
@@ -65,6 +66,7 @@ const props = defineProps({
   }
 })
 
+const { t } = useI18n()
 const emit = defineEmits(['select'])
 const value = defineModel()
 const open = ref(false)

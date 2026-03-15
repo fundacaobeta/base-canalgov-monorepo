@@ -36,11 +36,22 @@ frontend-build: install-deps
 	@echo "→ Building frontend for production..."
 	@export VITE_APP_VERSION="${VERSION}" && cd ${FRONTEND_DIR} && pnpm build
 
+# Start full dev environment with hot reload in Docker (backend + frontend + db + redis).
+.PHONY: dev
+dev:
+	@echo "→ Starting dev environment with hot reload..."
+	docker compose -f docker-compose.dev.yml up --build
+
+# Stop dev Docker environment.
+.PHONY: dev-down
+dev-down:
+	docker compose -f docker-compose.dev.yml down
+
 # Run the Go backend server in development mode.
 .PHONY: run-backend
 run-backend:
 	@echo "→ Running backend..."
-	CGO_ENABLED=0 go run -ldflags="-s -w -X 'main.buildString=${BUILDSTR}' -X 'main.versionString=${VERSION}' -X 'github.com/abhinavxd/libredesk/internal/version.Version=${VERSION}' -X 'main.frontendDir=frontend/dist'" cmd/*.go
+	CGO_ENABLED=0 go run -ldflags="-s -w -X 'main.buildString=${BUILDSTR}' -X 'main.versionString=${VERSION}' -X 'github.com/fundacaobeta/base-canalgov-monorepo/internal/version.Version=${VERSION}' -X 'main.frontendDir=frontend/dist'" cmd/*.go
 
 # Run the JS frontend server in development mode.
 .PHONY: run-frontend
@@ -55,7 +66,7 @@ run-frontend:
 build-backend: $(STUFFBIN)
 	@echo "→ Building backend..."
 	@CGO_ENABLED=0 go build -a \
-		-ldflags="-X 'main.buildString=${BUILDSTR}' -X 'main.versionString=${VERSION}' -X 'github.com/abhinavxd/libredesk/internal/version.Version=${VERSION}' -s -w" \
+		-ldflags="-X 'main.buildString=${BUILDSTR}' -X 'main.versionString=${VERSION}' -X 'github.com/fundacaobeta/base-canalgov-monorepo/internal/version.Version=${VERSION}' -s -w" \
 		-o ${BIN} cmd/*.go
 
 # Main build target: builds both frontend and backend, then stuffs static assets into the binary.

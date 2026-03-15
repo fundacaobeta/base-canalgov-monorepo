@@ -5,9 +5,9 @@ import (
 	"net/mail"
 	"strings"
 
-	"github.com/abhinavxd/libredesk/internal/envelope"
-	"github.com/abhinavxd/libredesk/internal/setting/models"
-	"github.com/abhinavxd/libredesk/internal/stringutil"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/envelope"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/setting/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/stringutil"
 	"github.com/valyala/fasthttp"
 	"github.com/zerodha/fastglue"
 )

@@ -3,6 +3,7 @@ package main
 import (
 	"strconv"
 
+	rmodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/report/models"
 	"github.com/zerodha/fastglue"
 )
 
@@ -81,4 +82,75 @@ func handleOverviewTagDistribution(r *fastglue.Request) error {
 		return sendErrorEnvelope(r, err)
 	}
 	return r.SendEnvelope(tags)
+}
+
+// handleGetCustomReports returns all custom reports.
+func handleGetCustomReports(r *fastglue.Request) error {
+	app := r.Context.(*App)
+	reports, err := app.report.GetCustomReports()
+	if err != nil {
+		return sendErrorEnvelope(r, err)
+	}
+	return r.SendEnvelope(reports)
+}
+
+// handleGetCustomReport returns a single custom report.
+func handleGetCustomReport(r *fastglue.Request) error {
+	app := r.Context.(*App)
+	id, _ := strconv.Atoi(r.RequestCtx.UserValue("id").(string))
+	report, err := app.report.GetCustomReport(id)
+	if err != nil {
+		return sendErrorEnvelope(r, err)
+	}
+	return r.SendEnvelope(report)
+}
+
+// handleCreateCustomReport creates a new custom report.
+func handleCreateCustomReport(r *fastglue.Request) error {
+	app := r.Context.(*App)
+	var req rmodels.CustomReport
+	if err := r.Decode(&req, "json"); err != nil {
+		return sendErrorEnvelope(r, err)
+	}
+	report, err := app.report.CreateCustomReport(req)
+	if err != nil {
+		return sendErrorEnvelope(r, err)
+	}
+	return r.SendEnvelope(report)
+}
+
+// handleUpdateCustomReport updates a custom report.
+func handleUpdateCustomReport(r *fastglue.Request) error {
+	app := r.Context.(*App)
+	id, _ := strconv.Atoi(r.RequestCtx.UserValue("id").(string))
+	var req rmodels.CustomReport
+	if err := r.Decode(&req, "json"); err != nil {
+		return sendErrorEnvelope(r, err)
+	}
+	report, err := app.report.UpdateCustomReport(id, req)
+	if err != nil {
+		return sendErrorEnvelope(r, err)
+	}
+	return r.SendEnvelope(report)
+}
+
+// handleDeleteCustomReport deletes a custom report.
+func handleDeleteCustomReport(r *fastglue.Request) error {
+	app := r.Context.(*App)
+	id, _ := strconv.Atoi(r.RequestCtx.UserValue("id").(string))
+	if err := app.report.DeleteCustomReport(id); err != nil {
+		return sendErrorEnvelope(r, err)
+	}
+	return r.SendEnvelope(true)
+}
+
+// handleExecuteCustomReport executes a custom report and returns the data.
+func handleExecuteCustomReport(r *fastglue.Request) error {
+	app := r.Context.(*App)
+	id, _ := strconv.Atoi(r.RequestCtx.UserValue("id").(string))
+	data, err := app.report.ExecuteCustomReport(id)
+	if err != nil {
+		return sendErrorEnvelope(r, err)
+	}
+	return r.SendEnvelope(data)
 }

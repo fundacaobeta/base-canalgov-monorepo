@@ -3,7 +3,7 @@ package noop
 import (
 	"context"
 
-	"github.com/abhinavxd/libredesk/internal/conversation/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/conversation/models"
 )
 
 type Noop struct {

@@ -1,0 +1,12 @@
+{
+  "navigation.reassignReplies": "Reassign replies",
+  "navigation.darkMode": "Dark Mode",
+  "navigation.away": "Away",
+  "navigation.logout": "Logout",
+  "navigation.integrations.whatsapp": "WhatsApp",
+  "navigation.integrations.telegram": "Telegram",
+  "navigation.integrations.sms": "SMS",
+  "navigation.integrations.push": "Push notifications",
+  "navigation.integrations.actions": "Actions",
+  "navigation.notifications.officialCommunications": "Official communications"
+}

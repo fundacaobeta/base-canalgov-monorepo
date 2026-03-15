@@ -5,11 +5,16 @@ import (
 	"net/textproto"
 	"time"
 
-	"github.com/abhinavxd/libredesk/internal/attachment"
-	mmodels "github.com/abhinavxd/libredesk/internal/media/models"
-	umodels "github.com/abhinavxd/libredesk/internal/user/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/attachment"
+	mmodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/media/models"
+	umodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/user/models"
 	"github.com/lib/pq"
 	"github.com/volatiletech/null/v9"
+)
+
+const (
+	MessageTableName = "messages"
+	ConversationTableName = "conversations"
 )
 
 var (
@@ -174,15 +179,18 @@ func (c *ConversationContact) FullName() string {
 }
 
 type PreviousConversation struct {
-	ID            int                         `db:"id" json:"id"`
-	CreatedAt     time.Time                   `db:"created_at" json:"created_at"`
-	UpdatedAt     time.Time                   `db:"updated_at" json:"updated_at"`
-	UUID          string                      `db:"uuid" json:"uuid"`
-	Subject       string                      `db:"subject" json:"subject"`
-	Contact       PreviousConversationContact `db:"contact" json:"contact"`
-	LastMessage   null.String                 `db:"last_message" json:"last_message"`
-	LastMessageAt null.Time                   `db:"last_message_at" json:"last_message_at"`
+	ID              int                         `db:"id" json:"id"`
+	CreatedAt       time.Time                   `db:"created_at" json:"created_at"`
+	UpdatedAt       time.Time                   `db:"updated_at" json:"updated_at"`
+	UUID            string                      `db:"uuid" json:"uuid"`
+	Subject         string                      `db:"subject" json:"subject"`
+	ReferenceNumber string                      `db:"reference_number" json:"reference_number"`
+	Status          string                      `db:"status" json:"status"`
+	Contact         PreviousConversationContact `db:"contact" json:"contact"`
+	LastMessage     null.String                 `db:"last_message" json:"last_message"`
+	LastMessageAt   null.Time                   `db:"last_message_at" json:"last_message_at"`
 }
+
 
 type PreviousConversationContact struct {
 	FirstName string      `db:"first_name" json:"first_name"`

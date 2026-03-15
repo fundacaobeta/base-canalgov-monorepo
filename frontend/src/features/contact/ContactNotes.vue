@@ -33,7 +33,7 @@
             />
           </div>
           <div class="flex justify-end space-x-3 pt-2">
-            <Button variant="outline" @click="cancelAddNote"> Cancel </Button>
+            <Button variant="outline" @click="cancelAddNote"> {{ t('globals.messages.cancel') }} </Button>
             <Button type="submit" :disabled="!newNote.trim()">
               {{ $t('globals.messages.save') + ' ' + $t('globals.terms.note').toLowerCase() }}
             </Button>
@@ -79,7 +79,7 @@
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" class="h-8 w-8 rounded-full">
                   <MoreVerticalIcon class="h-4 w-4" />
-                  <span class="sr-only">Open menu</span>
+                  <span class="sr-only">{{ t('globals.messages.openMenu') }}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" class="w-[180px]">

@@ -3,8 +3,8 @@ package main
 import (
 	"strconv"
 
-	"github.com/abhinavxd/libredesk/internal/envelope"
-	"github.com/abhinavxd/libredesk/internal/template/models"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/envelope"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/template/models"
 	"github.com/valyala/fasthttp"
 	"github.com/zerodha/fastglue"
 )
@@ -66,9 +66,6 @@ func handleCreateTemplate(r *fastglue.Request) error {
 	if req.Type == "" {
 		req.Type = "response"
 	}
-	if req.Type != "response" {
-		req.TeamID = nil
-	}
 	template, err := app.tmpl.Create(req)
 	if err != nil {
 		return sendErrorEnvelope(r, err)
@@ -93,12 +90,6 @@ func handleUpdateTemplate(r *fastglue.Request) error {
 	if req.Name == "" {
 		return r.SendErrorEnvelope(fasthttp.StatusBadRequest, app.i18n.Ts("globals.messages.empty", "name", "`name`"), nil, envelope.InputError)
 	}
-	if req.Type == "" {
-		req.Type = "response"
-	}
-	if req.Type != "response" {
-		req.TeamID = nil
-	}
 	updatedTemplate, err := app.tmpl.Update(id, req)
 	if err != nil {
 		return sendErrorEnvelope(r, err)
@@ -108,19 +99,62 @@ func handleUpdateTemplate(r *fastglue.Request) error {
 
 // handleDeleteTemplate deletes a template.
 func handleDeleteTemplate(r *fastglue.Request) error {
-	var (
-		app = r.Context.(*App)
-		req = models.Template{}
-	)
+	app := r.Context.(*App)
 	id, err := strconv.Atoi(r.RequestCtx.UserValue("id").(string))
 	if err != nil || id == 0 {
 		return r.SendErrorEnvelope(fasthttp.StatusBadRequest,
 			"Invalid template `id`.", nil, envelope.InputError)
 	}
+	if err = app.tmpl.Delete(id); err != nil {
+		return sendErrorEnvelope(r, err)
+	}
+	return r.SendEnvelope(true)
+}
+
+// handleGetTemplateCategories returns all template categories.
+func handleGetTemplateCategories(r *fastglue.Request) error {
+	app := r.Context.(*App)
+	categories, err := app.tmpl.GetCategories()
+	if err != nil {
+		return sendErrorEnvelope(r, err)
+	}
+	return r.SendEnvelope(categories)
+}
+
+// handleCreateTemplateCategory creates a new template category.
+func handleCreateTemplateCategory(r *fastglue.Request) error {
+	app := r.Context.(*App)
+	var req models.TemplateCategory
 	if err := r.Decode(&req, "json"); err != nil {
 		return r.SendErrorEnvelope(fasthttp.StatusBadRequest, app.i18n.Ts("globals.messages.errorParsing", "name", "{globals.terms.request}"), nil, envelope.InputError)
 	}
-	if err = app.tmpl.Delete(id); err != nil {
+	category, err := app.tmpl.CreateCategory(req)
+	if err != nil {
+		return sendErrorEnvelope(r, err)
+	}
+	return r.SendEnvelope(category)
+}
+
+// handleUpdateTemplateCategory updates a template category.
+func handleUpdateTemplateCategory(r *fastglue.Request) error {
+	app := r.Context.(*App)
+	id, _ := strconv.Atoi(r.RequestCtx.UserValue("id").(string))
+	var req models.TemplateCategory
+	if err := r.Decode(&req, "json"); err != nil {
+		return r.SendErrorEnvelope(fasthttp.StatusBadRequest, app.i18n.Ts("globals.messages.errorParsing", "name", "{globals.terms.request}"), nil, envelope.InputError)
+	}
+	category, err := app.tmpl.UpdateCategory(id, req)
+	if err != nil {
+		return sendErrorEnvelope(r, err)
+	}
+	return r.SendEnvelope(category)
+}
+
+// handleDeleteTemplateCategory deletes a template category.
+func handleDeleteTemplateCategory(r *fastglue.Request) error {
+	app := r.Context.(*App)
+	id, _ := strconv.Atoi(r.RequestCtx.UserValue("id").(string))
+	if err := app.tmpl.DeleteCategory(id); err != nil {
 		return sendErrorEnvelope(r, err)
 	}
 	return r.SendEnvelope(true)

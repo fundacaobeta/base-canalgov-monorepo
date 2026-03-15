@@ -778,6 +778,237 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GenericObject'
+  /api/v1/settings/general:
+    get:
+      tags: [Configuracao]
+      summary: Retorna configuracoes gerais
+      operationId: getGeneralSettings
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Configuracoes carregadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralSettings'
+    put:
+      tags: [Configuracao]
+      summary: Atualiza configuracoes gerais
+      operationId: updateGeneralSettings
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeneralSettings'
+      responses:
+        '200':
+          description: Configuracoes atualizadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralSettings'
+  /api/v1/settings/notifications/email:
+    get:
+      tags: [Configuracao]
+      summary: Retorna configuracoes de notificacao por email
+      operationId: getEmailNotificationSettings
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Configuracoes carregadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailNotificationSettings'
+    put:
+      tags: [Configuracao]
+      summary: Atualiza configuracoes de notificacao por email
+      operationId: updateEmailNotificationSettings
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailNotificationSettings'
+      responses:
+        '200':
+          description: Configuracoes atualizadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailNotificationSettings'
+  /api/v1/settings/notifications/whatsapp:
+    get:
+      tags: [Configuracao]
+      summary: Retorna configuracoes de notificacao por WhatsApp
+      operationId: getWhatsAppNotificationSettings
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Configuracoes carregadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhatsAppNotificationSettings'
+    put:
+      tags: [Configuracao]
+      summary: Atualiza configuracoes de notificacao por WhatsApp
+      operationId: updateWhatsAppNotificationSettings
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WhatsAppNotificationSettings'
+      responses:
+        '200':
+          description: Configuracoes atualizadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhatsAppNotificationSettings'
+  /api/v1/settings/notifications/telegram:
+    get:
+      tags: [Configuracao]
+      summary: Retorna configuracoes de notificacao por Telegram
+      operationId: getTelegramNotificationSettings
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Configuracoes carregadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelegramNotificationSettings'
+    put:
+      tags: [Configuracao]
+      summary: Atualiza configuracoes de notificacao por Telegram
+      operationId: updateTelegramNotificationSettings
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TelegramNotificationSettings'
+      responses:
+        '200':
+          description: Configuracoes atualizadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelegramNotificationSettings'
+  /api/v1/settings/notifications/sms:
+    get:
+      tags: [Configuracao]
+      summary: Retorna configuracoes de notificacao por SMS
+      operationId: getSMSNotificationSettings
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Configuracoes carregadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SMSNotificationSettings'
+    put:
+      tags: [Configuracao]
+      summary: Atualiza configuracoes de notificacao por SMS
+      operationId: updateSMSNotificationSettings
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SMSNotificationSettings'
+      responses:
+        '200':
+          description: Configuracoes atualizadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SMSNotificationSettings'
+  /api/v1/settings/notifications/push:
+    get:
+      tags: [Configuracao]
+      summary: Retorna configuracoes de notificacao push
+      operationId: getPushNotificationSettings
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Configuracoes carregadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushNotificationSettings'
+    put:
+      tags: [Configuracao]
+      summary: Atualiza configuracoes de notificacao push
+      operationId: updatePushNotificationSettings
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushNotificationSettings'
+      responses:
+        '200':
+          description: Configuracoes atualizadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushNotificationSettings'
+  /api/v1/settings/notifications/official-communications:
+    get:
+      tags: [Configuracao]
+      summary: Retorna configuracoes de comunicacoes oficiais
+      operationId: getOfficialCommunicationsSettings
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Configuracoes carregadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfficialCommunicationsSettings'
+    put:
+      tags: [Configuracao]
+      summary: Atualiza configuracoes de comunicacoes oficiais
+      operationId: updateOfficialCommunicationsSettings
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OfficialCommunicationsSettings'
+      responses:
+        '200':
+          description: Configuracoes atualizadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfficialCommunicationsSettings'
 components:
   securitySchemes:
     sessionAuth:
@@ -1053,3 +1284,175 @@ components:
         created_at:
           type: string
           format: date-time
+    GeneralSettings:
+      type: object
+      properties:
+        app.site_name:
+          type: string
+        app.lang:
+          type: string
+        app.max_file_upload_size:
+          type: integer
+        app.favicon_url:
+          type: string
+        app.logo_url:
+          type: string
+        app.root_url:
+          type: string
+        app.allowed_file_upload_extensions:
+          type: array
+          items:
+            type: string
+        app.timezone:
+          type: string
+        app.business_hours_id:
+          type: string
+    EmailNotificationSettings:
+      type: object
+      properties:
+        notification.email.username:
+          type: string
+        notification.email.host:
+          type: string
+        notification.email.port:
+          type: integer
+        notification.email.password:
+          type: string
+        notification.email.max_conns:
+          type: integer
+        notification.email.idle_timeout:
+          type: string
+        notification.email.wait_timeout:
+          type: string
+        notification.email.auth_protocol:
+          type: string
+        notification.email.email_address:
+          type: string
+        notification.email.max_msg_retries:
+          type: integer
+        notification.email.tls_type:
+          type: string
+        notification.email.tls_skip_verify:
+          type: boolean
+        notification.email.hello_hostname:
+          type: string
+        notification.email.enabled:
+          type: boolean
+    WhatsAppNotificationSettings:
+      type: object
+      properties:
+        notification.whatsapp.enabled:
+          type: boolean
+        notification.whatsapp.provider:
+          type: string
+        notification.whatsapp.display_name:
+          type: string
+        notification.whatsapp.phone_number_id:
+          type: string
+        notification.whatsapp.access_token:
+          type: string
+        notification.whatsapp.base_url:
+          type: string
+        notification.whatsapp.webhook_verify_token:
+          type: string
+        notification.whatsapp.default_template:
+          type: string
+        notification.whatsapp.department_hint:
+          type: string
+    TelegramNotificationSettings:
+      type: object
+      properties:
+        notification.telegram.enabled:
+          type: boolean
+        notification.telegram.bot_name:
+          type: string
+        notification.telegram.bot_token:
+          type: string
+        notification.telegram.webhook_url:
+          type: string
+        notification.telegram.default_chat_id:
+          type: string
+        notification.telegram.allowed_updates:
+          type: string
+        notification.telegram.default_message:
+          type: string
+    SMSNotificationSettings:
+      type: object
+      properties:
+        notification.sms.enabled:
+          type: boolean
+        notification.sms.provider:
+          type: string
+        notification.sms.sender_id:
+          type: string
+        notification.sms.api_key:
+          type: string
+        notification.sms.api_secret:
+          type: string
+        notification.sms.base_url:
+          type: string
+        notification.sms.fallback_country_code:
+          type: string
+        notification.sms.default_message:
+          type: string
+    PushNotificationSettings:
+      type: object
+      properties:
+        notification.push.enabled:
+          type: boolean
+        notification.push.provider:
+          type: string
+        notification.push.app_id:
+          type: string
+        notification.push.project_id:
+          type: string
+        notification.push.api_key:
+          type: string
+        notification.push.topic_default:
+          type: string
+        notification.push.click_action_url:
+          type: string
+        notification.push.payload_template:
+          type: string
+    OfficialCommunicationRoutingRule:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        types:
+          type: array
+          items:
+            type: string
+        team_ids:
+          type: array
+          items:
+            type: string
+    OfficialCommunicationsSettings:
+      type: object
+      properties:
+        notification.official_communications.enabled:
+          type: boolean
+        notification.official_communications.auto_create_conversation:
+          type: boolean
+        notification.official_communications.inbox_id:
+          type: string
+        notification.official_communications.priority_id:
+          type: string
+        notification.official_communications.status_id:
+          type: string
+        notification.official_communications.subject_prefix:
+          type: string
+        notification.official_communications.target_sla_hours:
+          type: string
+        notification.official_communications.default_types:
+          type: array
+          items:
+            type: string
+        notification.official_communications.internal_note:
+          type: string
+        notification.official_communications.routing_rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/OfficialCommunicationRoutingRule'

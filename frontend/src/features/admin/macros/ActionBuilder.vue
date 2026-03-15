@@ -63,7 +63,7 @@
                   v-if="action.type && config.actions[action.type]?.type === 'select'"
                   class="flex-1 max-w-xs"
                 >
-                  <label class="block text-sm font-medium mb-2">Value</label>
+                  <label class="block text-sm font-medium mb-2">{{ t('globals.terms.value') }}</label>
 
                   <SelectComboBox
                     v-if="action.type === 'assign_user'"

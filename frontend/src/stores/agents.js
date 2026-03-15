@@ -5,20 +5,19 @@ import { useEmitter } from '@/composables/useEmitter'
 import { EMITTER_EVENTS } from '@/constants/emitterEvents'
 import api from '@/api'
 
-// TODO: rename this store to agents
-export const useUsersStore = defineStore('users', () => {
-    const users = ref([])
+export const useAgentsStore = defineStore('agents', () => {
+    const agents = ref([])
     const emitter = useEmitter()
-    const options = computed(() => users.value.map(user => ({
-        label: user.first_name + ' ' + user.last_name,
-        value: String(user.id),
-        avatar_url: user.avatar_url,
+    const options = computed(() => agents.value.map(agent => ({
+        label: agent.first_name + ' ' + agent.last_name,
+        value: String(agent.id),
+        avatar_url: agent.avatar_url,
     })))
-    const fetchUsers = async (force = false) => {
-        if (!force && users.value.length) return
+    const fetchAgents = async (force = false) => {
+        if (!force && agents.value.length) return
         try {
             const response = await api.getUsersCompact()
-            users.value = response?.data?.data || []
+            agents.value = response?.data?.data || []
         } catch (error) {
             emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
                 variant: 'destructive',
@@ -27,8 +26,8 @@ export const useUsersStore = defineStore('users', () => {
         }
     }
     return {
-        users,
+        agents,
         options,
-        fetchUsers,
+        fetchAgents,
     }
 })

@@ -145,5 +145,52 @@ SELECT
 FROM templates
 WHERE name = $1;
 
+-- name: get-categories
+SELECT id, name, description, created_at, updated_at
+FROM template_categories
+ORDER BY name ASC;
+
+-- name: get-category-teams
+SELECT team_id FROM template_category_teams WHERE category_id = $1;
+
+-- name: insert-category
+INSERT INTO template_categories (name, description)
+VALUES ($1, $2)
+RETURNING id, name, description, created_at, updated_at;
+
+-- name: update-category
+UPDATE template_categories
+SET name = $2, description = $3, updated_at = NOW()
+WHERE id = $1
+RETURNING id, name, description, created_at, updated_at;
+
+-- name: delete-category
+DELETE FROM template_categories WHERE id = $1;
+
+-- name: clear-category-teams
+DELETE FROM template_category_teams WHERE category_id = $1;
+
+-- name: insert-category-team
+INSERT INTO template_category_teams (category_id, team_id) VALUES ($1, $2);
+
+-- name: get-templates-by-category
+SELECT
+    templates.id,
+    templates.created_at,
+    templates.updated_at,
+    templates.type,
+    templates.body,
+    templates.is_default,
+    templates.name,
+    templates.subject,
+    templates.is_builtin,
+    templates.team_id,
+    templates.category_id,
+    teams.name AS team_name
+FROM templates
+LEFT JOIN teams ON teams.id = templates.team_id
+WHERE templates.category_id = $1
+ORDER BY templates.name ASC;
+
 -- name: is-builtin
 SELECT EXISTS(SELECT 1 FROM templates WHERE id = $1 AND is_builtin is TRUE);

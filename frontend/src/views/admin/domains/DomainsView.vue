@@ -1,126 +1,185 @@
 <template>
-  <div class="space-y-6">
-    <div class="box p-6">
-      <h2 class="text-xl font-semibold">Domínios</h2>
-      <p class="mt-2 text-sm text-muted-foreground">
-        Cadastre os domínios que poderão ser usados nas caixas de e-mail gerenciadas pelo CanalGov.
-      </p>
-    </div>
+  <div>
+    <AdminPageHeader
+      :title="$t('admin.domain.title')"
+      :description="$t('admin.domain.description')"
+      :breadcrumbs="[{ label: $t('globals.terms.administration'), to: '/admin' }, { label: $t('admin.domain.title') }]"
+    >
+      <template #actions>
+        <Button @click="openCreate">
+          <Plus class="h-4 w-4 mr-1.5" aria-hidden="true" />
+          {{ $t('globals.messages.new', { name: $t('globals.terms.domain') }) }}
+        </Button>
+      </template>
+    </AdminPageHeader>
 
-    <div class="box space-y-5 p-6">
-      <div class="grid gap-4 lg:grid-cols-2">
-        <div>
-          <label class="text-sm font-medium">Nome</label>
-          <Input v-model="draft.name" class="mt-2" placeholder="Domínio principal" />
+    <AdminPageWithHelp>
+      <template #content>
+        <div class="space-y-3">
+          <div
+            v-if="domains.length === 0"
+            class="box flex flex-col items-center justify-center gap-2 p-10 text-center text-muted-foreground"
+          >
+            <Globe class="h-8 w-8 opacity-40" />
+            <p class="text-sm">{{ $t('admin.domain.empty') }}</p>
+          </div>
+
+          <div
+            v-for="domain in domains"
+            :key="domain.id"
+            class="box flex flex-col gap-4 p-5 lg:flex-row lg:items-start lg:justify-between"
+          >
+            <div class="space-y-2">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="font-medium">{{ domain.name }}</span>
+                <span class="rounded-full bg-muted px-2 py-0.5 text-xs font-mono">{{ domain.domain }}</span>
+                <span class="rounded-full bg-muted px-2 py-0.5 text-xs">{{ providerLabel(domain.provider) }}</span>
+                <span v-if="domain.is_default" class="rounded-full bg-foreground px-2 py-0.5 text-xs text-background">
+                  {{ $t('globals.terms.default') }}
+                </span>
+                <span
+                  class="rounded-full px-2 py-0.5 text-xs"
+                  :class="domain.enabled ? 'bg-emerald-100 text-emerald-700' : 'bg-zinc-100 text-zinc-600'"
+                >
+                  {{ domain.enabled ? $t('globals.terms.active') : $t('globals.terms.inactive') }}
+                </span>
+              </div>
+              <p class="text-sm text-muted-foreground">{{ inboundLabel(domain.inbound_strategy) }}</p>
+              <p v-if="domain.notes" class="text-sm text-muted-foreground">{{ domain.notes }}</p>
+            </div>
+
+            <div class="flex gap-2">
+              <Button variant="outline" size="sm" @click="openEdit(domain)">
+                {{ $t('globals.messages.edit', { name: '' }).trim() }}
+              </Button>
+              <Button variant="destructive" size="sm" @click="confirmRemove(domain)">
+                {{ $t('globals.messages.delete', { name: '' }).trim() }}
+              </Button>
+            </div>
+          </div>
         </div>
-        <div>
-          <label class="text-sm font-medium">Domínio</label>
-          <Input v-model="draft.domain" class="mt-2" placeholder="atendimento.gov.br" />
-        </div>
-      </div>
+      </template>
 
-      <div class="grid gap-4 lg:grid-cols-2">
-        <div>
-          <label class="text-sm font-medium">Provedor</label>
-          <Select v-model="draft.provider">
-            <SelectTrigger class="mt-2">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ses">AWS SES</SelectItem>
-              <SelectItem value="sns">AWS SNS</SelectItem>
-              <SelectItem value="mailgun">Mailgun</SelectItem>
-              <SelectItem value="sendgrid">SendGrid</SelectItem>
-              <SelectItem value="self_hosted">Servidor próprio</SelectItem>
-              <SelectItem value="custom">Customizado</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      <template #help>
+        <p>{{ $t('admin.domain.help') }}</p>
+        <p>{{ $t('admin.domain.help2') }}</p>
+      </template>
+    </AdminPageWithHelp>
 
-        <div>
-          <label class="text-sm font-medium">Estratégia de entrada</label>
-          <Select v-model="draft.inbound_strategy">
-            <SelectTrigger class="mt-2">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="managed_mailbox">Caixa gerenciada</SelectItem>
-              <SelectItem value="smtp_imap">SMTP/IMAP próprio</SelectItem>
-              <SelectItem value="webhook">Webhook inbound</SelectItem>
-              <SelectItem value="docker_mailserver">Servidor via Docker</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+    <!-- Create / Edit Dialog -->
+    <Dialog v-model:open="dialogOpen">
+      <DialogContent class="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>{{ isEditing ? $t('admin.domain.editTitle') : $t('globals.messages.new', { name: $t('globals.terms.domain') }) }}</DialogTitle>
+        </DialogHeader>
 
-      <div>
-        <label class="text-sm font-medium">Notas</label>
-        <Textarea
-          v-model="draft.notes"
-          class="mt-2 min-h-28"
-          placeholder="Observações sobre DNS, MX, provedor ou operação."
-        />
-      </div>
+        <div class="space-y-4 py-2">
+          <div class="grid gap-4 lg:grid-cols-2">
+            <div>
+              <label class="text-sm font-medium">{{ $t('globals.terms.name') }}</label>
+              <Input v-model="draft.name" class="mt-2" :placeholder="t('globals.terms.name')" />
+            </div>
+            <div>
+              <label class="text-sm font-medium">{{ $t('globals.terms.domain') }}</label>
+              <Input v-model="draft.domain" class="mt-2" placeholder="atendimento.gov.br" />
+            </div>
+          </div>
 
-      <div class="grid gap-4 lg:grid-cols-2">
-        <div class="flex items-center justify-between rounded-xl border border-border/70 p-4">
+          <div class="grid gap-4 lg:grid-cols-2">
+            <div>
+              <label class="text-sm font-medium">{{ $t('globals.terms.provider') }}</label>
+              <Select v-model="draft.provider">
+                <SelectTrigger class="mt-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ses">{{ t('admin.inbox.form.provider.ses') }}</SelectItem>
+                  <SelectItem value="sns">{{ t('admin.inbox.form.provider.sns') }}</SelectItem>
+                  <SelectItem value="mailgun">{{ t('admin.inbox.form.provider.mailgun') }}</SelectItem>
+                  <SelectItem value="sendgrid">{{ t('admin.inbox.form.provider.sendgrid') }}</SelectItem>
+                  <SelectItem value="self_hosted">{{ t('admin.inbox.form.provider.self_hosted') }}</SelectItem>
+                  <SelectItem value="custom">{{ t('globals.terms.custom') }}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label class="text-sm font-medium">{{ $t('admin.domain.inboundStrategy') }}</label>
+              <Select v-model="draft.inbound_strategy">
+                <SelectTrigger class="mt-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="managed_mailbox">{{ t('admin.inbox.form.provider.managed') }}</SelectItem>
+                  <SelectItem value="smtp_imap">{{ t('admin.inbox.form.provider.smtp_imap') }}</SelectItem>
+                  <SelectItem value="webhook">{{ t('admin.inbox.form.provider.webhook') }}</SelectItem>
+                  <SelectItem value="docker_mailserver">{{ t('admin.inbox.form.provider.docker') }}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           <div>
-            <p class="text-sm font-medium">Habilitado</p>
-            <p class="text-xs text-muted-foreground">Disponível para novas caixas.</p>
+            <label class="text-sm font-medium">{{ $t('globals.terms.notes') }}</label>
+            <Textarea
+              v-model="draft.notes"
+              class="mt-2 min-h-24"
+              :placeholder="t('globals.terms.notes')"
+            />
           </div>
-          <Switch v-model:checked="draft.enabled" />
-        </div>
 
-        <div class="flex items-center justify-between rounded-xl border border-border/70 p-4">
-          <div>
-            <p class="text-sm font-medium">Padrão</p>
-            <p class="text-xs text-muted-foreground">Usado como sugestão inicial nas caixas gerenciadas.</p>
+          <div class="grid gap-4 lg:grid-cols-2">
+            <div class="flex items-center justify-between rounded-xl border border-border/70 p-4">
+              <div>
+                <p class="text-sm font-medium">{{ $t('globals.terms.enabled') }}</p>
+                <p class="text-xs text-muted-foreground">{{ $t('admin.domain.enabledDescription') }}</p>
+              </div>
+              <Switch v-model:checked="draft.enabled" />
+            </div>
+
+            <div class="flex items-center justify-between rounded-xl border border-border/70 p-4">
+              <div>
+                <p class="text-sm font-medium">{{ $t('globals.terms.default') }}</p>
+                <p class="text-xs text-muted-foreground">{{ $t('admin.domain.defaultDescription') }}</p>
+              </div>
+              <Switch v-model:checked="draft.is_default" />
+            </div>
           </div>
-          <Switch v-model:checked="draft.is_default" />
-        </div>
-      </div>
-
-      <div class="flex gap-3">
-        <Button @click="saveDomain" :isLoading="isSaving">{{ isEditing ? 'Salvar domínio' : 'Adicionar domínio' }}</Button>
-        <Button variant="outline" @click="resetDraft">Limpar</Button>
-      </div>
-    </div>
-
-    <div class="space-y-4">
-      <div
-        v-for="domain in domains"
-        :key="domain.id"
-        class="box flex flex-col gap-4 p-5 lg:flex-row lg:items-start lg:justify-between"
-      >
-        <div class="space-y-2">
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="font-medium">{{ domain.name }}</span>
-            <span class="rounded-full bg-muted px-2 py-0.5 text-xs">{{ domain.domain }}</span>
-            <span class="rounded-full bg-muted px-2 py-0.5 text-xs">{{ providerLabel(domain.provider) }}</span>
-            <span v-if="domain.is_default" class="rounded-full bg-foreground px-2 py-0.5 text-xs text-background">Padrão</span>
-            <span
-              class="rounded-full px-2 py-0.5 text-xs"
-              :class="domain.enabled ? 'bg-emerald-100 text-emerald-700' : 'bg-zinc-100 text-zinc-600'"
-            >
-              {{ domain.enabled ? 'Ativo' : 'Inativo' }}
-            </span>
-          </div>
-          <p class="text-sm text-muted-foreground">{{ inboundLabel(domain.inbound_strategy) }}</p>
-          <p v-if="domain.notes" class="text-sm text-muted-foreground">{{ domain.notes }}</p>
         </div>
 
-        <div class="flex gap-2">
-          <Button variant="outline" @click="editDomain(domain)">Editar</Button>
-          <Button variant="destructive" @click="removeDomain(domain.id)">Remover</Button>
-        </div>
-      </div>
-    </div>
+        <DialogFooter>
+          <Button variant="outline" @click="dialogOpen = false">{{ $t('globals.messages.cancel') }}</Button>
+          <Button @click="saveDomain" :isLoading="isSaving">{{ $t('globals.messages.save') }}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Delete Confirmation Dialog -->
+    <AlertDialog v-model:open="deleteDialogOpen">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{{ $t('globals.messages.areYouAbsolutelySure') }}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {{ $t('globals.messages.deletionConfirmation', { name: domainToDelete?.name || $t('globals.terms.domain') }) }}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{{ $t('globals.messages.cancel') }}</AlertDialogCancel>
+          <AlertDialogAction @click="removeDomain" class="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            {{ $t('globals.messages.delete') }}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
+import { Plus, Globe } from 'lucide-vue-next'
 import api from '@/api'
+import AdminPageWithHelp from '@/layouts/admin/AdminPageWithHelp.vue'
+import AdminPageHeader from '@/components/layout/AdminPageHeader.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -132,13 +191,33 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { useEmitter } from '@/composables/useEmitter'
-import { EMITTER_EVENTS } from '@/constants/emitterEvents'
-import { handleHTTPError } from '@/utils/http'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@/components/ui/alert-dialog'
+import { useAdminErrorToast } from '@/composables/useAdminErrorToast'
+import { useI18n } from 'vue-i18n'
 
-const emitter = useEmitter()
+const { t } = useI18n()
+const { showErrorToast, showSuccessToast } = useAdminErrorToast()
 const isSaving = ref(false)
 const domains = ref([])
+const dialogOpen = ref(false)
+const deleteDialogOpen = ref(false)
+const domainToDelete = ref(null)
 
 const blankDraft = () => ({
   id: '',
@@ -159,10 +238,7 @@ const fetchDomains = async () => {
     const resp = await api.getMailDomainsSettings()
     domains.value = resp.data.data?.domains || []
   } catch (error) {
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      variant: 'destructive',
-      description: handleHTTPError(error).message
-    })
+    showErrorToast(error)
   }
 }
 
@@ -173,8 +249,19 @@ const persistDomains = async (nextDomains) => {
   domains.value = nextDomains
 }
 
-const resetDraft = () => {
+const openCreate = () => {
   draft.value = blankDraft()
+  dialogOpen.value = true
+}
+
+const openEdit = (domain) => {
+  draft.value = { ...domain }
+  dialogOpen.value = true
+}
+
+const confirmRemove = (domain) => {
+  domainToDelete.value = domain
+  deleteDialogOpen.value = true
 }
 
 const saveDomain = async () => {
@@ -190,51 +277,44 @@ const saveDomain = async () => {
     }
     nextDomains.unshift(payload)
     await persistDomains(nextDomains)
-    resetDraft()
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, { description: 'Domínio salvo.' })
+    dialogOpen.value = false
+    showSuccessToast(t('globals.messages.savedSuccessfully', { name: t('globals.terms.domain') }))
   } catch (error) {
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      variant: 'destructive',
-      description: handleHTTPError(error).message
-    })
+    showErrorToast(error)
   } finally {
     isSaving.value = false
   }
 }
 
-const editDomain = (domain) => {
-  draft.value = { ...domain }
-}
-
-const removeDomain = async (id) => {
+const removeDomain = async () => {
+  if (!domainToDelete.value) return
   try {
     isSaving.value = true
-    await persistDomains(domains.value.filter((item) => item.id !== id))
-    if (draft.value.id === id) resetDraft()
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, { description: 'Domínio removido.' })
+    await persistDomains(domains.value.filter((item) => item.id !== domainToDelete.value.id))
+    domainToDelete.value = null
+    showSuccessToast(t('globals.messages.deletedSuccessfully', { name: t('globals.terms.domain') }))
   } catch (error) {
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      variant: 'destructive',
-      description: handleHTTPError(error).message
-    })
+    showErrorToast(error)
   } finally {
     isSaving.value = false
   }
 }
 
-const providerLabel = (value) => ({
-  ses: 'AWS SES',
-  sns: 'AWS SNS',
-  mailgun: 'Mailgun',
-  sendgrid: 'SendGrid',
-  self_hosted: 'Servidor próprio',
-  custom: 'Customizado'
-}[value] || value)
+const providerLabel = (value) =>
+  ({
+    ses: 'AWS SES',
+    sns: 'AWS SNS',
+    mailgun: 'Mailgun',
+    sendgrid: 'SendGrid',
+    self_hosted: t('admin.domain.providerSelfHosted'),
+    custom: t('globals.terms.custom')
+  }[value] || value)
 
-const inboundLabel = (value) => ({
-  managed_mailbox: 'Caixa gerenciada pelo CanalGov',
-  smtp_imap: 'SMTP/IMAP próprio',
-  webhook: 'Webhook inbound',
-  docker_mailserver: 'Servidor de e-mail via Docker'
-}[value] || value)
+const inboundLabel = (value) =>
+  ({
+    managed_mailbox: t('admin.domain.inboundManaged'),
+    smtp_imap: t('admin.inbox.new.emailCustom'),
+    webhook: t('admin.domain.inboundWebhook'),
+    docker_mailserver: t('admin.domain.inboundDocker')
+  }[value] || value)
 </script>

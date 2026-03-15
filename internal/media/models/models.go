@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"time"
 
+	umodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/user/models"
 	"github.com/volatiletech/null/v9"
 )
 
 const (
-	// TODO: pick these table names from their respective package/models/models.go
 	ModelMessages = "messages"
-	ModelUser     = "users"
+	ModelUser     = umodels.UserTableName
 
 	DispositionInline = "inline"
 )

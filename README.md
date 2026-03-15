@@ -5,7 +5,7 @@
 
 Central de atendimento moderna, open source e self-hosted. Aplicacao em binario unico.
 
-![image](https://libredesk.io/hero.png?v=1)
+![image](https://canalgov.io/hero.png?v=1)
 
 
 Consulte a [documentacao local](./docs/README.md) para operacao e desenvolvimento.
@@ -48,8 +48,8 @@ The latest image is available on DockerHub at [`canalgov/canalgov:latest`](https
 
 ```shell
 # Download the compose file and sample config file in the current directory.
-curl -LO https://github.com/abhinavxd/libredesk/raw/main/docker-compose.yml
-curl -LO https://github.com/abhinavxd/libredesk/raw/main/config.sample.toml
+curl -LO https://github.com/fundacaobeta/base-canalgov-monorepo/raw/main/docker-compose.yml
+curl -LO https://github.com/fundacaobeta/base-canalgov-monorepo/raw/main/config.sample.toml
 
 # Copy the config.sample.toml to config.toml and edit it as needed.
 cp config.sample.toml config.toml

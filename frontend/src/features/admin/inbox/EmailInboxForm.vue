@@ -320,9 +320,9 @@
                 <SelectValue :placeholder="t('globals.messages.selectTLS')" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">OFF</SelectItem>
-                <SelectItem value="tls">SSL/TLS</SelectItem>
-                <SelectItem value="starttls">STARTTLS</SelectItem>
+                <SelectItem value="none">{{ t('globals.tls.none') }}</SelectItem>
+                <SelectItem value="tls">{{ t('globals.tls.ssl_tls') }}</SelectItem>
+                <SelectItem value="starttls">{{ t('globals.tls.starttls') }}</SelectItem>
               </SelectContent>
             </Select>
           </FormControl>
@@ -475,10 +475,10 @@
                 <SelectValue :placeholder="t('globals.messages.select', { name: t('globals.terms.protocol') })" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="login">Login</SelectItem>
-                <SelectItem value="cram">CRAM</SelectItem>
-                <SelectItem value="plain">Plain</SelectItem>
-                <SelectItem value="none">Nenhum</SelectItem>
+                <SelectItem value="login">{{ t('globals.auth.login') }}</SelectItem>
+                <SelectItem value="cram">{{ t('globals.auth.cram') }}</SelectItem>
+                <SelectItem value="plain">{{ t('globals.auth.plain') }}</SelectItem>
+                <SelectItem value="none">{{ t('globals.auth.none') }}</SelectItem>
               </SelectContent>
             </Select>
           </FormControl>
@@ -496,9 +496,9 @@
                 <SelectValue :placeholder="t('globals.messages.selectTLS')" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">OFF</SelectItem>
-                <SelectItem value="tls">SSL/TLS</SelectItem>
-                <SelectItem value="starttls">STARTTLS</SelectItem>
+                <SelectItem value="none">{{ t('globals.tls.none') }}</SelectItem>
+                <SelectItem value="tls">{{ t('globals.tls.ssl_tls') }}</SelectItem>
+                <SelectItem value="starttls">{{ t('globals.tls.starttls') }}</SelectItem>
               </SelectContent>
             </Select>
           </FormControl>
@@ -679,7 +679,7 @@ import {
   PROVIDER_GOOGLE,
   PROVIDER_MICROSOFT
 } from '@/constants/auth.js'
-import { handleHTTPError } from '@/utils/http'
+import { useAdminErrorToast } from '@/composables/useAdminErrorToast'
 import { useAppSettingsStore } from '@/stores/appSettings'
 
 const props = defineProps({
@@ -703,6 +703,7 @@ const props = defineProps({
 
 const { t } = useI18n()
 const emitter = useEmitter()
+const { showErrorToast, showSuccessToast } = useAdminErrorToast()
 const appSettingsStore = useAppSettingsStore()
 
 // OAuth detection
@@ -829,10 +830,7 @@ const reconnectOAuth = () => {
 
 const submitOAuthCredentials = async () => {
   if (!oauthCredentials.value.client_id || !oauthCredentials.value.client_secret) {
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      variant: 'destructive',
-      description: t('admin.inbox.oauth.clientIDSecretRequired')
-    })
+    showErrorToast(new Error(t('admin.inbox.oauth.clientIDSecretRequired')))
     return
   }
 
@@ -851,24 +849,16 @@ const submitOAuthCredentials = async () => {
     const response = await api.initiateOAuthFlow(selectedProvider.value, payload)
     window.location.href = response.data.data
   } catch (error) {
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      variant: 'destructive',
-      description: handleHTTPError(error).message
-    })
+    showErrorToast(error)
   }
 }
 
 const copyToClipboard = async (text) => {
   try {
     await navigator.clipboard.writeText(text)
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      description: t('globals.messages.copied')
-    })
-  } catch (error) {
-    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-      variant: 'destructive',
-      description: t('globals.messages.errorCopying')
-    })
+    showSuccessToast(t('globals.messages.copied'))
+  } catch {
+    showSuccessToast(t('globals.messages.errorCopying'))
   }
 }
 

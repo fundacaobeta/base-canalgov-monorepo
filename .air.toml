@@ -1,0 +1,36 @@
+# Air — Go hot reload config
+# https://github.com/air-verse/air
+
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "CGO_ENABLED=0 go build -o ./tmp/canalgov cmd/*.go"
+  bin = "./tmp/canalgov"
+  full_bin = "./tmp/canalgov"
+  include_ext = ["go", "tpl", "tmpl", "html", "toml", "sql", "json"]
+  exclude_dir = ["frontend", "tmp", "vendor", "uploads", "docs", "scripts"]
+  include_dir = ["cmd", "internal", "i18n"]
+  exclude_file = []
+  exclude_regex = ["_test.go"]
+  exclude_unchanged = true
+  follow_symlink = false
+  log = "build-errors.log"
+  delay = 500
+  stop_on_error = true
+  send_interrupt = false
+  kill_delay = "0s"
+  rerun = false
+
+[log]
+  time = false
+  main_only = false
+
+[color]
+  main = "magenta"
+  watcher = "cyan"
+  build = "yellow"
+  runner = "green"
+
+[misc]
+  clean_on_exit = true
