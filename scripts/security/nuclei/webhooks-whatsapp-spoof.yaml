@@ -1,0 +1,23 @@
+id: canalgov-whatsapp-webhook-spoof
+
+info:
+  name: CanalGov WhatsApp Webhook Spoof
+  author: codex
+  severity: high
+  description: Detecta verificacao insegura do webhook de WhatsApp aceitando verify_token arbitrario.
+  tags: canalgov,webhook,whatsapp,spoof
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/api/v1/webhooks/whatsapp?hub.mode=subscribe&hub.verify_token=test&hub.challenge=1337"
+
+    matchers-condition: and
+    matchers:
+      - type: status
+        status:
+          - 200
+      - type: word
+        words:
+          - "1337"
+        part: body

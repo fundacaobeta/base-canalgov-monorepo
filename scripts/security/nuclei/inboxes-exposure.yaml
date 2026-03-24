@@ -1,0 +1,28 @@
+id: canalgov-inboxes-exposure
+
+info:
+  name: CanalGov Inboxes Exposure
+  author: codex
+  severity: medium
+  description: Detecta exposicao de configuracao de inboxes para usuario autenticado sem privilegio administrativo.
+  tags: canalgov,bac,exposure,inboxes
+
+variables:
+  cookie: "{{cookie}}"
+
+http:
+  - raw:
+      - |
+        GET /api/v1/inboxes HTTP/1.1
+        Host: {{Hostname}}
+        Cookie: {{cookie}}
+
+    matchers-condition: and
+    matchers:
+      - type: status
+        status:
+          - 200
+      - type: word
+        words:
+          - '"config"'
+        part: body
