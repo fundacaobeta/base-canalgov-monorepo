@@ -48,7 +48,7 @@
         class="flex flex-col items-center justify-center py-8 text-muted-foreground"
       >
         <BellOff class="h-8 w-8 mb-2" />
-        <p class="text-sm">{{ t('globals.messages.noResults', { name: t('globals.terms.notification', 2) }) }}</p>
+        <p class="text-sm">{{ t('toast.noNotificationsFound') }}</p>
       </div>
 
       <!-- Notifications -->
@@ -77,9 +77,9 @@
               <p v-if="notification.body" class="text-xs text-muted-foreground mt-0.5">
                 {{ notification.body }}
               </p>
-              <div class="mt-1">
-                <DateTimeMeta :value="notification.created_at" :show-absolute="false" compact />
-              </div>
+              <p class="text-xs text-muted-foreground mt-1">
+                {{ getRelativeTime(new Date(notification.created_at)) }}
+              </p>
             </div>
 
             <!-- Action buttons (visible on hover) -->
@@ -141,7 +141,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useNotificationStore } from '@/stores/notification'
-import DateTimeMeta from '@/components/datetime/DateTimeMeta.vue'
+import { getRelativeTime } from '@/utils/datetime.js'
 
 const emit = defineEmits(['close'])
 

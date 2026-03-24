@@ -41,7 +41,7 @@ func (u *Manager) UpdateContact(id int, user models.User) error {
 
 // GetContact retrieves a contact by ID.
 func (u *Manager) GetContact(id int, email string) (models.User, error) {
-	return u.Get(id, email, models.UserTypeContact)
+	return u.Get(id, email, []string{models.UserTypeContact})
 }
 
 // GetAllContacts returns a list of all contacts.

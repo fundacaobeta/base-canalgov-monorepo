@@ -7,7 +7,15 @@ export function formatBytes(bytes) {
 }
 
 export function getThumbFilepath (filepath) {
-  const urlParts = filepath.split('/')
+  if (!filepath) {
+    return filepath
+  }
+
+  const [pathPart, queryPart] = filepath.split('?')
+  const urlParts = pathPart.split('/')
   const filename = urlParts.pop()
-  return `/uploads/thumb_${filename}`
+  urlParts.push(`thumb_${filename}`)
+
+  const thumbPath = urlParts.join('/')
+  return queryPart ? `${thumbPath}?${queryPart}` : thumbPath
 }

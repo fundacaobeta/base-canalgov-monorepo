@@ -303,3 +303,81 @@ func ExtractReferenceNumber(subject string) string {
 	}
 	return ""
 }
+
+// MarkdownToHTML converts markdown content to HTML.
+// This is a simple implementation that handles common markdown patterns.
+func MarkdownToHTML(markdown string) (string, error) {
+	// Simple markdown to HTML conversion using string replacement
+	result := markdown
+
+	// Handle bold
+	boldRe := regexp.MustCompile(`\*\*(.*?)\*\*`)
+	result = boldRe.ReplaceAllString(result, "<strong>$1</strong>")
+
+	// Handle italic
+	italicRe := regexp.MustCompile(`\*(.*?)\*`)
+	result = italicRe.ReplaceAllString(result, "<em>$1</em>")
+
+	// Handle line breaks
+	result = strings.ReplaceAll(result, "\n\n", "</p><p>")
+	result = strings.ReplaceAll(result, "\n", "<br>")
+	result = "<p>" + result + "</p>"
+
+	return result, nil
+}
+
+// CleanJSONResponse removes markdown code blocks from LLM responses.
+// This handles cases where LLMs wrap JSON in ```json ... ``` blocks despite explicit instructions.
+func CleanJSONResponse(response string) string {
+	response = strings.TrimSpace(response)
+
+	// Handle ```json ... ``` blocks
+	if strings.HasPrefix(response, "```json") && strings.HasSuffix(response, "```") {
+		cleaned := strings.TrimPrefix(response, "```json")
+		cleaned = strings.TrimSuffix(cleaned, "```")
+		return strings.TrimSpace(cleaned)
+	}
+
+	// Handle generic ``` ... ``` blocks
+	if strings.HasPrefix(response, "```") && strings.HasSuffix(response, "```") {
+		cleaned := strings.TrimPrefix(response, "```")
+		cleaned = strings.TrimSuffix(cleaned, "```")
+		return strings.TrimSpace(cleaned)
+	}
+
+	return response
+}
+func GenerateSlug(title string, prefixRandom bool) string {
+	// Trim whitespace
+	slug := strings.TrimSpace(title)
+
+	// Convert to lowercase
+	slug = strings.ToLower(slug)
+
+	// Replace spaces and special characters with hyphens
+	slug = regexpSpaces.ReplaceAllString(slug, "-")
+
+	// Remove any non-alphanumeric characters except hyphens and underscores
+	slugRegex := regexp.MustCompile(`[^a-z0-9\-_]+`)
+	slug = slugRegex.ReplaceAllString(slug, "")
+
+	// Remove multiple consecutive hyphens
+	multiHyphens := regexp.MustCompile(`-+`)
+	slug = multiHyphens.ReplaceAllString(slug, "-")
+
+	// Trim leading/trailing hyphens
+	slug = strings.Trim(slug, "-")
+
+	// If slug is empty after processing, generate a random string as slug
+	if slug == "" {
+		randomSlug, err := RandomAlphanumeric(12)
+		if err != nil {
+			slug = "untitled"
+		} else {
+			slug = randomSlug
+		}
+	}
+
+
+	return slug
+}

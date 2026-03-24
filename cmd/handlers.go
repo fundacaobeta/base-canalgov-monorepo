@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/fundacaobeta/base-canalgov-monorepo/internal/envelope"
 	"github.com/fundacaobeta/base-canalgov-monorepo/internal/ws"
@@ -272,6 +273,41 @@ func initHandlers(g *fastglue.Fastglue, hub *ws.Hub) {
 	g.PUT("/api/v1/custom-attributes/{id}", perm(handleUpdateCustomAttribute, "custom_attributes:manage"))
 	g.DELETE("/api/v1/custom-attributes/{id}", perm(handleDeleteCustomAttribute, "custom_attributes:manage"))
 
+	// AI assistants & snippets.
+	g.GET("/api/v1/ai-assistants", perm(handleGetAIAssistants, "ai:manage"))
+	g.GET("/api/v1/ai-assistants/{id}", perm(handleGetAIAssistant, "ai:manage"))
+	g.POST("/api/v1/ai-assistants", perm(handleCreateAIAssistant, "ai:manage"))
+	g.PUT("/api/v1/ai-assistants/{id}", perm(handleUpdateAIAssistant, "ai:manage"))
+	g.DELETE("/api/v1/ai-assistants/{id}", perm(handleDeleteAIAssistant, "ai:manage"))
+
+	g.GET("/api/v1/ai-snippets", perm(handleGetAISnippets, "ai:manage"))
+	g.GET("/api/v1/ai-snippets/{id}", perm(handleGetAISnippet, "ai:manage"))
+	g.POST("/api/v1/ai-snippets", perm(handleCreateAISnippet, "ai:manage"))
+	g.PUT("/api/v1/ai-snippets/{id}", perm(handleUpdateAISnippet, "ai:manage"))
+	g.DELETE("/api/v1/ai-snippets/{id}", perm(handleDeleteAISnippet, "ai:manage"))
+
+	// Help Center.
+	g.GET("/api/v1/help-centers", auth(handleGetHelpCenters))
+	g.GET("/api/v1/help-centers/{id}", auth(handleGetHelpCenter))
+	g.GET("/api/v1/help-centers/{id}/tree", auth(handleGetHelpCenterTree))
+	g.POST("/api/v1/help-centers", perm(handleCreateHelpCenter, "help_center:manage"))
+	g.PUT("/api/v1/help-centers/{id}", perm(handleUpdateHelpCenter, "help_center:manage"))
+	g.DELETE("/api/v1/help-centers/{id}", perm(handleDeleteHelpCenter, "help_center:manage"))
+
+	g.GET("/api/v1/help-centers/{hc_id}/collections", auth(handleGetCollections))
+	g.GET("/api/v1/help-centers/{hc_id}/collections/{id}", auth(handleGetCollection))
+	g.POST("/api/v1/help-centers/{hc_id}/collections", perm(handleCreateCollection, "help_center:manage"))
+	g.PUT("/api/v1/help-centers/{hc_id}/collections/{id}", perm(handleUpdateCollection, "help_center:manage"))
+	g.DELETE("/api/v1/help-centers/{hc_id}/collections/{id}", perm(handleDeleteCollection, "help_center:manage"))
+
+	g.GET("/api/v1/collections/{c_id}/articles", auth(handleGetArticles))
+	g.GET("/api/v1/collections/{c_id}/articles/{id}", auth(handleGetArticle))
+	g.POST("/api/v1/collections/{c_id}/articles", perm(handleCreateArticle, "help_center:manage"))
+	g.PUT("/api/v1/collections/{c_id}/articles/{id}", perm(handleUpdateArticle, "help_center:manage"))
+	g.DELETE("/api/v1/collections/{c_id}/articles/{id}", perm(handleDeleteArticle, "help_center:manage"))
+	g.PUT("/api/v1/articles/{id}", perm(handleUpdateArticleByID, "help_center:manage"))
+	g.PUT("/api/v1/articles/{id}/status", perm(handleUpdateArticleStatus, "help_center:manage"))
+
 	// Actvity logs.
 	g.GET("/api/v1/activity-logs", perm(handleGetActivityLogs, "activity_logs:manage"))
 
@@ -282,6 +318,19 @@ func initHandlers(g *fastglue.Fastglue, hub *ws.Hub) {
 	g.PUT("/api/v1/notifications/read-all", auth(handleMarkAllNotificationsAsRead))
 	g.DELETE("/api/v1/notifications/{id}", auth(handleDeleteNotification))
 	g.DELETE("/api/v1/notifications", auth(handleDeleteAllNotifications))
+
+	// Live chat widget WebSocket.
+	g.GET("/widget/ws", handleWidgetWS)
+
+	// Live chat widget API.
+	g.GET("/api/v1/widget/chat/settings/launcher", handleGetChatLauncherSettings)
+	g.GET("/api/v1/widget/chat/settings", handleGetChatSettings)
+	g.POST("/api/v1/widget/chat/conversations/init", widgetAuth(handleChatInit))
+	g.GET("/api/v1/widget/chat/conversations", widgetAuth(handleGetConversations))
+	g.POST("/api/v1/widget/chat/conversations/{uuid}/update-last-seen", widgetAuth(handleChatUpdateLastSeen))
+	g.GET("/api/v1/widget/chat/conversations/{uuid}", widgetAuth(handleChatGetConversation))
+	g.POST("/api/v1/widget/chat/conversations/{uuid}/message", widgetAuth(handleChatSendMessage))
+	g.POST("/api/v1/widget/media/upload", widgetAuth(handleWidgetMediaUpload))
 
 	// WebSocket.
 	g.GET("/ws", auth(func(r *fastglue.Request) error {
@@ -311,6 +360,9 @@ func initHandlers(g *fastglue.Fastglue, hub *ws.Hub) {
 	g.GET("/assets/{all:*}", serveFrontendStaticFiles)
 	g.GET("/images/{all:*}", serveFrontendStaticFiles)
 	g.GET("/static/public/{all:*}", serveStaticFiles)
+	// Widget static assets.
+	g.GET("/widget", serveWidgetIndexPage)
+	g.GET("/widget/assets/{all:*}", serveWidgetStaticFiles)
 
 	// Public pages.
 	g.GET("/csat/{uuid}", handleShowCSAT)
@@ -383,6 +435,45 @@ func serveFrontendStaticFiles(r *fastglue.Request) error {
 	}
 
 	// Set the appropriate Content-Type based on the file extension.
+	ext := filepath.Ext(filePath)
+	contentType := mime.TypeByExtension(ext)
+	if contentType == "" {
+		contentType = http.DetectContentType(file.ReadBytes())
+	}
+	r.RequestCtx.Response.Header.Set("Content-Type", contentType)
+	r.RequestCtx.SetBody(file.ReadBytes())
+	return nil
+}
+
+// serveWidgetIndexPage serves the live chat widget index page.
+func serveWidgetIndexPage(r *fastglue.Request) error {
+	app := r.Context.(*App)
+
+	r.RequestCtx.Response.Header.Add("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0")
+	r.RequestCtx.Response.Header.Add("Pragma", "no-cache")
+	r.RequestCtx.Response.Header.Add("Expires", "-1")
+
+	file, err := app.fs.Get(path.Join(widgetDir, "index.html"))
+	if err != nil {
+		return r.SendErrorEnvelope(http.StatusNotFound, app.i18n.Ts("globals.messages.notFound", "name", "{globals.terms.file}"), nil, envelope.NotFoundError)
+	}
+	r.RequestCtx.Response.Header.Set("Content-Type", "text/html")
+	r.RequestCtx.SetBody(file.ReadBytes())
+	return nil
+}
+
+// serveWidgetStaticFiles serves widget static assets from the embedded filesystem.
+func serveWidgetStaticFiles(r *fastglue.Request) error {
+	app := r.Context.(*App)
+
+	filePath := string(r.RequestCtx.Path())
+	finalPath := filepath.Join(widgetDir, strings.TrimPrefix(filePath, "/widget"))
+
+	file, err := app.fs.Get(finalPath)
+	if err != nil {
+		return r.SendErrorEnvelope(http.StatusNotFound, app.i18n.Ts("globals.messages.notFound", "name", "{globals.terms.file}"), nil, envelope.NotFoundError)
+	}
+
 	ext := filepath.Ext(filePath)
 	contentType := mime.TypeByExtension(ext)
 	if contentType == "" {

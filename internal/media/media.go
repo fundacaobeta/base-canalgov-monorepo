@@ -184,6 +184,12 @@ func (m *Manager) SignedURLValidator() func(name, sig string, exp int64) bool {
 	return m.store.SignedURLValidator()
 }
 
+// GetSignedURL returns a URL for the media identified by its UUID.
+// For local storage this produces a signed URL; for S3 the regular URL is returned.
+func (m *Manager) GetSignedURL(name string) string {
+	return m.store.GetURL(name, "attachment", name)
+}
+
 // Attach associates a media file with a specific model by its ID and model name.
 func (m *Manager) Attach(id int, model string, modelID int) error {
 	if _, err := m.queries.Attach.Exec(id, model, modelID); err != nil {

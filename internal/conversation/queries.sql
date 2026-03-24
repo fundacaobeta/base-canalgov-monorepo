@@ -4,7 +4,9 @@ SET snoozed_until = NULL, status_id = (SELECT id FROM conversation_statuses WHER
 WHERE snoozed_until <= NOW();
 
 -- name: insert-conversation
-WITH 
+-- $1=contact_id $2=contact_channel_id(nullable) $3=status $4=inbox_id $5=last_message
+-- $6=last_message_at $7=subject $8=prefix $9=append_ref $10=meta $11=custom_attributes
+WITH
 status_id AS (
    SELECT id FROM conversation_statuses WHERE name = $3
 ),
@@ -12,19 +14,21 @@ reference_number AS (
    SELECT generate_reference_number($8) AS reference_number
 )
 INSERT INTO conversations
-(contact_id, contact_channel_id, status_id, inbox_id, last_message, last_message_at, subject, reference_number)
+(contact_id, contact_channel_id, status_id, inbox_id, last_message, last_message_at, subject, reference_number, meta, custom_attributes)
 VALUES(
-   $1, 
-   $2, 
-   (SELECT id FROM status_id), 
-   $4, 
-   $5, 
-   $6, 
-   CASE 
+   $1,
+   NULLIF($2, 0),
+   (SELECT id FROM status_id),
+   $4,
+   $5,
+   $6,
+   CASE
       WHEN $9 = TRUE THEN CONCAT($7::text, ' - #', (SELECT reference_number FROM reference_number), '')
       ELSE $7::text
-   END, 
-   (SELECT reference_number FROM reference_number)
+   END,
+   (SELECT reference_number FROM reference_number),
+   COALESCE($10::jsonb, '{}'::jsonb),
+   COALESCE($11::jsonb, '{}'::jsonb)
 )
 RETURNING id, uuid;
 
@@ -649,3 +653,152 @@ DO UPDATE SET
                     WHERE conversation_id = (SELECT id FROM conversations WHERE uuid = $2)
                     ORDER BY created_at DESC LIMIT 1),
     updated_at = NOW();
+-- name: delete-message
+DELETE FROM conversation_messages WHERE CASE 
+    WHEN $1 > 0 THEN id = $1 
+    ELSE uuid = $2 
+END;
+
+-- name: get-offline-livechat-conversations
+SELECT
+    c.id,
+    c.uuid,
+    c.contact_id,
+    c.inbox_id,
+    c.contact_last_seen_at,
+    c.last_continuity_email_sent_at,
+    i.linked_email_inbox_id,
+    u.email as contact_email,
+    u.first_name as contact_first_name,
+    u.last_name as contact_last_name
+FROM conversations c
+JOIN users u ON u.id = c.contact_id
+JOIN inboxes i ON i.id = c.inbox_id
+WHERE i.channel = 'livechat'
+  AND i.enabled = TRUE
+  AND i.linked_email_inbox_id IS NOT NULL
+  AND c.contact_last_seen_at IS NOT NULL
+  AND c.contact_last_seen_at < NOW() - MAKE_INTERVAL(mins => $1)
+  AND EXISTS (
+    SELECT 1 FROM conversation_messages cm
+    WHERE cm.conversation_id = c.id
+      AND cm.created_at > c.contact_last_seen_at
+      AND cm.type = 'outgoing'
+      AND cm.private = false
+  )
+  AND u.email > ''
+  AND (c.last_continuity_email_sent_at IS NULL
+       OR c.last_continuity_email_sent_at < NOW() - MAKE_INTERVAL(mins => $2));
+
+-- name: get-unread-messages
+SELECT
+    m.id,
+    m.created_at,
+    m.updated_at,
+    m.status,
+    m.type, 
+    m.content,
+    m.text_content,
+    m.uuid,
+    m.private,
+    m.sender_id,
+    m.sender_type,
+    m.meta,
+    u.first_name as "sender.first_name",
+    u.last_name as "sender.last_name",
+    u.type as "sender.type"
+FROM conversation_messages m
+LEFT JOIN users u ON u.id = m.sender_id
+WHERE m.conversation_id = $1
+  AND m.created_at > $2
+  AND m.type = 'outgoing'
+  AND m.private = false
+  AND (m.meta IS NULL OR NOT COALESCE((m.meta->>'continuity_email')::boolean, false))
+ORDER BY m.created_at ASC
+LIMIT $3;
+
+-- name: update-continuity-email-tracking
+UPDATE conversations
+SET contact_last_seen_at = NOW(),
+    last_continuity_email_sent_at = NOW()
+WHERE id = $1;
+
+-- name: get-chat-conversation
+SELECT
+    c.created_at,
+    c.uuid,
+    cs.name as status,
+    COALESCE(c.last_interaction, '') as "last_message.content",
+    c.last_interaction_at as "last_message.created_at",
+    COALESCE(lis.id::TEXT, '') AS "last_message.author.id",
+    COALESCE(lis.first_name, '') AS "last_message.author.first_name",
+    COALESCE(lis.last_name, '') AS "last_message.author.last_name",
+    COALESCE(lis.avatar_url, '') AS "last_message.author.avatar_url",
+    COALESCE(c.last_interaction_sender::TEXT, '') AS "last_message.author.type",
+    (SELECT CASE WHEN COUNT(*) > 9 THEN 10 ELSE COUNT(*) END
+     FROM (
+         SELECT 1 FROM conversation_messages unread
+         WHERE unread.conversation_id = c.id
+           AND unread.created_at > c.contact_last_seen_at
+           AND unread.type IN ('incoming', 'outgoing')
+           AND unread.private = false
+         LIMIT 10
+     ) t) AS unread_message_count,
+    COALESCE(au.availability_status::TEXT, '') as "assignee.availability_status",
+    au.avatar_url as "assignee.avatar_url",
+    COALESCE(au.first_name, '') as "assignee.first_name",
+    COALESCE(au.id, 0) as "assignee.id",
+    COALESCE(au.last_name, '') as "assignee.last_name",
+    COALESCE(au.type::TEXT, '') as "assignee.type"
+FROM conversations c
+INNER JOIN inboxes inb on c.inbox_id = inb.id
+LEFT JOIN conversation_statuses cs ON c.status_id = cs.id
+LEFT JOIN users au ON c.assigned_user_id = au.id
+LEFT JOIN users lis ON c.last_interaction_sender_id = lis.id
+WHERE c.uuid = $1
+  AND inb.deleted_at IS NULL;
+
+-- name: get-contact-chat-conversations
+SELECT
+    c.created_at,
+    c.uuid,
+    cs.name as status,
+    COALESCE(c.last_interaction, '') as "last_message.content",
+    c.last_interaction_at as "last_message.created_at",
+    COALESCE(lis.id::TEXT, '') AS "last_message.author.id",
+    COALESCE(lis.first_name, '') AS "last_message.author.first_name",
+    COALESCE(lis.last_name, '') AS "last_message.author.last_name",
+    COALESCE(lis.avatar_url, '') AS "last_message.author.avatar_url",
+    COALESCE(c.last_interaction_sender::TEXT, '') AS "last_message.author.type",
+    (SELECT CASE WHEN COUNT(*) > 9 THEN 10 ELSE COUNT(*) END
+     FROM (
+         SELECT 1 FROM conversation_messages unread
+         WHERE unread.conversation_id = c.id
+           AND unread.created_at > c.contact_last_seen_at
+           AND unread.type IN ('incoming', 'outgoing')
+           AND unread.private = false
+         LIMIT 10
+     ) t) AS unread_message_count,
+    COALESCE(au.availability_status::TEXT, '') as "assignee.availability_status",
+    au.avatar_url as "assignee.avatar_url",
+    COALESCE(au.first_name, '') as "assignee.first_name",
+    COALESCE(au.id, 0) as "assignee.id",
+    COALESCE(au.last_name, '') as "assignee.last_name",
+    COALESCE(au.type::TEXT, '') as "assignee.type"
+FROM conversations c
+INNER JOIN inboxes inb ON c.inbox_id = inb.id
+INNER JOIN users con ON c.contact_id = con.id
+LEFT JOIN conversation_statuses cs ON c.status_id = cs.id
+LEFT JOIN users au ON c.assigned_user_id = au.id
+LEFT JOIN users lis ON c.last_interaction_sender_id = lis.id
+WHERE c.contact_id = $1 AND c.inbox_id = $2
+  AND inb.deleted_at IS NULL
+  AND con.deleted_at IS NULL
+ORDER BY c.created_at DESC
+LIMIT 500;
+
+-- name: update-conversation-contact-last-seen
+UPDATE conversations
+SET contact_last_seen_at = NOW(),
+updated_at = NOW()
+WHERE uuid = $1;

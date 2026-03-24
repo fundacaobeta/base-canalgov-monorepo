@@ -58,7 +58,10 @@ FROM users u
 LEFT JOIN user_roles ur ON ur.user_id = u.id
 LEFT JOIN roles r ON r.id = ur.role_id
 LEFT JOIN LATERAL unnest(r.permissions) AS p ON true
-WHERE (u.id = $1 OR u.email = $2) AND u.type = $3 AND u.deleted_at IS NULL
+WHERE u.deleted_at IS NULL
+    AND ($1 = 0 OR u.id = $1)
+    AND ($2 = '' OR u.email = $2)
+    AND (cardinality($3::text[]) = 0 OR u.type::text = ANY($3::text[]))
 GROUP BY u.id;
 
 -- name: set-user-password
@@ -295,3 +298,45 @@ RETURNING id, name, description, filters, created_at, updated_at;
 -- name: delete-contact-segment
 DELETE FROM contact_segments
 WHERE id = $1;
+-- name: insert-visitor
+INSERT INTO users (email, type, first_name, last_name, custom_attributes)
+VALUES ($1, 'visitor', $2, $3, $4)
+RETURNING *;
+
+-- name: insert-ai-assistant
+INSERT INTO users (email, type, first_name, last_name, avatar_url, meta)
+VALUES ($1, 'ai_assistant', $2, $3, $4, $5)
+RETURNING id;
+
+-- name: update-ai-assistant
+UPDATE users
+SET first_name = COALESCE($2, first_name),
+    last_name = COALESCE($3, last_name),
+    email = COALESCE($4, email),
+    avatar_url = COALESCE($5, avatar_url),
+    meta = COALESCE($6, meta),
+    enabled = COALESCE($7, enabled),
+    updated_at = now()
+WHERE id = $1 AND type = 'ai_assistant';
+
+-- name: soft-delete-ai-assistant
+UPDATE users
+SET deleted_at = now(), updated_at = now()
+WHERE id = $1 AND type = 'ai_assistant';
+
+-- name: get-contact-by-external-id
+SELECT id, first_name, last_name, email, type, enabled, avatar_url, custom_attributes, external_user_id, created_at, updated_at
+FROM users
+WHERE external_user_id = $1 AND type IN ('contact', 'visitor') AND deleted_at IS NULL
+LIMIT 1;
+
+-- name: get-contact-by-email
+SELECT id, first_name, last_name, email, type, enabled, avatar_url, custom_attributes, external_user_id, created_at, updated_at
+FROM users
+WHERE email = $1 AND type IN ('contact', 'visitor') AND deleted_at IS NULL
+LIMIT 1;
+
+-- name: set-external-user-id
+UPDATE users
+SET external_user_id = $2, updated_at = now()
+WHERE id = $1 AND type IN ('contact', 'visitor');

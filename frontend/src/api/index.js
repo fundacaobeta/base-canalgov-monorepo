@@ -268,6 +268,54 @@ const getAllDrafts = () => http.get('/api/v1/drafts')
 const saveDraft = (uuid, data) => http.post(`/api/v1/conversations/${uuid}/draft`, data)
 const deleteDraft = (uuid) => http.delete(`/api/v1/conversations/${uuid}/draft`)
 
+// Page visits (livechat)
+const getContactPageVisits = (uuid) => http.get(`/api/v1/conversations/${uuid}/page-visits`)
+
+// Available languages
+const getAvailableLanguages = () => http.get('/api/v1/lang')
+
+// OIDC enabled
+const getAllEnabledOIDC = () => http.get('/api/v1/oidc/enabled')
+
+// Help Center
+const getHelpCenters = () => http.get('/api/v1/help-centers')
+const getHelpCenter = (id) => http.get(`/api/v1/help-centers/${id}`)
+const createHelpCenter = (data) => http.post('/api/v1/help-centers', data)
+const updateHelpCenter = (id, data) => http.put(`/api/v1/help-centers/${id}`, data)
+const deleteHelpCenter = (id) => http.delete(`/api/v1/help-centers/${id}`)
+const getHelpCenterTree = (id, params) => http.get(`/api/v1/help-centers/${id}/tree`, { params })
+
+// Collections
+const getCollections = (helpCenterId, params) => http.get(`/api/v1/help-centers/${helpCenterId}/collections`, { params })
+const getCollection = (id) => http.get(`/api/v1/help-centers/*/collections/${id}`)
+const createCollection = (helpCenterId, data) => http.post(`/api/v1/help-centers/${helpCenterId}/collections`, data)
+const updateCollection = (helpCenterId, id, data) => http.put(`/api/v1/help-centers/${helpCenterId}/collections/${id}`, data)
+const deleteCollection = (helpCenterId, id) => http.delete(`/api/v1/help-centers/${helpCenterId}/collections/${id}`)
+const toggleCollection = (id) => http.put(`/api/v1/collections/${id}/toggle`)
+
+// Articles
+const getArticles = (collectionId, params) => http.get(`/api/v1/collections/${collectionId}/articles`, { params })
+const getArticle = (id) => http.get(`/api/v1/collections/*/articles/${id}`)
+const createArticle = (collectionId, data) => http.post(`/api/v1/collections/${collectionId}/articles`, data)
+const updateArticle = (collectionId, id, data) => http.put(`/api/v1/collections/${collectionId}/articles/${id}`, data)
+const updateArticleByID = (id, data) => http.put(`/api/v1/articles/${id}`, data)
+const deleteArticle = (collectionId, id) => http.delete(`/api/v1/collections/${collectionId}/articles/${id}`)
+const updateArticleStatus = (id, data) => http.put(`/api/v1/articles/${id}/status`, data)
+
+// AI Assistants
+const getAIAssistants = () => http.get('/api/v1/ai-assistants')
+const getAIAssistant = (id) => http.get(`/api/v1/ai-assistants/${id}`)
+const createAIAssistant = (data) => http.post('/api/v1/ai-assistants', data)
+const updateAIAssistant = (id, data) => http.put(`/api/v1/ai-assistants/${id}`, data)
+const deleteAIAssistant = (id) => http.delete(`/api/v1/ai-assistants/${id}`)
+
+// AI Snippets
+const getAISnippets = () => http.get('/api/v1/ai-snippets')
+const getAISnippet = (id) => http.get(`/api/v1/ai-snippets/${id}`)
+const createAISnippet = (data) => http.post('/api/v1/ai-snippets', data)
+const updateAISnippet = (id, data) => http.put(`/api/v1/ai-snippets/${id}`, data)
+const deleteAISnippet = (id) => http.delete(`/api/v1/ai-snippets/${id}`)
+
 export default {
   getOverviewCounts, getOverviewCharts, getOverviewSLA, getOverviewCSAT, getOverviewMessageVolume, getOverviewTagDistribution,
   getCustomReports, getCustomReport, createCustomReport, updateCustomReport, deleteCustomReport, executeCustomReport,
@@ -305,5 +353,13 @@ export default {
   getCustomAttributes, getCustomAttribute, createCustomAttribute, updateCustomAttribute, deleteCustomAttribute,
   getActivityLogs, getNotifications, getNotificationStats, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification, deleteAllNotifications,
   getMacros, getAllMacros, getMacro, createMacro, updateMacro, deleteMacro, applyMacro,
-  getAllDrafts, saveDraft, deleteDraft
+  getAllDrafts, saveDraft, deleteDraft,
+  getContactPageVisits,
+  getAvailableLanguages,
+  getAllEnabledOIDC,
+  getHelpCenters, getHelpCenter, createHelpCenter, updateHelpCenter, deleteHelpCenter, getHelpCenterTree,
+  getCollections, getCollection, createCollection, updateCollection, deleteCollection, toggleCollection,
+  getArticles, getArticle, createArticle, updateArticle, updateArticleByID, deleteArticle, updateArticleStatus,
+  getAIAssistants, getAIAssistant, createAIAssistant, updateAIAssistant, deleteAIAssistant,
+  getAISnippets, getAISnippet, createAISnippet, updateAISnippet, deleteAISnippet
 }

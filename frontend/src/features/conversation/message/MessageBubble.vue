@@ -9,6 +9,13 @@
       >
         {{ getFullName }}
       </router-link>
+      <router-link
+        v-else-if="canManageUsers"
+        :to="{ name: 'edit-agent', params: { id: message.author?.id } }"
+        class="text-muted-foreground text-sm font-medium hover:underline hover:text-primary"
+      >
+        {{ getFullName }}
+      </router-link>
       <p v-else class="text-muted-foreground text-sm font-medium">
         {{ getFullName }}
       </p>
@@ -91,7 +98,19 @@
       </div>
 
       <!-- Avatar (right for outgoing) -->
-      <Avatar v-if="isOutgoing" class="cursor-pointer w-8 h-8">
+      <router-link
+        v-if="isOutgoing && canManageUsers"
+        :to="{ name: 'edit-agent', params: { id: message.author?.id } }"
+        class="flex-shrink-0"
+      >
+        <Avatar class="cursor-pointer w-8 h-8 hover:opacity-80 transition-opacity">
+          <AvatarImage :src="getAvatar" />
+          <AvatarFallback class="font-medium">
+            {{ avatarFallback }}
+          </AvatarFallback>
+        </Avatar>
+      </router-link>
+      <Avatar v-else-if="isOutgoing" class="cursor-pointer w-8 h-8">
         <AvatarImage :src="getAvatar" />
         <AvatarFallback class="font-medium">
           {{ avatarFallback }}
@@ -139,6 +158,8 @@ const props = defineProps({
 const convStore = useConversationStore()
 const settingsStore = useAppSettingsStore()
 const { t } = useI18n()
+const userStore = useUserStore()
+const canManageUsers = computed(() => userStore.can('users:manage') && !!props.message.author?.id)
 
 // Direction helpers
 const isOutgoing = computed(() => props.direction === 'outgoing')
@@ -199,7 +220,6 @@ const isPrivateMessage = computed(() => isOutgoing.value && props.message.privat
 const showCheckCheck = computed(
   () => isOutgoing.value && props.message.status === 'sent' && !isPrivateMessage.value
 )
-const userStore = useUserStore()
 const showRetry = computed(() => isOutgoing.value && props.message.status === 'failed' && props.message.sender_id === userStore.userID)
 
 const retryMessage = (msg) => {

@@ -1,0 +1,53 @@
+<template>
+  <div class="mb-5">
+    <CustomBreadcrumb :links="breadcrumbLinks" />
+  </div>
+  <SnippetForm @submit="onSubmit" :formLoading="formLoading" />
+</template>
+
+<script setup>
+import { ref } from 'vue'
+import SnippetForm from '@/features/admin/snippets/SnippetForm.vue'
+import { handleHTTPError } from '@/utils/http'
+import { CustomBreadcrumb } from '@/components/ui/breadcrumb'
+import { useRouter } from 'vue-router'
+import { useEmitter } from '@/composables/useEmitter'
+import { EMITTER_EVENTS } from '@/constants/emitterEvents.js'
+import { useI18n } from 'vue-i18n'
+import api from '@/api'
+
+const { t } = useI18n()
+const emitter = useEmitter()
+const router = useRouter()
+const formLoading = ref(false)
+
+const breadcrumbLinks = [
+  { path: 'snippet-list', label: t('globals.terms.snippet', 2) },
+  {
+    path: '',
+    label: t('globals.messages.new', { name: t('globals.terms.snippet', 1).toLowerCase() })
+  }
+]
+
+const onSubmit = (values) => {
+  createNewSnippet(values)
+}
+
+const createNewSnippet = async (values) => {
+  try {
+    formLoading.value = true
+    await api.createAISnippet(values)
+    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
+      description: t('globals.messages.createdSuccessfully', { name: t('globals.terms.snippet', 1) })
+    })
+    router.push({ name: 'snippet-list' })
+  } catch (error) {
+    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
+      variant: 'destructive',
+      description: handleHTTPError(error).message
+    })
+  } finally {
+    formLoading.value = false
+  }
+}
+</script>

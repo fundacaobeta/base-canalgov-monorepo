@@ -299,43 +299,105 @@ const hasTextContent = computed(() => {
  */
 const processSend = async () => {
   let hasMessageSendingErrored = false
+  let pendingUUID = null
+  let previousHTMLContent = ''
+  let previousTextContent = ''
+  let previousConversationPreview = null
   isEditorFullscreen.value = false
   try {
-    isSending.value = true
     // Send message if there is text content in the editor or media files are attached.
     if (hasTextContent.value > 0 || mediaFiles.value.length > 0) {
+      const conversationUUID = conversationStore.current.uuid
       const message = htmlContent.value
-      await api.sendMessage(conversationStore.current.uuid, {
+      const plainTextMessage = textContent.value
+      previousHTMLContent = message
+      previousTextContent = plainTextMessage
+      const currentConversation = conversationStore.conversations.data.find(
+        conversation => conversation.uuid === conversationUUID
+      )
+      previousConversationPreview = currentConversation
+        ? {
+            last_message: currentConversation.last_message,
+            last_message_at: currentConversation.last_message_at,
+            last_message_sender: currentConversation.last_message_sender
+          }
+        : null
+      const isPrivateMessage = messageType.value === 'private_note'
+      if (!isPrivateMessage && selectedResponseChannel.value === 'email' && !to.value.trim()) {
+        emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
+          variant: 'destructive',
+          description: t('globals.messages.required', {
+            name: t('globals.emails.to')
+          })
+        })
+        return
+      }
+      const parsedCC = cc.value
+        ? cc.value
+            .split(',')
+            .map((email) => email.trim())
+            .filter((email) => email)
+        : []
+      const parsedBCC = bcc.value
+        ? bcc.value
+            .split(',')
+            .map((email) => email.trim())
+            .filter((email) => email)
+        : []
+      const parsedTo = to.value
+        ? to.value
+            .split(',')
+            .map((email) => email.trim())
+            .filter((email) => email)
+        : []
+      const meta = {}
+      if (!isPrivateMessage && parsedTo.length > 0) meta.to = parsedTo
+      if (!isPrivateMessage && parsedCC.length > 0) meta.cc = parsedCC
+      if (!isPrivateMessage && parsedBCC.length > 0) meta.bcc = parsedBCC
+
+      const author = {
+        id: userStore.userID,
+        first_name: userStore.firstName,
+        last_name: userStore.lastName,
+        avatar_url: userStore.avatar,
+        type: 'agent'
+      }
+
+      pendingUUID = conversationStore.addPendingMessage(
+        conversationUUID,
+        message,
+        isPrivateMessage,
+        author,
+        [...mediaFiles.value],
+        plainTextMessage,
+        meta
+      )
+
+      htmlContent.value = ''
+      textContent.value = ''
+      isSending.value = true
+
+      conversationStore.updateConversationLastMessage(
+        conversationUUID,
+        { text_content: plainTextMessage, created_at: new Date().toISOString(), sender_type: 'agent' }
+      )
+
+      const response = await api.sendMessage(conversationUUID, {
         sender_type: UserTypeAgent,
-        private: messageType.value === 'private_note',
+        private: isPrivateMessage,
         message: message,
         attachments: mediaFiles.value.map((file) => file.id),
         // Include mentions only for private notes
-        mentions: messageType.value === 'private_note' ? mentions.value : [],
-        // Convert email addresses to array and remove empty strings.
-        cc: cc.value
-          .split(',')
-          .map((email) => email.trim())
-          .filter((email) => email),
-        bcc: bcc.value
-          ? bcc.value
-              .split(',')
-              .map((email) => email.trim())
-              .filter((email) => email)
-          : [],
-        to: to.value
-          ? to.value
-              .split(',')
-              .map((email) => email.trim())
-              .filter((email) => email)
-          : []
+        mentions: isPrivateMessage ? mentions.value : [],
+        cc: parsedCC,
+        bcc: parsedBCC,
+        to: parsedTo
       })
 
-      // Instantly update conversation list preview.
-      conversationStore.updateConversationLastMessage(
-        conversationStore.current.uuid,
-        { text_content: textContent.value, created_at: new Date().toISOString(), sender_type: 'agent' }
-      )
+      if (response?.data?.data) {
+        conversationStore.replacePendingMessage(conversationUUID, pendingUUID, response.data.data)
+        conversationStore.updateConversationLastMessage(conversationUUID, response.data.data)
+      }
     }
 
     // Apply macro actions if any, for macro errors just show toast and clear the editor.
@@ -353,6 +415,28 @@ const processSend = async () => {
     }
   } catch (error) {
     hasMessageSendingErrored = true
+    if (conversationStore.current?.uuid && pendingUUID) {
+      conversationStore.removePendingMessage(conversationStore.current.uuid, pendingUUID)
+    }
+    if (conversationStore.current?.uuid && previousConversationPreview) {
+      conversationStore.updateConversationProp({
+        uuid: conversationStore.current.uuid,
+        prop: 'last_message',
+        value: previousConversationPreview.last_message
+      })
+      conversationStore.updateConversationProp({
+        uuid: conversationStore.current.uuid,
+        prop: 'last_message_at',
+        value: previousConversationPreview.last_message_at
+      })
+      conversationStore.updateConversationProp({
+        uuid: conversationStore.current.uuid,
+        prop: 'last_message_sender',
+        value: previousConversationPreview.last_message_sender
+      })
+    }
+    htmlContent.value = previousHTMLContent
+    textContent.value = previousTextContent
     emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
       variant: 'destructive',
       description: handleHTTPError(error).message

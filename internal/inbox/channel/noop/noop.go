@@ -39,7 +39,7 @@ func (n *Noop) Receive(ctx context.Context) error {
 	return nil
 }
 
-func (n *Noop) Send(models.Message) error {
+func (n *Noop) Send(models.OutboundMessage) error {
 	return nil
 }
 

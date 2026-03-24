@@ -839,7 +839,7 @@ func handleCreateConversation(r *fastglue.Request) error {
 	}
 
 	// Create conversation first.
-	conversationID, conversationUUID, err := app.conversation.CreateConversation(
+	conversationID, conversationUUID, err := app.conversation.CreateConversationWithChannel(
 		contact.ID,
 		contact.ContactChannelID,
 		req.InboxID,

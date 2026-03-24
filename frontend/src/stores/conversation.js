@@ -601,6 +601,58 @@ export const useConversationStore = defineStore('conversation', () => {
     }
   }
 
+  function addPendingMessage (conversationUUID, content, isPrivate, author, attachments = [], textContent = '', meta = {}) {
+    const pendingMessage = {
+      uuid: `pending-${Date.now()}`,
+      type: 'outgoing',
+      status: 'pending',
+      content,
+      text_content: textContent,
+      content_type: 'html',
+      private: isPrivate,
+      sender_type: 'agent',
+      sender_id: author.id,
+      conversation_uuid: conversationUUID,
+      created_at: new Date().toISOString(),
+      author,
+      attachments,
+      meta
+    }
+
+    messages.data.addMessage(conversationUUID, pendingMessage)
+    incrementMessageVersion()
+    setTimeout(() => {
+      emitter.emit(EMITTER_EVENTS.NEW_MESSAGE, {
+        conversation_uuid: conversationUUID,
+        message: pendingMessage
+      })
+    }, 0)
+
+    const tempId = pendingMessage.uuid
+    setTimeout(() => {
+      if (messages.data.hasMessage(conversationUUID, tempId)) {
+        messages.data.removeMessage(conversationUUID, tempId)
+        incrementMessageVersion()
+      }
+    }, 10000)
+
+    return pendingMessage.uuid
+  }
+
+  function replacePendingMessage (conversationUUID, tempUUID, realMessage) {
+    if (messages.data.hasMessage(conversationUUID, realMessage.uuid)) {
+      messages.data.removeMessage(conversationUUID, tempUUID)
+    } else {
+      messages.data.updateMessage(conversationUUID, tempUUID, realMessage)
+    }
+    incrementMessageVersion()
+  }
+
+  function removePendingMessage (conversationUUID, tempUUID) {
+    messages.data.removeMessage(conversationUUID, tempUUID)
+    incrementMessageVersion()
+  }
+
   function addNewConversation (conversation) {
     if (!conversationUUIDExists(conversation.uuid)) {
       // Fetch list of conversations again.
@@ -762,6 +814,9 @@ export const useConversationStore = defineStore('conversation', () => {
     updateAssigneeLastSeen,
     markAsUnread,
     updateConversationMessage,
+    addPendingMessage,
+    replacePendingMessage,
+    removePendingMessage,
     snoozeConversation,
     fetchConversation,
     fetchConversationsList,

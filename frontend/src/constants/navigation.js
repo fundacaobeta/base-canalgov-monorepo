@@ -223,6 +223,34 @@ export const adminNavItems = [
     ]
   },
   {
+    titleKey: 'globals.terms.aiAssistant',
+    isTitleKeyPlural: true,
+    activeGroup: ['ai-assistants', 'new-ai-assistant', 'edit-ai-assistant', 'help-centers', 'snippet-list', 'new-snippet', 'edit-snippet'],
+    children: [
+      {
+        titleKey: 'globals.terms.aiAssistant',
+        to: { name: 'ai-assistants' },
+        activeGroup: ['ai-assistants', 'new-ai-assistant', 'edit-ai-assistant'],
+        permission: 'general_settings:manage',
+        isTitleKeyPlural: true
+      },
+      {
+        titleKey: 'globals.terms.helpCenter',
+        to: { name: 'help-centers' },
+        activeGroup: ['help-centers'],
+        permission: 'general_settings:manage',
+        isTitleKeyPlural: true
+      },
+      {
+        titleKey: 'globals.terms.snippet',
+        to: { name: 'snippet-list' },
+        activeGroup: ['snippet-list', 'new-snippet', 'edit-snippet'],
+        permission: 'ai:manage',
+        isTitleKeyPlural: true
+      }
+    ]
+  },
+  {
     titleKey: 'globals.terms.security',
     activeGroup: ['activity-log', 'sso-list', 'new-sso', 'edit-sso'],
     children: [

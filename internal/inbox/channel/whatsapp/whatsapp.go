@@ -2,9 +2,6 @@ package whatsapp
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"net/http"
 
 	cmodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/conversation/models"
 	"github.com/fundacaobeta/base-canalgov-monorepo/internal/inbox"
@@ -50,10 +47,10 @@ func (w *WhatsApp) Receive(ctx context.Context) error {
 }
 
 // Send sends a message to WhatsApp.
-func (w *WhatsApp) Send(msg cmodels.Message) error {
+func (w *WhatsApp) Send(msg cmodels.OutboundMessage) error {
 	// Implementation for sending a message back to the user via WhatsApp API.
 	// This would use the Meta API similar to the notifier provider.
-	w.lo.Info("sending message to whatsapp", "conversation", msg.ConversationID)
+	w.lo.Info("sending message to whatsapp", "conversation_uuid", msg.ConversationUUID)
 	return nil
 }
 

@@ -52,7 +52,19 @@ export default class MessageCache {
     */
     addMessage (convId, message) {
         const conv = this.cache.get(convId)
-        if (!conv || this.hasMessage(convId, message.uuid)) return
+        if (this.hasMessage(convId, message.uuid)) return
+
+        if (!conv) {
+            this.cache.set(convId, {
+                pages: new Map([[1, [message]]]),
+                totalPages: 1,
+                lastFetchedPage: 1,
+                hasMore: false,
+            })
+            this.pruneOldConversations(convId)
+            return
+        }
+
         if (!conv.pages.has(1)) {
             conv.pages.set(1, [message])
         } else {
@@ -118,6 +130,19 @@ export default class MessageCache {
         conv.pages.forEach(msgs => {
             const msg = msgs.find(m => m.uuid === msgId)
             if (msg) msg[field] = value
+        })
+    }
+
+    /**
+     * Removes a single message from a conversation cache
+     */
+    removeMessage (convId, msgId) {
+        const conv = this.cache.get(convId)
+        if (!conv) return
+
+        conv.pages.forEach((msgs, page) => {
+            const filtered = msgs.filter(m => m.uuid !== msgId)
+            conv.pages.set(page, filtered)
         })
     }
 

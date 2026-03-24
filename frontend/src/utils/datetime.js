@@ -37,3 +37,12 @@ export const formatMessageTimestamp = (time) => {
 export const formatFullTimestamp = (time) => {
   return format(time, 'd MMM yyyy, hh:mm a')
 }
+
+export const formatDatetime = (date, formatString = 'MMMM d, yyyy h:mm a') => {
+  try {
+    return format(date, formatString)
+  } catch (error) {
+    console.error('Error formatting datetime', error)
+    return ''
+  }
+}

@@ -12,14 +12,16 @@ import (
 )
 
 const (
-	UserModel = "user"
+	UserModel     = "user"
 	UserTableName = "users"
 
 	SystemUserEmail = "System"
 
 	// User types
-	UserTypeAgent   = "agent"
-	UserTypeContact = "contact"
+	UserTypeAgent       = "agent"
+	UserTypeContact     = "contact"
+	UserTypeVisitor     = "visitor"
+	UserTypeAIAssistant = "ai_assistant"
 
 	// User availability statuses
 	Online  = "online"
@@ -74,6 +76,7 @@ type User struct {
 	LastLoginAt            null.Time            `db:"last_login_at" json:"last_login_at"`
 	Roles                  pq.StringArray       `db:"roles" json:"roles"`
 	Permissions            pq.StringArray       `db:"permissions" json:"permissions"`
+	Meta                   json.RawMessage      `db:"meta" json:"meta"`
 	CustomAttributes       json.RawMessage      `db:"custom_attributes" json:"custom_attributes"`
 	Teams                  tmodels.TeamsCompact `db:"teams" json:"teams"`
 	ContactChannelID       int                  `db:"contact_channel_id" json:"contact_channel_id,omitempty"`
@@ -88,7 +91,21 @@ type User struct {
 	APIKeyLastUsedAt null.Time   `db:"api_key_last_used_at" json:"api_key_last_used_at"`
 	APISecret        null.String `db:"api_secret" json:"-"`
 
+	// External user ID for live chat integration.
+	ExternalUserID null.String `db:"external_user_id" json:"external_user_id"`
+
 	Total int `db:"total" json:"-"`
+}
+
+// ChatUser is a user with limited fields for live chat.
+type ChatUser struct {
+	ID                 int         `db:"id" json:"id"`
+	FirstName          string      `db:"first_name" json:"first_name"`
+	LastName           string      `db:"last_name" json:"last_name"`
+	AvatarURL          null.String `db:"avatar_url" json:"avatar_url"`
+	AvailabilityStatus string      `db:"availability_status" json:"availability_status"`
+	Type               string      `db:"type" json:"type"`
+	ActiveAt           null.Time   `db:"active_at" json:"active_at"`
 }
 
 type Note struct {
@@ -113,4 +130,18 @@ func (u *User) HasAdminRole() bool {
 
 func (u *User) IsSystemUser() bool {
 	return u.Email.String == SystemUserEmail
+}
+
+func (u *User) IsAiAssistant() bool {
+	return u.Type == UserTypeAIAssistant
+}
+
+// AIAssistantMeta represents the meta fields for AI assistants
+type AIAssistantMeta struct {
+	ProductName        string `json:"product_name"`
+	ProductDescription string `json:"product_description"`
+	AnswerLength       string `json:"answer_length"`
+	AnswerTone         string `json:"answer_tone"`
+	HandOff            bool   `json:"hand_off"`
+	HandOffTeam        int    `json:"hand_off_team"`
 }

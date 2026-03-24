@@ -611,6 +611,68 @@ export function createAppRouter(locale = 'pt-BR') {
                       meta: { title: 'route.editSharedView', area: 'admin' }
                     }
                   ]
+                },
+                {
+                  path: 'assistentes-ia',
+                  component: () => import('@/views/admin/ai-assistants/AIAssistants.vue'),
+                  meta: { title: 'route.aiAssistants', area: 'admin' },
+                  children: [
+                    {
+                      path: '',
+                      name: 'ai-assistants',
+                      component: () => import('@/views/admin/ai-assistants/AIAssistantList.vue')
+                    },
+                    {
+                      path: 'novo',
+                      name: 'new-ai-assistant',
+                      component: () => import('@/views/admin/ai-assistants/CreateAIAssistant.vue'),
+                      meta: { title: 'route.newAIAssistant', area: 'admin' }
+                    },
+                    {
+                      path: ':id/editar',
+                      props: true,
+                      name: 'edit-ai-assistant',
+                      component: () => import('@/views/admin/ai-assistants/EditAIAssistant.vue'),
+                      meta: { title: 'route.editAIAssistant', area: 'admin' }
+                    }
+                  ]
+                },
+                {
+                  path: 'central-de-ajuda',
+                  component: () => import('@/views/admin/help-center/HelpCenter.vue'),
+                  meta: { title: 'route.helpCenter', area: 'admin' },
+                  children: [
+                    {
+                      path: '',
+                      name: 'help-centers',
+                      component: () => import('@/views/admin/help-center/HelpCenterList.vue')
+                    }
+                  ]
+                },
+                {
+                  path: 'snippets',
+                  component: () => import('@/views/admin/snippets/Snippets.vue'),
+                  meta: { title: 'route.snippets', area: 'admin' },
+                  children: [
+                    {
+                      path: '',
+                      name: 'snippet-list',
+                      component: () => import('@/views/admin/snippets/SnippetList.vue')
+                    },
+                    {
+                      path: 'novo',
+                      name: 'new-snippet',
+                      component: () => import('@/views/admin/snippets/CreateSnippet.vue'),
+                      meta: { title: 'route.newSnippet', area: 'admin' }
+                    },
+                    {
+                      path: ':id/editar',
+                      props: true,
+                      name: 'edit-snippet',
+                      component: () => import('@/views/admin/snippets/EditSnippet.vue'),
+                      meta: { title: 'route.editSnippet', area: 'admin' }
+                    }
+                  ]
                 }
               ]
             }

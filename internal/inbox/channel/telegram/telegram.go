@@ -44,8 +44,8 @@ func (t *Telegram) Receive(ctx context.Context) error {
 }
 
 // Send sends a message to Telegram.
-func (t *Telegram) Send(msg cmodels.Message) error {
-	t.lo.Info("sending message to telegram", "conversation", msg.ConversationID)
+func (t *Telegram) Send(msg cmodels.OutboundMessage) error {
+	t.lo.Info("sending message to telegram", "conversation_uuid", msg.ConversationUUID)
 	return nil
 }
 

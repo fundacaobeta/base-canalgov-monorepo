@@ -81,7 +81,12 @@ type queries struct {
 	InsertAgent            *sqlx.Stmt `query:"insert-agent"`
 	InsertContact          *sqlx.Stmt `query:"insert-contact"`
 	InsertNote             *sqlx.Stmt `query:"insert-note"`
+	InsertVisitor          *sqlx.Stmt `query:"insert-visitor"`
 	ToggleEnable           *sqlx.Stmt `query:"toggle-enable"`
+	// AI Assistant queries
+	InsertAIAssistant     *sqlx.Stmt `query:"insert-ai-assistant"`
+	UpdateAIAssistant     *sqlx.Stmt `query:"update-ai-assistant"`
+	SoftDeleteAIAssistant *sqlx.Stmt `query:"soft-delete-ai-assistant"`
 	// API key queries
 	GetUserByAPIKey      *sqlx.Stmt `query:"get-user-by-api-key"`
 	SetAPIKey            *sqlx.Stmt `query:"set-api-key"`
@@ -94,6 +99,11 @@ type queries struct {
 	InsertContactSegment *sqlx.Stmt `query:"insert-contact-segment"`
 	UpdateContactSegment *sqlx.Stmt `query:"update-contact-segment"`
 	DeleteContactSegment *sqlx.Stmt `query:"delete-contact-segment"`
+
+	// External user ID queries.
+	GetContactByExternalID *sqlx.Stmt `query:"get-contact-by-external-id"`
+	GetContactByEmail      *sqlx.Stmt `query:"get-contact-by-email"`
+	SetExternalUserID      *sqlx.Stmt `query:"set-external-user-id"`
 }
 
 // New creates and returns a new instance of the Manager.
@@ -114,7 +124,7 @@ func New(i18n *i18n.I18n, opts Opts) (*Manager, error) {
 // VerifyPassword authenticates an user by email and password, returning the user if successful.
 func (u *Manager) VerifyPassword(email string, password []byte) (models.User, error) {
 	var user models.User
-	if err := u.q.GetUser.Get(&user, 0, email, models.UserTypeAgent); err != nil {
+	if err := u.q.GetUser.Get(&user, 0, email, pq.Array([]string{models.UserTypeAgent})); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return user, envelope.NewError(envelope.InputError, u.i18n.T("user.invalidEmailPassword"), nil)
 		}
@@ -128,7 +138,7 @@ func (u *Manager) VerifyPassword(email string, password []byte) (models.User, er
 }
 
 // GetAllUsers returns a list of all users.
-func (u *Manager) GetAllUsers(page, pageSize int, userType, order, orderBy string, filtersJSON string) ([]models.UserCompact, error) {
+func (u *Manager) GetAllUsers(page, pageSize int, userType, order, orderBy string, filtersJSON string) ([]models.User, error) {
 	query, qArgs, err := u.makeUserListQuery(page, pageSize, userType, order, orderBy, filtersJSON)
 	if err != nil {
 		u.lo.Error("error creating user list query", "error", err)
@@ -146,7 +156,7 @@ func (u *Manager) GetAllUsers(page, pageSize int, userType, order, orderBy strin
 	defer tx.Rollback()
 
 	// Execute query
-	var users = make([]models.UserCompact, 0)
+	var users = make([]models.User, 0)
 	if err := tx.Select(&users, query, qArgs...); err != nil {
 		u.lo.Error("error fetching users", "error", err)
 		return nil, envelope.NewError(envelope.GeneralError, u.i18n.Ts("globals.messages.errorFetching", "name", "{globals.terms.user}"), nil)
@@ -155,10 +165,10 @@ func (u *Manager) GetAllUsers(page, pageSize int, userType, order, orderBy strin
 	return users, nil
 }
 
-// Get retrieves an user by ID or email.
-func (u *Manager) Get(id int, email, type_ string) (models.User, error) {
+// Get retrieves an user by ID or email. userTypes is a list of user types to filter by; pass an empty slice to match any type.
+func (u *Manager) Get(id int, email string, userTypes []string) (models.User, error) {
 	var user models.User
-	if err := u.q.GetUser.Get(&user, id, email, type_); err != nil {
+	if err := u.q.GetUser.Get(&user, id, email, pq.Array(userTypes)); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return user, envelope.NewError(envelope.NotFoundError, u.i18n.Ts("globals.messages.notFound", "name", "{globals.terms.user}"), nil)
 		}
@@ -170,7 +180,7 @@ func (u *Manager) Get(id int, email, type_ string) (models.User, error) {
 
 // GetSystemUser retrieves the system user.
 func (u *Manager) GetSystemUser() (models.User, error) {
-	return u.Get(0, models.SystemUserEmail, models.UserTypeAgent)
+	return u.Get(0, models.SystemUserEmail, []string{models.UserTypeAgent})
 }
 
 // UpdateAvatar updates the user avatar.
@@ -487,6 +497,64 @@ func updateSystemUserPassword(db *sqlx.DB, hashedPassword []byte) error {
 	_, err := db.Exec(`UPDATE users SET password = $1 WHERE email = $2`, hashedPassword, models.SystemUserEmail)
 	if err != nil {
 		return fmt.Errorf("failed to update system user password: %v", err)
+	}
+	return nil
+}
+
+// SaveCustomAttributes updates the custom attributes of a user (contact or visitor),
+// optionally merging with existing attributes when merge=true.
+func (u *Manager) SaveCustomAttributes(id int, attrs map[string]any, merge bool) error {
+	if !merge {
+		return u.UpdateCustomAttributes(id, attrs)
+	}
+	// Merge: fetch existing attributes, merge, then save.
+	user, err := u.Get(id, "", []string{})
+	if err != nil {
+		return err
+	}
+	existing := make(map[string]any)
+	if len(user.CustomAttributes) > 0 {
+		if err := json.Unmarshal(user.CustomAttributes, &existing); err != nil {
+			u.lo.Error("error unmarshalling existing custom attributes", "error", err)
+		}
+	}
+	for k, v := range attrs {
+		existing[k] = v
+	}
+	return u.UpdateCustomAttributes(id, existing)
+}
+
+// GetByExternalID retrieves a contact or visitor by their external_user_id.
+func (u *Manager) GetByExternalID(externalUserID string) (models.User, error) {
+	var user models.User
+	if err := u.q.GetContactByExternalID.Get(&user, externalUserID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return user, envelope.NewError(envelope.NotFoundError, u.i18n.Ts("globals.messages.notFound", "name", "{globals.terms.user}"), nil)
+		}
+		u.lo.Error("error fetching user by external ID", "error", err)
+		return user, envelope.NewError(envelope.GeneralError, u.i18n.Ts("globals.messages.errorFetching", "name", "{globals.terms.user}"), nil)
+	}
+	return user, nil
+}
+
+// GetContactByEmail retrieves a contact or visitor by their email address.
+func (u *Manager) GetContactByEmail(email string) (models.User, error) {
+	var user models.User
+	if err := u.q.GetContactByEmail.Get(&user, email); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return user, envelope.NewError(envelope.NotFoundError, u.i18n.Ts("globals.messages.notFound", "name", "{globals.terms.user}"), nil)
+		}
+		u.lo.Error("error fetching contact by email", "error", err)
+		return user, envelope.NewError(envelope.GeneralError, u.i18n.Ts("globals.messages.errorFetching", "name", "{globals.terms.user}"), nil)
+	}
+	return user, nil
+}
+
+// SetExternalUserID sets the external_user_id for a contact or visitor.
+func (u *Manager) SetExternalUserID(id int, externalUserID string) error {
+	if _, err := u.q.SetExternalUserID.Exec(id, externalUserID); err != nil {
+		u.lo.Error("error setting external user ID", "error", err)
+		return envelope.NewError(envelope.GeneralError, u.i18n.Ts("globals.messages.errorUpdating", "name", "{globals.terms.user}"), nil)
 	}
 	return nil
 }

@@ -59,12 +59,17 @@
               <div
                 class="text-sm flex items-center gap-1.5 flex-1 break-all text-gray-600 dark:text-gray-300"
               >
-                <Reply
-                  class="text-green-600 flex-shrink-0"
-                  size="15"
-                  v-if="conversation.last_message_sender === 'agent'"
-                />
-                {{ trimmedLastMessage }}
+                <template v-if="hasDraftForConversation">
+                  {{ draftPreview }}
+                </template>
+                <template v-else>
+                  <Reply
+                    class="text-green-600 flex-shrink-0"
+                    size="15"
+                    v-if="conversation.last_message_sender === 'agent'"
+                  />
+                  {{ trimmedLastMessage }}
+                </template>
               </div>
               <div
                 v-if="conversation.unread_message_count > 0"
@@ -179,5 +184,13 @@ const getSlaClass = (status) => (['overdue', 'remaining'].includes(status) ? 'mr
 
 const hasDraftForConversation = computed(() => {
   return conversationStore.hasDraft(props.conversation.uuid)
+})
+
+const draftPreview = computed(() => {
+  const draft = conversationStore.getDraft(props.conversation.uuid)
+  if (!draft?.content) return ''
+
+  const text = draft.content.replace(/<[^>]*>/g, '').trim()
+  return text.length > 100 ? text.slice(0, 100) + '...' : text
 })
 </script>

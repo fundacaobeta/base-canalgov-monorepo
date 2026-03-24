@@ -24,6 +24,7 @@ import (
 const (
 	ChannelNone     = "none"
 	ChannelEmail    = "email"
+	ChannelLiveChat = "livechat"
 	ChannelWhatsApp = "whatsapp"
 	ChannelTelegram = "telegram"
 	ChannelSMS      = "sms"
@@ -55,7 +56,7 @@ type Identifier interface {
 // MessageHandler defines methods for handling message operations.
 type MessageHandler interface {
 	Receive(context.Context) error
-	Send(models.Message) error
+	Send(models.OutboundMessage) error
 }
 
 // Inbox combines the operations of an inbox including its lifecycle, identification, and message handling.
@@ -76,6 +77,7 @@ type MessageStore interface {
 // UserStore defines methods for fetching user information.
 type UserStore interface {
 	GetContact(id int, email string) (umodels.User, error)
+	GetAgent(id int, email string) (umodels.User, error)
 }
 
 // Opts contains the options for initializing the inbox manager.

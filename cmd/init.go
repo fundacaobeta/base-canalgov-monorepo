@@ -47,6 +47,8 @@ import (
 	"github.com/fundacaobeta/base-canalgov-monorepo/internal/setting"
 	smodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/setting/models"
 	"github.com/fundacaobeta/base-canalgov-monorepo/internal/sla"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/helpcenter"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/ratelimit"
 	"github.com/fundacaobeta/base-canalgov-monorepo/internal/tag"
 	"github.com/fundacaobeta/base-canalgov-monorepo/internal/team"
 	tmpl "github.com/fundacaobeta/base-canalgov-monorepo/internal/template"
@@ -175,6 +177,7 @@ func initFS() stuffbin.FileSystem {
 	var files = []string{
 		"schema.sql",
 		"frontend/dist",
+		"frontend/widget/dist",
 		"i18n",
 		"static",
 	}
@@ -918,18 +921,68 @@ func initPriority(db *sqlx.DB, i18n *i18n.I18n) *priority.Manager {
 }
 
 // initAI inits AI manager.
-func initAI(db *sqlx.DB, i18n *i18n.I18n) *ai.Manager {
+func initAI(db *sqlx.DB, i18n *i18n.I18n, conversationStore ai.ConversationStore, helpCenterStore ai.HelpCenterStore) *ai.Manager {
 	lo := initLogger("ai")
-	m, err := ai.New(ai.Opts{
-		DB:            db,
-		Lo:            lo,
-		I18n:          i18n,
-		EncryptionKey: ko.MustString("app.encryption_key"),
+
+	embeddingCfg := ai.EmbeddingConfig{
+		Provider: ko.String("ai.embedding.provider"),
+		URL:      ko.String("ai.embedding.url"),
+		APIKey:   ko.String("ai.embedding.api_key"),
+		Model:    ko.String("ai.embedding.model"),
+		Timeout:  ko.Duration("ai.embedding.timeout"),
+	}
+	chunkingCfg := ai.ChunkingConfig{
+		MaxTokens:     ko.Int("ai.chunking.max_tokens"),
+		MinTokens:     ko.Int("ai.chunking.min_tokens"),
+		OverlapTokens: ko.Int("ai.chunking.overlap_tokens"),
+	}
+	completionCfg := ai.CompletionConfig{
+		Provider:    ko.String("ai.completion.provider"),
+		URL:         ko.String("ai.completion.url"),
+		APIKey:      ko.String("ai.completion.api_key"),
+		Model:       ko.String("ai.completion.model"),
+		Timeout:     ko.Duration("ai.completion.timeout"),
+		Temperature: ko.Float64("ai.completion.temperature"),
+		MaxTokens:   ko.Int("ai.completion.max_tokens"),
+	}
+	workerCfg := ai.WorkerConfig{
+		Workers:  ko.Int("ai.workers"),
+		Capacity: ko.Int("ai.worker_capacity"),
+	}
+
+	m, err := ai.New(embeddingCfg, chunkingCfg, completionCfg, workerCfg, conversationStore, helpCenterStore, ai.Opts{
+		DB:   db,
+		Lo:   lo,
+		I18n: i18n,
 	})
 	if err != nil {
 		log.Fatalf("error initializing AI manager: %v", err)
 	}
 	return m
+}
+
+// initHelpCenter inits the help center manager.
+func initHelpCenter(db *sqlx.DB, i18n *i18n.I18n) *helpcenter.Manager {
+	m, err := helpcenter.New(helpcenter.Opts{
+		DB:   db,
+		Lo:   initLogger("helpcenter"),
+		I18n: i18n,
+	})
+	if err != nil {
+		log.Fatalf("error initializing helpcenter manager: %v", err)
+	}
+	return m
+}
+
+// initRateLimit initializes the rate limiter.
+func initRateLimit(rdb *redis.Client) *ratelimit.Limiter {
+	limiter := ratelimit.New(rdb)
+	limiter.AddRule(ratelimit.Rule{
+		Name:              "widget",
+		Enabled:           ko.Bool("ratelimit.widget.enabled"),
+		RequestsPerMinute: ko.Int("ratelimit.widget.requests_per_minute"),
+	})
+	return limiter
 }
 
 // initSearch inits search manager.

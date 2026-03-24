@@ -176,8 +176,14 @@ func (m *Manager) sendOutgoingMessage(message models.Message) {
 		message.InReplyTo = message.References[len(message.References)-1]
 	}
 
+	// Build OutboundMessage with transport fields
+	outbound := message.ToOutbound()
+	outbound.References = message.References
+	outbound.InReplyTo = message.InReplyTo
+	outbound.AltContent = message.AltContent
+
 	// Send message
-	err = inbox.Send(message)
+	err = inbox.Send(outbound)
 	if handleError(err, "error sending message") {
 		return
 	}
@@ -962,7 +968,7 @@ func (m *Manager) findOrCreateConversation(in *models.Message, inboxID, contactC
 		new = true
 		lastMessage := stringutil.HTML2Text(in.Content)
 		lastMessageAt := time.Now()
-		conversationID, conversationUUID, err = m.CreateConversation(contactID, contactChannelID, inboxID, lastMessage, lastMessageAt, in.Subject, false /**append reference number to subject**/)
+		conversationID, conversationUUID, err = m.CreateConversationWithChannel(contactID, contactChannelID, inboxID, lastMessage, lastMessageAt, in.Subject, false /**append reference number to subject**/)
 		if err != nil || conversationID == 0 {
 			return new, err
 		}
@@ -1078,4 +1084,36 @@ func (m *Manager) getLatestMessage(conversationID int, typ []string, status []st
 		return message, fmt.Errorf("fetching latest message: %w", err)
 	}
 	return message, nil
+}
+
+// fetchMessageAttachments fetches attachments for a single message ID - extracted for reuse
+func (m *Manager) fetchMessageAttachments(messageID int) (attachment.Attachments, error) {
+	var attachments attachment.Attachments
+
+	// Get all media for this message
+	medias, err := m.mediaStore.GetByModel(messageID, mmodels.ModelMessages)
+	if err != nil {
+		return attachments, fmt.Errorf("error fetching message attachments: %w", err)
+	}
+
+	// Fetch blobs for each media item
+	for _, media := range medias {
+		blob, err := m.mediaStore.GetBlob(media.UUID)
+		if err != nil {
+			return attachments, fmt.Errorf("error fetching media blob: %w", err)
+		}
+
+		att := attachment.Attachment{
+			Name:        media.Filename,
+			UUID:        media.UUID,
+			ContentType: media.ContentType,
+			Content:     blob,
+			Size:        media.Size,
+			Header:      attachment.MakeHeader(media.ContentType, media.UUID, media.Filename, "base64", media.Disposition.String),
+			URL:         m.mediaStore.GetSignedURL(media.UUID),
+		}
+		attachments = append(attachments, att)
+	}
+
+	return attachments, nil
 }

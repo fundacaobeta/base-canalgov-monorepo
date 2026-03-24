@@ -3,6 +3,7 @@ package models
 import (
 	"encoding/json"
 	"net/textproto"
+	"strings"
 	"time"
 
 	"github.com/fundacaobeta/base-canalgov-monorepo/internal/attachment"
@@ -206,10 +207,129 @@ type ConversationParticipant struct {
 }
 
 type MessageAuthor struct {
-	ID        int         `db:"id" json:"id"`
-	FirstName string      `db:"first_name" json:"first_name"`
-	LastName  string      `db:"last_name" json:"last_name"`
-	AvatarURL null.String `db:"avatar_url" json:"avatar_url"`
+	ID                 int         `db:"id" json:"id"`
+	FirstName          string      `db:"first_name" json:"first_name"`
+	LastName           string      `db:"last_name" json:"last_name"`
+	Email              null.String `db:"email" json:"email"`
+	AvatarURL          null.String `db:"avatar_url" json:"avatar_url"`
+	AvailabilityStatus string      `db:"availability_status" json:"availability_status"`
+	Type               string      `db:"type" json:"type"`
+	LastActiveAt       null.Time   `db:"last_active_at" json:"last_active_at"`
+}
+
+// ContinuityConversation represents a conversation for continuity email processing
+type ContinuityConversation struct {
+	ID                        int         `db:"id"`
+	UUID                      string      `db:"uuid"`
+	ContactID                 int         `db:"contact_id"`
+	InboxID                   int         `db:"inbox_id"`
+	ContactLastSeenAt         time.Time   `db:"contact_last_seen_at"`
+	LastContinuityEmailSentAt null.Time   `db:"last_continuity_email_sent_at"`
+	ContactEmail              null.String `db:"contact_email"`
+	ContactFirstName          null.String `db:"contact_first_name"`
+	ContactLastName           null.String `db:"contact_last_name"`
+	LinkedEmailInboxID        null.Int    `db:"linked_email_inbox_id"`
+}
+
+// ContinuityUnreadMessage represents an unread message for continuity email
+type ContinuityUnreadMessage struct {
+	Message
+	SenderFirstName null.String `db:"sender.first_name"`
+	SenderLastName  null.String `db:"sender.last_name"`
+	SenderType      string      `db:"sender.type"`
+}
+
+// LastChatMessage represents the last message in a chat conversation
+type LastChatMessage struct {
+	Content   string           `db:"content" json:"content"`
+	CreatedAt time.Time        `db:"created_at" json:"created_at"`
+	Author    umodels.ChatUser `db:"author" json:"author"`
+}
+
+// ChatConversation represents a conversation as seen by a chat widget
+type ChatConversation struct {
+	CreatedAt          time.Time         `db:"created_at" json:"created_at"`
+	UUID               string            `db:"uuid" json:"uuid"`
+	Status             string            `db:"status" json:"status"`
+	LastChatMessage    LastChatMessage   `db:"last_message" json:"last_message"`
+	UnreadMessageCount int               `db:"unread_message_count" json:"unread_message_count"`
+	Assignee           *umodels.ChatUser `db:"assignee" json:"assignee"`
+}
+
+// ChatMessage represents a message as seen by a chat widget
+type ChatMessage struct {
+	UUID             string                 `json:"uuid"`
+	Status           string                 `json:"status"`
+	ConversationUUID string                 `json:"conversation_uuid"`
+	CreatedAt        time.Time              `json:"created_at"`
+	Content          string                 `json:"content"`
+	TextContent      string                 `json:"text_content"`
+	Author           MessageAuthor          `json:"author"`
+	Attachments      attachment.Attachments `json:"attachments"`
+	Meta             json.RawMessage        `json:"meta"`
+}
+
+// OutboundMessage contains fields needed for sending messages via inboxes.
+type OutboundMessage struct {
+	// Core message identifiers
+	UUID             string
+	ConversationUUID string
+
+	// Sender info
+	SenderID          int
+	MessageReceiverID int
+
+	// Content
+	Content     string
+	TextContent string
+	ContentType string
+	AltContent  string // Plain text alternative for HTML emails
+
+	// Email-specific fields
+	From     string
+	To       []string
+	CC       []string
+	BCC      []string
+	Subject  string
+	SourceID string
+
+	// Threading (email)
+	References []string
+	InReplyTo  string
+	ReplyTo    string
+
+	// Attachments
+	Attachments attachment.Attachments
+
+	// Email-level headers
+	Headers textproto.MIMEHeader
+
+	// Metadata
+	Meta      json.RawMessage
+	CreatedAt time.Time
+}
+
+// ToOutbound converts a Message to an OutboundMessage for transport.
+// Transport-only fields (References, InReplyTo, Headers, AltContent) must be set by caller.
+func (m *Message) ToOutbound() OutboundMessage {
+	return OutboundMessage{
+		UUID:              m.UUID,
+		ConversationUUID:  m.ConversationUUID,
+		SenderID:          m.SenderID,
+		MessageReceiverID: m.MessageReceiverID,
+		Content:           m.Content,
+		TextContent:       m.TextContent,
+		ContentType:       m.ContentType,
+		From:              m.From,
+		To:                m.To,
+		CC:                m.CC,
+		BCC:               m.BCC,
+		Subject:           m.Subject,
+		SourceID:          m.SourceID.String,
+		Attachments:       m.Attachments,
+		Meta:              m.Meta,
+		CreatedAt:         m.CreatedAt,
+	}
 }
 
 type ConversationCounts struct {
@@ -251,13 +371,34 @@ type Message struct {
 	Channel          string                 `db:"channel" json:"-"`
 	To               pq.StringArray         `db:"to"  json:"-"`
 	CC               pq.StringArray         `db:"cc" json:"-"`
-	BCC              pq.StringArray         `db:"bcc" json:"-"`
-	References       []string               `json:"-"`
+	BCC               pq.StringArray         `db:"bcc" json:"-"`
+	MessageReceiverID int                    `db:"message_receiver_id" json:"-"`
+	References        []string               `json:"-"`
 	InReplyTo        string                 `json:"-"`
 	Headers          textproto.MIMEHeader   `json:"-"`
 	AltContent       string                 `json:"-"`
 	Media            []mmodels.Media        `json:"-"`
 	IsCSAT           bool                   `json:"-"`
+}
+
+// IsContinuityMessage returns true if the message is a continuity email.
+func (m *Message) IsContinuityMessage() bool {
+	var meta map[string]any
+	if err := json.Unmarshal([]byte(m.Meta), &meta); err != nil {
+		return false
+	}
+	isContinuity, _ := meta["continuity_email"].(bool)
+	return isContinuity
+}
+
+// csatMeta unmarshals the message meta and returns the map and whether is_csat is true.
+func (m *Message) csatMeta() (map[string]any, bool) {
+	var meta map[string]any
+	if err := json.Unmarshal([]byte(m.Meta), &meta); err != nil {
+		return nil, false
+	}
+	isCsat, _ := meta["is_csat"].(bool)
+	return meta, isCsat
 }
 
 // CensorCSATContent redacts the content of a CSAT message to prevent leaking the CSAT survey public link.
@@ -274,12 +415,59 @@ func (m *Message) CensorCSATContent() {
 
 // HasCSAT returns true if the message is a CSAT message.
 func (m *Message) HasCSAT() bool {
-	var meta map[string]interface{}
-	if err := json.Unmarshal([]byte(m.Meta), &meta); err != nil {
-		return false
-	}
-	isCsat, _ := meta["is_csat"].(bool)
+	_, isCsat := m.csatMeta()
 	return isCsat
+}
+
+// ExtractCSATUUID extracts the CSAT UUID from the message content.
+func (m *Message) ExtractCSATUUID() string {
+	if _, isCsat := m.csatMeta(); !isCsat {
+		return ""
+	}
+
+	// Extract UUID from the CSAT URL in the message content.
+	// Pattern: <a href="http://localhost:8000/csat/3b68fa67-ad1a-4c5b-87eb-b262c420f43f">
+	start := strings.Index(m.Content, "/csat/")
+	if start == -1 {
+		return ""
+	}
+	start += 6 // Skip "/csat/"
+
+	if len(m.Content) < start+36 {
+		return ""
+	}
+
+	uuid := m.Content[start : start+36]
+	// Basic validation - UUID should contain hyphens at positions 8, 13, 18, 23.
+	if uuid[8] == '-' && uuid[13] == '-' && uuid[18] == '-' && uuid[23] == '-' {
+		return uuid
+	}
+	return ""
+}
+
+// CensorCSATContentWithStatus redacts the content and adds submission status for CSAT messages.
+func (m *Message) CensorCSATContentWithStatus(csatSubmitted bool, csatUUID string, rating int, feedback string) {
+	meta, isCsat := m.csatMeta()
+	if !isCsat {
+		return
+	}
+
+	m.Content = "Please rate this conversation"
+	m.TextContent = m.Content
+
+	meta["csat_submitted"] = csatSubmitted
+	meta["csat_uuid"] = csatUUID
+
+	if csatSubmitted {
+		if rating > 0 {
+			meta["submitted_rating"] = rating
+		}
+		meta["submitted_feedback"] = feedback
+	}
+
+	if updatedMeta, err := json.Marshal(meta); err == nil {
+		m.Meta = json.RawMessage(updatedMeta)
+	}
 }
 
 // IncomingMessage links a message with the contact information and inbox id.

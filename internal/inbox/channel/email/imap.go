@@ -8,14 +8,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/emersion/go-imap/v2"
+	"github.com/emersion/go-imap/v2/imapclient"
 	"github.com/fundacaobeta/base-canalgov-monorepo/internal/attachment"
 	"github.com/fundacaobeta/base-canalgov-monorepo/internal/conversation/models"
 	"github.com/fundacaobeta/base-canalgov-monorepo/internal/envelope"
 	imodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/inbox/models"
 	"github.com/fundacaobeta/base-canalgov-monorepo/internal/stringutil"
 	umodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/user/models"
-	"github.com/emersion/go-imap/v2"
-	"github.com/emersion/go-imap/v2/imapclient"
 	"github.com/jhillyerd/enmime"
 	"github.com/volatiletech/null/v9"
 )
@@ -316,7 +316,21 @@ func (e *Email) processEnvelope(ctx context.Context, client *imapclient.Client, 
 		e.lo.Warn("no sender received for email", "message_id", env.MessageID)
 		return nil
 	}
-	var fromAddress = strings.ToLower(env.From[0].Addr())
+	var (
+		fromAddress      = strings.ToLower(env.From[0].Addr())
+		inboxFromAddress = e.FromAddress()
+	)
+
+	// Ignore messages sent from the inbox itself to reduce loops and self-ingestion noise.
+	inboxEmail, err := stringutil.ExtractEmail(inboxFromAddress)
+	if err != nil {
+		e.lo.Error("error extracting email from inbox address", "inbox_from_address", inboxFromAddress, "error", err)
+		return fmt.Errorf("extracting email from inbox address (%s): %w", inboxFromAddress, err)
+	}
+	if strings.EqualFold(fromAddress, inboxEmail) {
+		e.lo.Info("ignoring incoming message from inbox address", "message_id", env.MessageID, "from_email", fromAddress, "inbox_email", inboxEmail)
+		return nil
+	}
 
 	// Determine final Message ID - prefer IMAP-parsed, fallback to raw header extraction
 	messageID := env.MessageID

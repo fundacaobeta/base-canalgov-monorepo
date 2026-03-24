@@ -11,6 +11,16 @@
       <Loader2 class="h-8 w-8 animate-spin text-primary" />
     </div>
 
+    <!-- Livechat: use full LivechatInboxForm -->
+    <div v-else-if="inbox?.channel === 'livechat'" class="max-w-4xl">
+      <LivechatInboxForm
+        :initialValues="inbox"
+        :submitForm="handleLivechatUpdate"
+        :isLoading="isSaving"
+      />
+    </div>
+
+    <!-- All other channels -->
     <div v-else class="max-w-3xl space-y-6">
       <Card>
         <CardHeader>
@@ -62,9 +72,9 @@
         </CardHeader>
         <CardContent>
           <div class="grid gap-2">
-            <Textarea 
-              v-model="configString" 
-              class="font-mono text-xs min-h-[200px]" 
+            <Textarea
+              v-model="configString"
+              class="font-mono text-xs min-h-[200px]"
               placeholder='{ "key": "value" }'
             />
           </div>
@@ -89,6 +99,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import LivechatInboxForm from '@/features/admin/inbox/LivechatInboxForm.vue'
 import api from '@/api'
 
 const props = defineProps({
@@ -135,6 +146,18 @@ const handleUpdate = async () => {
   try {
     isSaving.value = true
     await api.updateInbox(props.id, form)
+    await loadInbox()
+  } catch (err) {
+    console.error(err)
+  } finally {
+    isSaving.value = false
+  }
+}
+
+const handleLivechatUpdate = async (values) => {
+  try {
+    isSaving.value = true
+    await api.updateInbox(props.id, values)
     await loadInbox()
   } catch (err) {
     console.error(err)

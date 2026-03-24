@@ -17,6 +17,8 @@ import (
 	activitylog "github.com/fundacaobeta/base-canalgov-monorepo/internal/activity_log"
 	"github.com/fundacaobeta/base-canalgov-monorepo/internal/ai"
 	auth_ "github.com/fundacaobeta/base-canalgov-monorepo/internal/auth"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/helpcenter"
+	"github.com/fundacaobeta/base-canalgov-monorepo/internal/ratelimit"
 	"github.com/fundacaobeta/base-canalgov-monorepo/internal/authz"
 	businesshours "github.com/fundacaobeta/base-canalgov-monorepo/internal/business_hours"
 	"github.com/fundacaobeta/base-canalgov-monorepo/internal/colorlog"
@@ -58,6 +60,7 @@ var (
 	ctx         = context.Background()
 	appName     = "canalgov"
 	frontendDir = "frontend/dist"
+	widgetDir   = "frontend/widget/dist"
 
 	// Injected at build time.
 	buildString   string
@@ -96,6 +99,8 @@ type App struct {
 	csat             *csat.Manager
 	view             *view.Manager
 	ai               *ai.Manager
+	helpCenter       *helpcenter.Manager
+	rateLimit        *ratelimit.Limiter
 	search           *search.Manager
 	activityLog      *activitylog.Manager
 	notifier         *notifier.Service
@@ -218,6 +223,8 @@ func main() {
 		automation                  = initAutomationEngine(db, i18n)
 		sla                         = initSLA(db, team, settings, businessHours, template, user, i18n, notifDispatcher)
 		conversation                = initConversations(i18n, sla, status, priority, wsHub, db, inbox, user, team, media, settings, csat, automation, template, webhook, notifDispatcher)
+		helpCenterMgr               = initHelpCenter(db, i18n)
+		rateLimiter                 = initRateLimit(rdb)
 		autoassigner                = initAutoAssigner(team, user, conversation)
 	)
 	automation.SetConversationStore(conversation)
@@ -269,7 +276,9 @@ func main() {
 		role:             initRole(db, i18n),
 		tag:              initTag(db, i18n),
 		macro:            initMacro(db, i18n),
-		ai:               initAI(db, i18n),
+		ai:               initAI(db, i18n, conversation, helpCenterMgr),
+		helpCenter:       helpCenterMgr,
+		rateLimit:        rateLimiter,
 		webhook:          webhook,
 	}
 	app.consts.Store(constants)

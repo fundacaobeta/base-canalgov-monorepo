@@ -36,6 +36,7 @@ import (
 	wmodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/webhook/models"
 	"github.com/fundacaobeta/base-canalgov-monorepo/internal/ws"
 	"github.com/jmoiron/sqlx"
+	"github.com/jmoiron/sqlx/types"
 	"github.com/knadh/go-i18n"
 	"github.com/lib/pq"
 	"github.com/volatiletech/null/v9"
@@ -82,6 +83,32 @@ type Manager struct {
 	closed                     bool
 	closedMu                   sync.RWMutex
 	wg                         sync.WaitGroup
+	continuityConfig           ContinuityConfig
+}
+
+// ContinuityConfig holds configuration for conversation continuity emails
+type ContinuityConfig struct {
+	BatchCheckInterval  time.Duration
+	OfflineThreshold    time.Duration
+	MinEmailInterval    time.Duration
+	MaxMessagesPerEmail int
+}
+
+// WidgetConversationView represents the conversation data for widget clients
+type WidgetConversationView struct {
+	UUID                  string      `json:"uuid"`
+	Status                string      `json:"status"`
+	Assignee              interface{} `json:"assignee"`
+	BusinessHoursID       *int        `json:"business_hours_id,omitempty"`
+	WorkingHoursUTCOffset *int        `json:"working_hours_utc_offset,omitempty"`
+}
+
+// WidgetConversationResponse represents the full conversation response for widget with messages
+type WidgetConversationResponse struct {
+	Conversation          models.ChatConversation `json:"conversation"`
+	Messages              []models.ChatMessage    `json:"messages"`
+	BusinessHoursID       *int                    `json:"business_hours_id,omitempty"`
+	WorkingHoursUTCOffset *int                    `json:"working_hours_utc_offset,omitempty"`
 }
 
 type slaStore interface {
@@ -112,6 +139,7 @@ type userStore interface {
 
 type mediaStore interface {
 	GetBlob(name string) ([]byte, error)
+	GetSignedURL(name string) string
 	Attach(id int, model string, modelID int) error
 	GetByModel(id int, model string) ([]mmodels.Media, error)
 	ContentIDExists(contentID string) (bool, string, error)
@@ -126,6 +154,8 @@ type inboxStore interface {
 
 type settingsStore interface {
 	GetAppRootURL() (string, error)
+	Get(key string) (types.JSONText, error)
+	GetByPrefix(prefix string) (types.JSONText, error)
 }
 
 type csatStore interface {
@@ -143,6 +173,7 @@ type Opts struct {
 	Lo                       *logf.Logger
 	OutgoingMessageQueueSize int
 	IncomingMessageQueueSize int
+	ContinuityConfig         *ContinuityConfig
 }
 
 // New initializes a new conversation Manager.
@@ -193,6 +224,10 @@ func New(
 		outgoingProcessingMessages: sync.Map{},
 	}
 
+	if opts.ContinuityConfig != nil {
+		c.continuityConfig = *opts.ContinuityConfig
+	}
+
 	return c, nil
 }
 
@@ -230,6 +265,15 @@ type queries struct {
 	RemoveConversationAssignee         *sqlx.Stmt `query:"remove-conversation-assignee"`
 	GetLatestMessage                   *sqlx.Stmt `query:"get-latest-message"`
 
+	// Livechat/continuity queries.
+	GetContactChatConversations       *sqlx.Stmt `query:"get-contact-chat-conversations"`
+	GetChatConversation               *sqlx.Stmt `query:"get-chat-conversation"`
+	UpdateConversationContactLastSeen *sqlx.Stmt `query:"update-conversation-contact-last-seen"`
+	GetOfflineLiveChatConversations   *sqlx.Stmt `query:"get-offline-livechat-conversations"`
+	GetUnreadMessages                 *sqlx.Stmt `query:"get-unread-messages"`
+	UpdateContinuityEmailTracking     *sqlx.Stmt `query:"update-continuity-email-tracking"`
+	DeleteMessage                     *sqlx.Stmt `query:"delete-message"`
+
 	// Draft queries.
 	UpsertConversationDraft *sqlx.Stmt `query:"upsert-conversation-draft"`
 	GetAllUserDrafts        *sqlx.Stmt `query:"get-all-user-drafts"`
@@ -252,13 +296,54 @@ type queries struct {
 }
 
 // CreateConversation creates a new conversation and returns its ID and UUID.
-func (c *Manager) CreateConversation(contactID, contactChannelID, inboxID int, lastMessage string, lastMessageAt time.Time, subject string, appendRefNumToSubject bool) (int, string, error) {
+// Pass contactChannelID=0 for livechat conversations that do not have a contact channel.
+// meta and conversationAttrs are optional JSONB fields stored on the conversation.
+// maxConversations and rateLimitWindow enforce per-contact rate limits when both > 0.
+func (c *Manager) CreateConversation(contactID, inboxID int, lastMessage string, lastMessageAt time.Time, subject string, appendRefNumToSubject bool, meta, conversationAttrs map[string]any, maxConversations int, rateLimitWindow time.Duration) (int, string, error) {
 	var (
 		id     int
 		uuid   string
 		prefix string
 	)
-	if err := c.q.InsertConversation.QueryRow(contactID, contactChannelID, models.StatusOpen, inboxID, lastMessage, lastMessageAt, subject, prefix, appendRefNumToSubject).Scan(&id, &uuid); err != nil {
+
+	// Rate-limit check: ensure the contact hasn't exceeded maxConversations in the window.
+	if maxConversations > 0 && rateLimitWindow > 0 {
+		conversations, err := c.GetContactChatConversations(contactID, inboxID)
+		if err != nil {
+			c.lo.Error("error checking conversation rate limit", "contact_id", contactID, "error", err)
+			return 0, "", err
+		}
+		if len(conversations) >= maxConversations {
+			return 0, "", envelope.NewError(envelope.RateLimitError, "too many conversations", nil)
+		}
+	}
+
+	// Marshal meta and custom_attributes.
+	metaJSON, err := json.Marshal(meta)
+	if err != nil || len(metaJSON) == 0 {
+		metaJSON = []byte("{}")
+	}
+	attrsJSON, err := json.Marshal(conversationAttrs)
+	if err != nil || len(attrsJSON) == 0 {
+		attrsJSON = []byte("{}")
+	}
+
+	if err := c.q.InsertConversation.QueryRow(contactID, 0, models.StatusOpen, inboxID, lastMessage, lastMessageAt, subject, prefix, appendRefNumToSubject, string(metaJSON), string(attrsJSON)).Scan(&id, &uuid); err != nil {
+		c.lo.Error("error inserting new conversation into the DB", "error", err)
+		return id, uuid, err
+	}
+	return id, uuid, nil
+}
+
+// CreateConversationWithChannel creates a new conversation with an explicit contact_channel_id.
+// Used for email/non-livechat conversations that require a contact channel.
+func (c *Manager) CreateConversationWithChannel(contactID, contactChannelID, inboxID int, lastMessage string, lastMessageAt time.Time, subject string, appendRefNumToSubject bool) (int, string, error) {
+	var (
+		id     int
+		uuid   string
+		prefix string
+	)
+	if err := c.q.InsertConversation.QueryRow(contactID, contactChannelID, models.StatusOpen, inboxID, lastMessage, lastMessageAt, subject, prefix, appendRefNumToSubject, "{}", "{}").Scan(&id, &uuid); err != nil {
 		c.lo.Error("error inserting new conversation into the DB", "error", err)
 		return id, uuid, err
 	}

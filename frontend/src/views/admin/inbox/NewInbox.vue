@@ -73,8 +73,8 @@
               </div>
             </template>
 
-            <!-- Other Channels -->
-            <template v-else>
+            <!-- Other Channels (non-email, non-livechat) -->
+            <template v-else-if="selectedChannel !== 'livechat'">
               <div class="grid gap-2">
                 <Label>{{ t('globals.terms.identifier') }}</Label>
                 <Input v-model="form.from" placeholder="Ex: 5511999998888" required />
@@ -115,9 +115,9 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { 
-  Mail, MessageSquare, Send, Smartphone, 
-  Globe, ArrowLeft, Loader2, Bot, Bell 
+import {
+  Mail, MessageSquare, Send, Smartphone,
+  Globe, ArrowLeft, Loader2, Bot, Bell, MessagesSquare
 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -136,6 +136,7 @@ const domains = ref([])
 
 const channels = [
   { id: 'email', icon: Mail },
+  { id: 'livechat', icon: MessagesSquare },
   { id: 'whatsapp', icon: MessageSquare },
   { id: 'telegram', icon: Bot },
   { id: 'sms', icon: Send },
