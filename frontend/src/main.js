@@ -9,10 +9,15 @@ import './assets/styles/main.scss'
 import './utils/strings.js'
 import Root from './Root.vue'
 
+const DEFAULT_FAVICON = '/images/beta-logo.png?v=20260331'
+
 const setFavicon = (url) => {
-  let link = document.createElement("link")
-  link.rel = "icon"
-  document.head.appendChild(link)
+  let link = document.querySelector("link[rel='icon']")
+  if (!link) {
+    link = document.createElement("link")
+    link.rel = "icon"
+    document.head.appendChild(link)
+  }
   link.href = url
 }
 
@@ -23,8 +28,7 @@ async function initApp () {
   const langMessages = await api.getLanguage(lang)
 
   // Set favicon.
-  if (config['app.favicon_url'])
-    setFavicon(config['app.favicon_url'])
+  setFavicon(config['app.favicon_url'] || DEFAULT_FAVICON)
 
   // Configure the i18n singleton with the loaded messages before mounting.
   setupI18n(lang, langMessages.data)

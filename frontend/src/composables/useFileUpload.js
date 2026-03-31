@@ -35,8 +35,10 @@ export function useFileUpload (options = {}) {
      */
     const handleFileUpload = (event) => {
         const files = Array.from(event.target.files)
+        if (!files.length) return
         uploadingFiles.value = files
         isUploading.value = true
+        event.target.value = ''
 
         for (const file of files) {
             api

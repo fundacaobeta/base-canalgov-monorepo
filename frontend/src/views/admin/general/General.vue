@@ -52,6 +52,6 @@ const submitForm = async (values) => {
   const updatedValues = Object.fromEntries(
     Object.entries(values).map(([key, value]) => [`app.${key}`, value])
   )
-  await api.updateSettings('general', updatedValues)
+  await api.updateSettings(updatedValues)
 }
 </script>

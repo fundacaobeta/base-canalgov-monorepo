@@ -9,9 +9,19 @@ import { useRoute } from 'vue-router'
 import { useConversationStore } from '@/stores/conversation'
 import { CONVERSATION_LIST_TYPE, CONVERSATION_DEFAULT_STATUSES } from '@/constants/conversation'
 import ConversationPlaceholder from '@/features/conversation/ConversationPlaceholder.vue'
+import { useI18n } from 'vue-i18n'
+import { getLocalePaths } from '@/router/paths'
 
 const route = useRoute()
-const type = computed(() => route.params.type)
+const { locale } = useI18n()
+const type = computed(() => {
+  const paramsType = route.params.type
+  const p = getLocalePaths(locale.value)
+  const internalType = Object.fromEntries(
+    Object.entries(p.inboxTypes).map(([internal, localized]) => [localized, internal])
+  )
+  return internalType[paramsType] ?? paramsType
+})
 const teamID = computed(() => route.params.teamID)
 const viewID = computed(() => route.params.viewID)
 

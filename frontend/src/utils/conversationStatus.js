@@ -1,10 +1,4 @@
 function getFallbackLocale() {
-  if (typeof document !== 'undefined' && document.documentElement.lang) {
-    return document.documentElement.lang
-  }
-  if (typeof navigator !== 'undefined' && navigator.language) {
-    return navigator.language
-  }
   return 'pt-BR'
 }
 
@@ -30,17 +24,17 @@ function getFallbackLabels(locale) {
 export function translateConversationStatus(status, t, locale = getFallbackLocale()) {
   if (!status) return ''
 
-  if (typeof t === 'function') {
-    const map = {
-      Open: t('globals.terms.open'),
-      Snoozed: t('globals.terms.snoozed'),
-      Resolved: t('globals.terms.resolved'),
-      Closed: t('globals.terms.closed'),
-      Replied: t('globals.terms.replied')
-    }
+  return getFallbackLabels(locale)[status] || status
+}
 
-    return map[status] || status
+export function getConversationStatusBadgeVariant(status) {
+  const variantMap = {
+    Open: 'destructive',
+    Snoozed: 'warning',
+    Resolved: 'success',
+    Closed: 'neutral',
+    Replied: 'info'
   }
 
-  return getFallbackLabels(locale)[status] || status
+  return variantMap[status] || 'outline'
 }

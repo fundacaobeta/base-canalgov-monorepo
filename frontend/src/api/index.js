@@ -49,14 +49,23 @@ const getViewConversations = (id, params) => http.get(`/api/v1/views/${id}/conve
 const getConversation = (uuid) => http.get(`/api/v1/conversations/${uuid}`)
 const getConversationParticipants = (uuid) => http.get(`/api/v1/conversations/${uuid}/participants`)
 const updateUserAssignee = (uuid, data) => http.put(`/api/v1/conversations/${uuid}/assignee/user`, data)
-const updateAssignee = updateUserAssignee
 const updateTeamAssignee = (uuid, data) => http.put(`/api/v1/conversations/${uuid}/assignee/team`, data)
+const updateAssignee = (uuid, type, data) => {
+  if (type === 'team') {
+    return updateTeamAssignee(uuid, data)
+  }
+
+  return updateUserAssignee(uuid, data)
+}
 const removeUserAssignee = (uuid) => http.put(`/api/v1/conversations/${uuid}/assignee/user/remove`)
 const removeTeamAssignee = (uuid) => http.put(`/api/v1/conversations/${uuid}/assignee/team/remove`)
 const removeAssignee = removeUserAssignee
 const updatePriority = (uuid, data) => http.put(`/api/v1/conversations/${uuid}/priority`, data)
 const updateConversationPriority = updatePriority
-const updateStatus = (uuid, data) => http.put(`/api/v1/conversations/${uuid}/status`)
+const updateStatus = (uuid, data) =>
+  http.put(`/api/v1/conversations/${uuid}/status`, data, {
+    headers: { 'Content-Type': 'application/json' }
+  })
 const updateConversationStatus = updateStatus
 const updateLastSeen = (uuid) => http.put(`/api/v1/conversations/${uuid}/last-seen`)
 const updateAssigneeLastSeen = updateLastSeen
@@ -66,9 +75,12 @@ const updateTags = (uuid, data) => http.post(`/api/v1/conversations/${uuid}/tags
 const upsertTags = updateTags
 const getConversationMessages = (uuid, params) => http.get(`/api/v1/conversations/${uuid}/messages`, { params })
 const getConversationMessage = (cuuid, uuid) => http.get(`/api/v1/conversations/${cuuid}/messages/${uuid}`)
-const sendMessage = (uuid, data) => http.post(`/api/v1/conversations/${uuid}/messages`, data, { headers: { 'Content-Type': 'multipart/form-data' } })
+const sendMessage = (uuid, data) => http.post(`/api/v1/conversations/${uuid}/messages`, data)
 const retryMessage = (cuuid, uuid) => http.put(`/api/v1/conversations/${cuuid}/messages/${uuid}/retry`)
-const createConversation = (data) => http.post('/api/v1/conversations', data, { headers: { 'Content-Type': 'multipart/form-data' } })
+const createConversation = (data) =>
+  http.post('/api/v1/conversations', JSON.parse(JSON.stringify(data)), {
+    headers: { 'Content-Type': 'application/json' }
+  })
 const updateConversationCustomAttributes = (uuid, data) => http.put(`/api/v1/conversations/${uuid}/custom-attributes`, data)
 const updateConversationCustomAttribute = updateConversationCustomAttributes
 const updateContactCustomAttributes = (uuid, data) => http.put(`/api/v1/conversations/${uuid}/contacts/custom-attributes`, data)
@@ -120,6 +132,20 @@ const resetPassword = (data) => http.post('/api/v1/agents/reset-password', data)
 const setPassword = (data) => http.post('/api/v1/agents/set-password', data)
 const generateAPIKey = (id) => http.post(`/api/v1/agents/${id}/api-key`)
 const revokeAPIKey = (id) => http.delete(`/api/v1/agents/${id}/api-key`)
+
+// Media
+const uploadMedia = (data) => {
+  const formData = new FormData()
+  formData.append('files', data.files)
+  formData.append('inline', String(Boolean(data.inline)))
+  if (data.linked_model) {
+    formData.append('linked_model', data.linked_model)
+  }
+
+  return http.post('/api/v1/media', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}
 
 // Contacts
 const getContacts = (params) => http.get('/api/v1/contacts', { params })
@@ -334,7 +360,7 @@ export default {
   getAgents, getAgent, getUser, createAgent, createUser, updateAgent, updateUser, deleteAgent, deleteUser,
   importAgents, getAgentImportStatus, getCurrentAgent, getCurrentUser, updateCurrentAgent, updateCurrentUser,
   getCurrentAgentTeams, updateAgentAvailability, updateCurrentUserAvailability, deleteCurrentAgentAvatar, deleteUserAvatar,
-  getUsersCompact, resetPassword, setPassword, generateAPIKey, revokeAPIKey,
+  getUsersCompact, resetPassword, setPassword, generateAPIKey, revokeAPIKey, uploadMedia,
   getContacts, getContact, getContactConversations, getContactStats, updateContact, blockContact,
   getContactNotes, createContactNote, deleteContactNote, getContactSegments, createContactSegment, getContactSegment, updateContactSegment, deleteContactSegment, updateContactCustomAttribute,
   getTeams, getTeam, createTeam, updateTeam, deleteTeam, getTeamsCompact,

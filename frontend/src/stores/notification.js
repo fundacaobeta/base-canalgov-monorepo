@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { handleHTTPError } from '@/utils/http'
 import { useEmitter } from '@/composables/useEmitter'
 import { EMITTER_EVENTS } from '@/constants/emitterEvents'
+import { getLocalePaths } from '@/router/paths'
 import api from '@/api'
 
 export const useNotificationStore = defineStore('notification', () => {
@@ -20,6 +21,27 @@ export const useNotificationStore = defineStore('notification', () => {
   const readNotifications = computed(() =>
     notifications.value.filter(n => n.is_read)
   )
+
+  const buildConversationURL = (notification) => {
+    if (!notification?.conversation_uuid) return null
+
+    const locale = document?.documentElement?.lang || 'pt-BR'
+    const paths = getLocalePaths(locale)
+    const inboxType = notification.notification_type === 'mention'
+      ? paths.inboxTypes.mentioned
+      : paths.inboxTypes.assigned
+
+    const url = new URL(
+      `/${paths.inboxes}/${inboxType}/${paths.inboxConversation}/${notification.conversation_uuid}`,
+      window.location.origin
+    )
+
+    if (notification.message_uuid) {
+      url.searchParams.set('scrollTo', notification.message_uuid)
+    }
+
+    return url.toString()
+  }
 
   // Fetch notifications with pagination
   const fetchNotifications = async (limit = 30, offset = 0, append = false) => {
@@ -130,10 +152,34 @@ export const useNotificationStore = defineStore('notification', () => {
 
   // Add a new notification (from WebSocket)
   const addNotification = (notification) => {
+    if (!notification?.id) return
+
+    const alreadyExists = notifications.value.some(item => item.id === notification.id)
+    if (alreadyExists) return
+
     // Add to the beginning of the list
     notifications.value.unshift(notification)
     unreadCount.value += 1
     totalCount.value += 1
+
+    emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
+      description: notification.title || 'Novo atendimento recebido'
+    })
+
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+      const browserNotification = new Notification(notification.title || 'Novo atendimento', {
+        body: notification.body || 'Voce recebeu uma nova atualizacao.',
+        tag: notification.conversation_uuid || `notification-${notification.id}`
+      })
+
+      browserNotification.onclick = () => {
+        const conversationURL = buildConversationURL(notification)
+        window.focus()
+        if (conversationURL) {
+          window.location.assign(conversationURL)
+        }
+      }
+    }
   }
 
   // Load more notifications (for infinite scroll / load more button)

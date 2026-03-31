@@ -34,28 +34,70 @@
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger>
-              <div
-                class="flex items-center space-x-1 cursor-pointer bg-primary px-2 py-1 rounded text-sm"
-                v-if="!conversationStore.conversation.loading"
+          <div
+            v-if="!conversationStore.conversation.loading"
+            class="flex items-center gap-3 rounded-md border px-3 py-2"
+          >
+            <div class="flex flex-col leading-tight">
+              <span class="text-[11px] uppercase tracking-wide text-muted-foreground">
+                Status do chamado
+              </span>
+              <Badge
+                :variant="getConversationStatusBadgeVariant(conversationStore.current?.status)"
+                class="w-fit"
               >
-                <span class="text-secondary font-medium inline-block">
-                  {{ translateConversationStatus(conversationStore.current?.status, t) }}
-                </span>
-              </div>
-              <Skeleton class="w-[70px] h-6 rounded-full" v-else />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem
-                v-for="status in conversationStore.statusOptions"
-                :key="status.value"
-                @click="handleUpdateStatus(status.label)"
+                {{ translateConversationStatus(conversationStore.current?.status, t) }}
+              </Badge>
+            </div>
+
+            <div v-if="conversationStore.current?.priority" class="flex flex-col leading-tight">
+              <span class="text-[11px] uppercase tracking-wide text-muted-foreground">
+                Prioridade
+              </span>
+              <Badge
+                :variant="getConversationPriorityBadgeVariant(conversationStore.current?.priority)"
+                class="w-fit"
               >
-                {{ translateConversationStatus(status.label, t) }}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                {{ translateConversationPriority(conversationStore.current?.priority) }}
+              </Badge>
+            </div>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger>
+                <Button size="sm" variant="outline">
+                  Alterar status
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  v-if="conversationStore.current?.status !== CONVERSATION_DEFAULT_STATUSES.OPEN"
+                  class="text-destructive focus:text-destructive"
+                  @click="handleUpdateStatus(CONVERSATION_DEFAULT_STATUSES.OPEN)"
+                >
+                  Reabrir chamado
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  v-if="conversationStore.current?.status !== CONVERSATION_DEFAULT_STATUSES.RESOLVED"
+                  @click="handleUpdateStatus(CONVERSATION_DEFAULT_STATUSES.RESOLVED)"
+                >
+                  Marcar como resolvido
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  v-if="conversationStore.current?.status !== CONVERSATION_DEFAULT_STATUSES.SNOOZED"
+                  @click="handleUpdateStatus(CONVERSATION_DEFAULT_STATUSES.SNOOZED)"
+                >
+                  Adiar chamado
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  v-if="conversationStore.current?.status !== CONVERSATION_DEFAULT_STATUSES.CLOSED"
+                  @click="handleUpdateStatus(CONVERSATION_DEFAULT_STATUSES.CLOSED)"
+                >
+                  Fechar chamado
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <Skeleton class="w-[220px] h-10 rounded-md" v-else />
         </div>
       </div>
     </div>
@@ -88,8 +130,11 @@ import { CONVERSATION_DEFAULT_STATUSES } from '@/constants/conversation'
 import { useEmitter } from '@/composables/useEmitter'
 import { useIntegrationActions } from '@/composables/useIntegrationActions'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { useI18n } from 'vue-i18n'
-import { translateConversationStatus } from '@/utils/conversationStatus'
+import { getConversationStatusBadgeVariant, translateConversationStatus } from '@/utils/conversationStatus'
+import { getConversationPriorityBadgeVariant, translateConversationPriority } from '@/utils/conversationPriority'
 
 const conversationStore = useConversationStore()
 const { t } = useI18n()

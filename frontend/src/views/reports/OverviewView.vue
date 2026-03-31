@@ -1,7 +1,7 @@
 <template>
   <div class="overflow-y-auto h-full">
     <div
-      class="p-6 w-full max-w-[1600px] mx-auto"
+      class="mx-auto w-full max-w-7xl p-6"
       :class="{ 'opacity-50 transition-opacity duration-300': isLoading }"
     >
       <div v-if="isLoading" class="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
@@ -9,7 +9,7 @@
       </div>
 
       <div class="space-y-8">
-        <div class="flex items-center justify-between">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 class="text-3xl font-bold tracking-tight">{{ t('reports.overview.title') }}</h1>
             <p class="text-sm text-muted-foreground">
@@ -25,7 +25,7 @@
         </div>
 
         <!-- Row 1: Open Conversations and Agent Status -->
-        <div class="grid gap-6 md:grid-cols-2">
+        <div class="grid gap-6 xl:grid-cols-2">
           <Card
             :title="$t('report.openConversations')"
             :counts="cardCounts"
@@ -41,14 +41,14 @@
         </div>
 
         <!-- Row 2: CSAT and Message Volume -->
-        <div class="grid gap-6 md:grid-cols-2">
+        <div class="grid gap-6 xl:grid-cols-2">
           <!-- CSAT Card -->
           <div class="box p-5 flex flex-col">
             <div class="flex justify-between items-center mb-6">
               <p class="card-title">{{ $t('report.csat.cardTitle', { days: csatDays }) }}</p>
               <DateFilter @filter-change="handleCSATFilterChange" :label="''" />
             </div>
-            <div class="grid grid-cols-3 gap-6 flex-1 items-center">
+            <div class="grid gap-6 sm:grid-cols-3 flex-1 items-center">
               <div class="metric-item">
                 <span class="metric-value">{{ formatRating(csatData.average_rating) }}</span>
                 <span class="metric-label">{{ $t('report.csat.avgRating') }}</span>
@@ -74,7 +74,7 @@
               </p>
               <DateFilter @filter-change="handleMessageVolumeFilterChange" :label="''" />
             </div>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 flex-1 items-center">
+            <div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-4 flex-1 items-center">
               <div class="metric-item">
                 <span class="metric-value">{{
                   formatCompactNumber(messageVolumeData.total_messages || 0)
@@ -110,7 +110,7 @@
             <DateFilter @filter-change="handleSlaFilterChange" :label="''" />
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+          <div class="grid grid-cols-1 gap-8 xl:grid-cols-3 xl:gap-12">
             <!-- First Response -->
             <div class="space-y-6">
               <p class="section-title">{{ $t('report.sla.firstResponse') }}</p>
@@ -145,7 +145,7 @@
             </div>
 
             <!-- Next Response -->
-            <div class="space-y-6 border-x border-dashed px-8">
+            <div class="space-y-6 xl:border-x xl:border-dashed xl:px-8">
               <p class="section-title">{{ $t('report.sla.nextResponse') }}</p>
               <div class="flex justify-center">
                 <div class="relative flex flex-col items-center">
@@ -213,7 +213,7 @@
         </div>
 
         <!-- Row 4: Tag Distribution & History -->
-        <div class="grid gap-6 md:grid-cols-3">
+        <div class="grid gap-6 xl:grid-cols-3">
           <div class="box p-5 col-span-1">
             <div class="flex justify-between items-center mb-6">
               <p class="card-title">{{ t('reports.overview.tagDistribution') }}</p>
@@ -235,12 +235,12 @@
             </div>
           </div>
 
-          <div class="box p-5 col-span-2">
+          <div class="box p-5 xl:col-span-2">
             <div class="flex justify-between items-center mb-6">
               <p class="card-title">{{ t('reports.overview.history') }}</p>
               <DateFilter @filter-change="handleChartFilterChange" :label="''" />
             </div>
-            <div class="h-[250px] w-full">
+            <div class="h-[320px] w-full xl:h-[360px]">
               <LineChart :data="processedLineData" />
             </div>
           </div>
@@ -261,7 +261,7 @@
             </router-link>
           </div>
           
-          <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div class="grid gap-6 xl:grid-cols-3">
             <div v-for="report in customReportsData" :key="report.id" class="box p-5 min-h-[250px] flex flex-col group hover:border-primary/30 transition-colors">
               <div class="flex items-start justify-between mb-6">
                 <div>
@@ -323,6 +323,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, RefreshCw, Settings } from 'lucide-vue-next'
 import { useCustomReports } from '@/composables/useCustomReports'
+import { translateConversationStatus } from '@/utils/conversationStatus'
 import api from '@/api'
 
 const emitter = useEmitter()
@@ -383,10 +384,10 @@ const slaCardTitle = computed(() => t('report.sla.cardTitle', { days: slaDays.va
 const lastUpdateFormatted = computed(() => lastUpdate.value.toLocaleTimeString())
 
 const conversationCountLabels = computed(() => ({
-  open: t('globals.terms.open'),
-  awaiting_response: t('globals.terms.awaitingResponse'),
-  unassigned: t('globals.terms.unassigned'),
-  pending: t('globals.terms.pending')
+  open: translateConversationStatus('Open', t),
+  snoozed: translateConversationStatus('Snoozed', t),
+  resolved: translateConversationStatus('Resolved', t),
+  closed: translateConversationStatus('Closed', t)
 }))
 
 const agentStatusLabels = computed(() => ({

@@ -81,11 +81,11 @@
                   </FormItem>
                 </FormField>
 
-                <FormField v-slot="{ componentField }" name="inbox_id">
+                <FormField v-slot="{ componentField, handleChange }" name="inbox_id">
                   <FormItem>
                     <FormLabel>{{ $t('globals.terms.inbox') }}</FormLabel>
                     <FormControl>
-                      <Select v-bind="componentField">
+                      <Select v-bind="componentField" @update:model-value="handleChange">
                         <SelectTrigger>
                           <SelectValue
                             :placeholder="
@@ -114,7 +114,7 @@
               <!-- Assignment Group -->
               <div class="grid grid-cols-2 gap-4">
                 <!-- Set assigned team -->
-                <FormField v-slot="{ componentField }" name="team_id">
+                <FormField v-slot="{ componentField, handleChange }" name="team_id">
                   <FormItem>
                     <FormLabel>
                       {{
@@ -127,6 +127,7 @@
                     <FormControl>
                       <SelectComboBox
                         v-bind="componentField"
+                        @update:modelValue="handleChange"
                         :items="[{ value: 'none', label: 'None' }, ...teamStore.options]"
                         :placeholder="
                           t('globals.messages.select', { name: t('globals.terms.team') })
@@ -139,7 +140,7 @@
                 </FormField>
 
                 <!-- Set assigned agent -->
-                <FormField v-slot="{ componentField }" name="agent_id">
+                <FormField v-slot="{ componentField, handleChange }" name="agent_id">
                   <FormItem>
                     <FormLabel>
                       {{
@@ -152,6 +153,7 @@
                     <FormControl>
                       <SelectComboBox
                         v-bind="componentField"
+                        @update:modelValue="handleChange"
                         :items="[{ value: 'none', label: 'None' }, ...uStore.options]"
                         :placeholder="
                           t('globals.messages.select', { name: t('globals.terms.agent') })
@@ -240,6 +242,7 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { z } from 'zod'
 import { ref, watch, onUnmounted, nextTick, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import AttachmentsPreview from '@/features/conversation/message/attachment/AttachmentsPreview.vue'
 import { useConversationStore } from '@/stores/conversation'
 import MacroActionsPreview from '@/features/conversation/MacroActionsPreview.vue'
@@ -251,6 +254,7 @@ import { handleHTTPError } from '@/utils/http'
 import { useInboxStore } from '@/stores/inbox'
 import { useAgentsStore } from '@/stores/agents'
 import { useTeamStore } from '@/stores/team'
+import { useUserStore } from '@/stores/user'
 import {
   Select,
   SelectContent,
@@ -265,6 +269,7 @@ import Editor from '@/components/editor/TextEditor.vue'
 import { useMacroStore } from '@/stores/macro'
 import SelectComboBox from '@/components/combobox/SelectCombobox.vue'
 import { UserTypeAgent } from '@/constants/user'
+import { useInboxTypes } from '@/composables/useInboxTypes'
 import api from '@/api'
 
 const dialogOpen = defineModel({
@@ -276,6 +281,9 @@ const inboxStore = useInboxStore()
 const { t } = useI18n()
 const uStore = useAgentsStore()
 const teamStore = useTeamStore()
+const userStore = useUserStore()
+const router = useRouter()
+const { toParam: inboxTypeParam } = useInboxTypes()
 const emitter = useEmitter()
 const loading = ref(false)
 const searchResults = ref([])
@@ -342,6 +350,9 @@ onMounted(() => {
     command: 'apply-macro-to-new-conversation',
     open: false
   })
+  inboxStore.fetchInboxes()
+  uStore.fetchAgents()
+  teamStore.fetchTeams()
 })
 
 const form = useForm({
@@ -357,6 +368,47 @@ const form = useForm({
     last_name: ''
   }
 })
+
+const ensureInboxSelection = () => {
+  if (form.values.inbox_id || inboxStore.options.length === 0) return
+  form.setFieldValue('inbox_id', inboxStore.options[0].value)
+}
+
+const ensureDefaultAssignee = () => {
+  if (form.values.agent_id || form.values.team_id || !userStore.userID) return
+  form.setFieldValue('agent_id', String(userStore.userID))
+}
+
+watch(
+  () => dialogOpen.value,
+  async (isOpen) => {
+    if (!isOpen) return
+    await Promise.all([
+      inboxStore.fetchInboxes(),
+      uStore.fetchAgents(),
+      teamStore.fetchTeams()
+    ])
+    ensureInboxSelection()
+    ensureDefaultAssignee()
+  },
+  { immediate: true }
+)
+
+watch(
+  () => inboxStore.options,
+  () => {
+    ensureInboxSelection()
+  },
+  { deep: true }
+)
+
+watch(
+  () => userStore.userID,
+  () => {
+    ensureDefaultAssignee()
+  },
+  { immediate: true }
+)
 
 watch(emailQuery, (newVal) => {
   form.setFieldValue('contact_email', newVal)
@@ -395,15 +447,36 @@ const selectContact = (contact) => {
 const createConversation = form.handleSubmit(async (values) => {
   loading.value = true
   try {
-    // Convert ids to numbers if they are not already
-    values.inbox_id = Number(values.inbox_id)
-    values.team_id = values.team_id ? Number(values.team_id) : null
-    values.agent_id = values.agent_id ? Number(values.agent_id) : null
-    // Array of attachment ids.
-    values.attachments = mediaFiles.value.map((file) => file.id)
-    // Initiator of this conversation is always agent
-    values.initiator = UserTypeAgent
-    const conversation = await api.createConversation(values)
+    const normalizeOptionalId = (value) => {
+      if (value === null || value === undefined || value === '' || value === 'none') return null
+      const parsed = Number(value)
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+    }
+
+    const normalizeRequiredId = (value, fallback = null) => {
+      const parsed = Number(value ?? fallback)
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+    }
+
+    const fallbackInboxId = inboxStore.options[0]?.value ?? null
+    const payload = {
+      ...values,
+      inbox_id: normalizeRequiredId(values.inbox_id, fallbackInboxId),
+      team_id: normalizeOptionalId(values.team_id),
+      agent_id: normalizeOptionalId(values.agent_id),
+      attachments: mediaFiles.value.map((file) => file.id),
+      initiator: UserTypeAgent
+    }
+
+    if (!payload.inbox_id) {
+      emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
+        variant: 'destructive',
+        description: t('globals.messages.required', { name: t('globals.terms.inbox') })
+      })
+      return
+    }
+
+    const conversation = await api.createConversation(payload)
     const conversationUUID = conversation.data.data.uuid
 
     // Get macro from context, and set if any actions are available.
@@ -420,6 +493,15 @@ const createConversation = form.handleSubmit(async (values) => {
     }
     dialogOpen.value = false
     form.resetForm()
+    conversationStore.refreshConversationList()
+    conversationStore.resetCurrentConversation()
+    await router.push({
+      name: 'inbox-conversation',
+      params: {
+        type: inboxTypeParam('assigned'),
+        uuid: conversationUUID
+      }
+    })
   } catch (error) {
     emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
       variant: 'destructive',

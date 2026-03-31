@@ -191,7 +191,7 @@ const form = useForm({
 const fetchDomains = async () => {
   try {
     const resp = await api.getMailDomainsSettings()
-    domains.value = (resp.data.data?.domains || []).filter((item) => item.enabled)
+    domains.value = (resp.data.data?.['mail.domains'] || []).filter((item) => item.enabled)
     if (!form.values.managed_domain_id) {
       const defaultDomain = domains.value.find((item) => item.is_default) || domains.value[0]
       if (defaultDomain) form.setFieldValue('managed_domain_id', defaultDomain.id)

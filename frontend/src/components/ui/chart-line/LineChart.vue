@@ -49,6 +49,13 @@ const legendItems = ref(
 );
 
 const isMounted = useMounted();
+const chartMargin = computed(() => ({
+  left: 24,
+  right: 24,
+  top: 12,
+  bottom: 44,
+  ...props.margin,
+}));
 
 function handleLegendItemClick(d, i) {
   emits('legendItemClick', d, i);
@@ -57,7 +64,7 @@ function handleLegendItemClick(d, i) {
 
 <template>
   <div
-    :class="cn('w-full h-[400px] flex flex-col items-end', $attrs.class ?? '')"
+    :class="cn('flex h-[320px] w-full min-w-0 flex-col items-end xl:h-[400px]', $attrs.class ?? '')"
   >
     <ChartLegend
       v-if="showLegend"
@@ -66,7 +73,7 @@ function handleLegendItemClick(d, i) {
     />
 
     <VisXYContainer
-      :margin="{ left: 20, right: 20 }"
+      :margin="chartMargin"
       :data="data"
       :style="{ height: isMounted ? '100%' : 'auto' }"
     >

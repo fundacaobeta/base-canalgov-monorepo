@@ -1,13 +1,32 @@
 <template>
   <AuthLayout>
     <Card
-      class="bg-card box"
+      class="bg-card box border-primary/20 shadow-2xl shadow-primary/10 overflow-hidden"
       :class="{ 'animate-shake': shakeCard }"
       id="login-container"
       ref="cardRef"
     >
+      <div class="h-2 w-full bg-[linear-gradient(90deg,hsl(var(--primary)),hsl(var(--accent)))]"></div>
       <CardContent class="p-6 space-y-6">
-        <div class="space-y-2 text-center">
+        <div class="space-y-3 text-center">
+          <div class="flex flex-col items-center gap-3">
+            <div class="flex h-16 w-16 items-center justify-center rounded-2xl border border-primary/20 bg-white/80 shadow-lg shadow-primary/10">
+              <img
+                src="/images/beta-logo.png"
+                alt="Beta"
+                class="h-12 w-12 object-contain"
+              />
+            </div>
+            <img
+              v-if="appLogoUrl"
+              :src="appLogoUrl"
+              :alt="appSettingsStore.public_config?.['app.site_name'] || 'CANALGOV'"
+              class="mx-auto h-20 w-auto object-contain"
+            />
+          </div>
+          <div class="inline-flex items-center rounded-full border border-accent/40 bg-accent/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+            Identidade Beta
+          </div>
           <CardTitle class="text-3xl font-bold text-foreground">
             {{ appSettingsStore.public_config?.['app.site_name'] || 'CANALGOV' }}
           </CardTitle>
@@ -152,7 +171,7 @@ const loginForm = ref({
 })
 const oidcProviders = ref([])
 const appSettingsStore = useAppSettingsStore()
-
+const appLogoUrl = computed(() => appSettingsStore.public_config?.['app.logo_url'] || '')
 // Demo build has the credentials prefilled.
 const isDemoBuild = import.meta.env.VITE_DEMO_BUILD === 'true'
 
@@ -227,13 +246,13 @@ const loginAction = () => {
       // Also fetch general setting as user's logged in.
       appSettingsStore.fetchSettings('general')
 
-      // Redirect to the 'next' parameter if it exists
       const nextParam = router.currentRoute.value.query.next
-      if (nextParam) {
-        router.push(nextParam)
-      } else {
-        router.push({ name: 'inboxes' })
+      if (typeof nextParam === 'string' && nextParam.length > 0) {
+        window.location.href = nextParam
+        return
       }
+
+      router.push({ name: 'inboxes' })
     })
     .catch((error) => {
       errorMessage.value = handleHTTPError(error).message

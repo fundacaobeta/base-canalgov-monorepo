@@ -420,9 +420,17 @@ const viewToDelete = ref(null)
         <SidebarHeader>
           <SidebarMenu>
             <SidebarMenuItem>
-              <div class="flex items-center justify-between w-full px-1">
-                <div class="font-semibold text-xl">
-                  <span>{{ t('globals.terms.inbox') }}</span>
+              <div class="flex items-center justify-between w-full px-1 gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                  <img
+                    v-if="settingsStore.public_config?.['app.logo_url']"
+                    src="/images/beta-logo.png"
+                    :alt="settingsStore.public_config?.['app.site_name'] || 'CANALGOV'"
+                    class="h-10 w-10 object-contain shrink-0 rounded-md bg-white/70 p-1"
+                  />
+                  <div class="font-semibold text-xl min-w-0">
+                    <span>{{ t('globals.terms.inbox') }}</span>
+                  </div>
                 </div>
                 <div class="mr-1 mt-1 hover:scale-110 transition-transform">
                   <router-link :to="{ name: 'search' }">

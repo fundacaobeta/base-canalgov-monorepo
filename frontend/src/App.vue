@@ -1,5 +1,8 @@
 <template>
-  <div class="flex w-full h-screen text-foreground bg-canvas p-1.5">
+  <div
+    class="flex w-full h-screen text-foreground bg-canvas p-1.5"
+    style="background-image: radial-gradient(circle at top left, hsl(var(--primary) / 0.18), transparent 24%), radial-gradient(circle at bottom right, hsl(var(--accent) / 0.16), transparent 22%), linear-gradient(180deg, hsl(var(--canvas)), hsl(var(--background)));"
+  >
     <!-- Icon sidebar always visible -->
     <SidebarProvider style="--sidebar-width: 3rem" class="w-auto z-50">
       <ShadcnSidebar collapsible="none" class="border rounded-lg overflow-hidden">

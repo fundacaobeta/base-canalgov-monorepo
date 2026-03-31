@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-6 h-full overflow-y-auto p-1">
-    <div class="flex items-center justify-between">
+    <div class="rounded-2xl border bg-gradient-to-br from-slate-50 via-white to-emerald-50 p-6 shadow-sm">
       <div>
         <h1 class="text-3xl font-bold tracking-tight">{{ t('reports.custom.title') }}</h1>
         <p class="text-muted-foreground italic text-sm">

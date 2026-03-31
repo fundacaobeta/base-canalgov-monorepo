@@ -12,12 +12,12 @@
           <!-- Avatar -->
           <Avatar class="w-12 h-12 rounded-full shadow">
             <AvatarImage
-              :src="conversation.contact.avatar_url || ''"
+              :src="conversation.contact?.avatar_url || ''"
               class="object-cover"
-              v-if="conversation.contact.avatar_url || ''"
+              v-if="conversation.contact?.avatar_url || ''"
             />
             <AvatarFallback>
-              {{ conversation.contact.first_name.substring(0, 2).toUpperCase() }}
+              {{ contactInitials }}
             </AvatarFallback>
           </Avatar>
 
@@ -43,16 +43,32 @@
               />
             </div>
 
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex min-w-0 items-center gap-2">
+                <Badge :variant="getConversationStatusBadgeVariant(conversation.status)">
+                  {{ translateConversationStatus(conversation.status) }}
+                </Badge>
+                <Badge v-if="conversation.priority" :variant="getConversationPriorityBadgeVariant(conversation.priority)">
+                  Prioridade: {{ translateConversationPriority(conversation.priority) }}
+                </Badge>
+              </div>
+              <p class="text-xs text-muted-foreground truncate">
+                {{ conversation.reference_number || '' }}
+              </p>
+            </div>
+
             <!-- Subject -->
             <p v-if="conversation.subject" class="text-xs font-medium text-muted-foreground truncate">
               {{ conversation.subject }}
             </p>
 
             <!-- Inbox name -->
-            <p class="text-xs text-gray-400 flex items-center gap-1.5">
-              <Mail class="w-3.5 h-3.5 text-gray-400/80" />
-              <span>{{ conversation.inbox_name }}</span>
-            </p>
+            <div class="flex items-center justify-between gap-2">
+              <p class="text-xs text-gray-400 flex items-center gap-1.5 min-w-0">
+                <Mail class="w-3.5 h-3.5 text-gray-400/80 flex-shrink-0" />
+                <span class="truncate">{{ conversation.inbox_name }}</span>
+              </p>
+            </div>
 
             <!-- Message preview and unread count -->
             <div class="flex items-start justify-between gap-2">
@@ -130,6 +146,7 @@ import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { Mail, Reply, Pencil, MailOpen } from 'lucide-vue-next'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -139,6 +156,8 @@ import {
 import SlaBadge from '@/features/sla/SlaBadge.vue'
 import { useConversationStore } from '@/stores/conversation'
 import DateTimeMeta from '@/components/datetime/DateTimeMeta.vue'
+import { getConversationStatusBadgeVariant, translateConversationStatus } from '@/utils/conversationStatus'
+import { getConversationPriorityBadgeVariant, translateConversationPriority } from '@/utils/conversationPriority'
 
 const route = useRoute()
 const conversationStore = useConversationStore()
@@ -178,6 +197,11 @@ const conversationRoute = computed(() => {
 const trimmedLastMessage = computed(() => {
   const message = props.conversation.last_message || ''
   return message.length > 100 ? message.slice(0, 100) + '...' : message
+})
+
+const contactInitials = computed(() => {
+  const firstName = props.conversation.contact?.first_name || props.contactFullName || '?'
+  return firstName.substring(0, 2).toUpperCase()
 })
 
 const getSlaClass = (status) => (['overdue', 'remaining'].includes(status) ? 'mr-2' : '')

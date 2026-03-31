@@ -236,7 +236,7 @@ const isEditing = computed(() => Boolean(draft.value.id))
 const fetchDomains = async () => {
   try {
     const resp = await api.getMailDomainsSettings()
-    domains.value = resp.data.data?.domains || []
+    domains.value = resp.data.data?.['mail.domains'] || []
   } catch (error) {
     showErrorToast(error)
   }
@@ -245,7 +245,7 @@ const fetchDomains = async () => {
 onMounted(fetchDomains)
 
 const persistDomains = async (nextDomains) => {
-  await api.updateMailDomainsSettings({ domains: nextDomains })
+  await api.updateMailDomainsSettings({ 'mail.domains': nextDomains })
   domains.value = nextDomains
 }
 

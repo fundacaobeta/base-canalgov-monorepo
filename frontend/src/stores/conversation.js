@@ -26,11 +26,12 @@ export const useConversationStore = defineStore('conversation', () => {
     return priorities.value.map(p => ({ label: p.name, value: p.id }))
   })
   const statusOptions = computed(() => {
-    return statuses.value.map(s => ({ label: translateConversationStatus(s.name), value: s.id }))
+    return statuses.value.map(s => ({ name: s.name, label: translateConversationStatus(s.name), value: s.id }))
   })
   // Status options excluding 'Snoozed'
   const statusOptionsNoSnooze = computed(() =>
     statuses.value.filter(s => s.name !== 'Snoozed').map(s => ({
+      name: s.name,
       label: translateConversationStatus(s.name),
       value: s.id
     }))
@@ -202,7 +203,10 @@ export const useConversationStore = defineStore('conversation', () => {
   function getContactFullName (uuid) {
     if (conversations?.data) {
       const conv = conversations.data.find(conv => conv.uuid === uuid)
-      return conv ? `${conv.contact.first_name} ${conv.contact.last_name}` : ''
+      if (!conv) return ''
+      const firstName = conv.contact?.first_name || ''
+      const lastName = conv.contact?.last_name || ''
+      return `${firstName} ${lastName}`.trim()
     }
   }
 
@@ -359,8 +363,8 @@ export const useConversationStore = defineStore('conversation', () => {
     if (listType) conversations.listType = listType
     if (teamID) conversations.teamID = teamID
     if (viewID) conversations.viewID = viewID
+    filters = Array.isArray(filters) ? filters.filter(f => f.model !== 'conversation_statuses') : []
     if (conversations.status) {
-      filters = filters.filter(f => f.model !== 'conversation_statuses')
       filters.push({
         model: 'conversation_statuses',
         field: 'name',

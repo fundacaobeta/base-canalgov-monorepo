@@ -1,6 +1,6 @@
 <template>
-  <div class="mx-auto max-w-6xl space-y-6 p-6">
-    <div class="grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,1fr)]">
+  <div class="mx-auto max-w-4xl space-y-6 p-6">
+    <div class="space-y-6">
       <Card class="border-border/70 shadow-sm">
         <CardHeader class="space-y-4">
           <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -31,9 +31,9 @@
               <Button
                 @click="saveUser"
                 :isLoading="isSaving"
-                :disabled="!hasPendingAvatar"
+                :disabled="!isProfileDirty"
               >
-                {{ t('account.saveAvatarChanges') }}
+                {{ t('globals.messages.saveChanges') }}
               </Button>
             </div>
           </div>
@@ -48,7 +48,7 @@
             @change="selectFile"
           />
 
-          <div class="grid gap-6 lg:grid-cols-[auto_minmax(0,1fr)]">
+          <div class="grid gap-6 md:grid-cols-[220px_minmax(0,1fr)]">
             <div class="flex flex-col items-center gap-3">
               <Avatar class="size-32 border border-border/60 shadow-sm">
                 <AvatarImage :src="userStore.avatar" alt="Avatar do usuário" />
@@ -62,22 +62,49 @@
             </div>
 
             <div class="grid gap-4 md:grid-cols-2">
-              <div class="rounded-2xl border border-border/70 bg-muted/20 p-4">
+              <div class="rounded-2xl border border-border/70 bg-muted/20 p-4 md:col-span-2">
                 <p class="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
                   {{ t('globals.terms.name') }}
                 </p>
-                <p class="mt-2 text-base font-semibold">
-                  {{ userStore.getFullName || t('globals.terms.notAvailable') }}
-                </p>
+                <div class="mt-3 grid gap-3 md:grid-cols-2">
+                  <div class="space-y-2">
+                    <label class="text-sm font-medium text-foreground" for="profile-first-name">
+                      {{ t('account.profileFields.firstName') }}
+                    </label>
+                    <Input
+                      id="profile-first-name"
+                      v-model="firstName"
+                      :placeholder="t('account.profileFields.firstNamePlaceholder')"
+                    />
+                  </div>
+                  <div class="space-y-2">
+                    <label class="text-sm font-medium text-foreground" for="profile-last-name">
+                      {{ t('account.profileFields.lastName') }}
+                    </label>
+                    <Input
+                      id="profile-last-name"
+                      v-model="lastName"
+                      :placeholder="t('account.profileFields.lastNamePlaceholder')"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div class="rounded-2xl border border-border/70 bg-muted/20 p-4">
                 <p class="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
                   {{ t('globals.terms.email') }}
                 </p>
-                <p class="mt-2 text-base font-semibold break-all">
-                  {{ userStore.email || t('globals.terms.notAvailable') }}
-                </p>
+                <div class="mt-3 space-y-2">
+                  <label class="text-sm font-medium text-foreground" for="profile-email">
+                    {{ t('account.profileFields.email') }}
+                  </label>
+                  <Input
+                    id="profile-email"
+                    v-model="email"
+                    type="email"
+                    :placeholder="t('account.profileFields.emailPlaceholder')"
+                  />
+                </div>
               </div>
 
               <div class="rounded-2xl border border-border/70 bg-muted/20 p-4">
@@ -164,11 +191,11 @@
             </Button>
             <Button
               class="w-full justify-start"
-              :disabled="!hasPendingAvatar"
+              :disabled="!isProfileDirty"
               @click="saveUser"
               :isLoading="isSaving"
             >
-              {{ t('account.saveAvatarChanges') }}
+              {{ t('globals.messages.saveChanges') }}
             </Button>
             <Button
               class="w-full justify-start"
@@ -212,12 +239,13 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { ShieldCheck } from 'lucide-vue-next'
 import VuePictureCropper, { cropper } from 'vue-picture-cropper'
 import { useI18n } from 'vue-i18n'
 import { useUserStore } from '@/stores/user'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -249,11 +277,20 @@ const userStore = useUserStore()
 const uploadInput = ref(null)
 const newUserAvatar = ref('')
 const showCropper = ref(false)
+const firstName = ref('')
+const lastName = ref('')
+const email = ref('')
 let croppedBlob = null
 let avatarFile = null
 
 const hasAvatar = computed(() => Boolean(userStore.avatar))
 const hasPendingAvatar = computed(() => Boolean(croppedBlob))
+const isProfileDirty = computed(() => {
+  return hasPendingAvatar.value ||
+    firstName.value.trim() !== (userStore.user.first_name || '') ||
+    lastName.value.trim() !== (userStore.user.last_name || '') ||
+    email.value.trim() !== (userStore.email || '')
+})
 
 const availabilityLabel = computed(() => {
   const labels = {
@@ -308,10 +345,15 @@ const getResult = async () => {
 }
 
 const saveUser = async () => {
-  if (!croppedBlob) return
+  if (!isProfileDirty.value) return
 
   const formData = new FormData()
-  formData.append('files', croppedBlob, 'avatar.png')
+  formData.append('first_name', firstName.value.trim())
+  formData.append('last_name', lastName.value.trim())
+  formData.append('email', email.value.trim())
+  if (croppedBlob) {
+    formData.append('files', croppedBlob, 'avatar.png')
+  }
   try {
     isSaving.value = true
     await api.updateCurrentUser(formData)
@@ -348,4 +390,14 @@ const removeAvatar = async () => {
     })
   }
 }
+
+watch(
+  () => userStore.user,
+  (user) => {
+    firstName.value = user?.first_name || ''
+    lastName.value = user?.last_name || ''
+    email.value = userStore.email || ''
+  },
+  { immediate: true, deep: true }
+)
 </script>

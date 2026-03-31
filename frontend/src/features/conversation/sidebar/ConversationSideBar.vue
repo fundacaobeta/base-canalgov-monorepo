@@ -185,15 +185,26 @@ const fetchTags = async () => {
   tags.value = tagStore.tags.map((item) => item.name)
 }
 
+const normalizeAssigneeID = (id) => {
+  const normalizedID = Number.parseInt(String(id), 10)
+  return Number.isFinite(normalizedID) && normalizedID > 0 ? normalizedID : null
+}
+
 const handleAssignedUserChange = (id) => {
+  const assigneeID = normalizeAssigneeID(id)
+  if (!assigneeID) return
+
   conversationStore.updateAssignee('user', {
-    assignee_id: parseInt(id)
+    assignee_id: assigneeID
   })
 }
 
 const handleAssignedTeamChange = (id) => {
+  const assigneeID = normalizeAssigneeID(id)
+  if (!assigneeID) return
+
   conversationStore.updateAssignee('team', {
-    assignee_id: parseInt(id)
+    assignee_id: assigneeID
   })
 }
 
@@ -210,8 +221,12 @@ const selectAgent = (agent) => {
     handleRemoveAssignee('user')
     return
   }
-  conversationStore.current.assigned_user_id = agent.value
-  handleAssignedUserChange(agent.value)
+
+  const assigneeID = normalizeAssigneeID(agent.value)
+  if (!assigneeID) return
+
+  conversationStore.current.assigned_user_id = String(assigneeID)
+  handleAssignedUserChange(assigneeID)
 }
 
 const selectTeam = (team) => {
@@ -219,7 +234,12 @@ const selectTeam = (team) => {
     handleRemoveAssignee('team')
     return
   }
-  handleAssignedTeamChange(team.value)
+
+  const assigneeID = normalizeAssigneeID(team.value)
+  if (!assigneeID) return
+
+  conversationStore.current.assigned_team_id = String(assigneeID)
+  handleAssignedTeamChange(assigneeID)
 }
 
 const selectPriority = (priority) => {

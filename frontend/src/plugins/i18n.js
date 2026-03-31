@@ -9,9 +9,22 @@ const i18n = createI18n({
   messages: {}
 })
 
+const normalizeTermLabel = (key, value) => {
+  if (typeof value !== 'string') return value
+  if (!key.startsWith('globals.terms.')) return value
+  if (!value.includes('|')) return value
+  return value.split('|')[0].trim()
+}
+
+const normalizeMessages = (messages = {}) => {
+  return Object.fromEntries(
+    Object.entries(messages).map(([key, value]) => [key, normalizeTermLabel(key, value)])
+  )
+}
+
 export function setupI18n(locale, messages) {
   i18n.global.locale.value = locale
-  i18n.global.setLocaleMessage(locale, messages)
+  i18n.global.setLocaleMessage(locale, normalizeMessages(messages))
 }
 
 export default i18n

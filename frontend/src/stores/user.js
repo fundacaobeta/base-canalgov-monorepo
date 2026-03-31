@@ -9,6 +9,27 @@ import api from '@/api'
 import { useStorage } from '@vueuse/core'
 
 export const useUserStore = defineStore('user', () => {
+  const normalizeNullableString = (value) => {
+    if (typeof value === 'string') return value
+    if (value && typeof value === 'object') {
+      if (typeof value.String === 'string') return value.String
+      if (typeof value.string === 'string') return value.string
+    }
+    return ''
+  }
+
+  const normalizeUserData = (userData = {}) => ({
+    id: userData.id ?? null,
+    first_name: userData.first_name || '',
+    last_name: userData.last_name || '',
+    avatar_url: normalizeNullableString(userData.avatar_url),
+    email: normalizeNullableString(userData.email),
+    teams: Array.isArray(userData.teams) ? userData.teams : [],
+    permissions: Array.isArray(userData.permissions) ? userData.permissions : [],
+    roles: Array.isArray(userData.roles) ? userData.roles : [],
+    availability_status: userData.availability_status || 'offline'
+  })
+
   const user = ref({
     id: null,
     first_name: '',
@@ -61,7 +82,7 @@ export const useUserStore = defineStore('user', () => {
       const response = await api.getCurrentUser()
       const userData = response?.data?.data
       if (userData) {
-        user.value = userData
+        user.value = normalizeUserData(userData)
       } else {
         throw new Error('No user data found')
       }
@@ -76,7 +97,7 @@ export const useUserStore = defineStore('user', () => {
   }
 
   const setCurrentUser = (userData) => {
-    user.value = userData
+    user.value = normalizeUserData(userData)
   }
 
   const setAvatar = (avatarURL) => {

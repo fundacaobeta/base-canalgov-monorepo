@@ -323,15 +323,9 @@ const processSend = async () => {
           }
         : null
       const isPrivateMessage = messageType.value === 'private_note'
-      if (!isPrivateMessage && selectedResponseChannel.value === 'email' && !to.value.trim()) {
-        emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
-          variant: 'destructive',
-          description: t('globals.messages.required', {
-            name: t('globals.emails.to')
-          })
-        })
-        return
-      }
+      const fallbackTo = conversationStore.current?.contact?.email
+        ? [conversationStore.current.contact.email.trim()].filter((email) => email)
+        : []
       const parsedCC = cc.value
         ? cc.value
             .split(',')
@@ -349,7 +343,16 @@ const processSend = async () => {
             .split(',')
             .map((email) => email.trim())
             .filter((email) => email)
-        : []
+        : fallbackTo
+      if (!isPrivateMessage && selectedResponseChannel.value === 'email' && parsedTo.length === 0) {
+        emitter.emit(EMITTER_EVENTS.SHOW_TOAST, {
+          variant: 'destructive',
+          description: t('globals.messages.required', {
+            name: t('globals.emails.to')
+          })
+        })
+        return
+      }
       const meta = {}
       if (!isPrivateMessage && parsedTo.length > 0) meta.to = parsedTo
       if (!isPrivateMessage && parsedCC.length > 0) meta.cc = parsedCC
