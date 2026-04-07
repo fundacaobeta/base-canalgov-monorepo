@@ -5,6 +5,11 @@ services:
     container_name: canalgov_backend_dev
     working_dir: /app
     environment:
+      HTTP_PROXY: ""
+      HTTPS_PROXY: ""
+      ALL_PROXY: ""
+      NO_PROXY: localhost,127.0.0.1,::1,db,redis,backend,frontend
+      GOSUMDB: off
       CANALGOV_SYSTEM_USER_PASSWORD: ${CANALGOV_SYSTEM_USER_PASSWORD:-}
       CANALGOV_DB__HOST: db
       CANALGOV_DB__PORT: 5432
@@ -19,6 +24,7 @@ services:
     volumes:
       - .:/app
       - ./uploads:/canalgov/uploads:rw
+      - ./.codex-certs:/codex-certs:ro
       - go-mod-cache:/go/pkg/mod
       - go-build-cache:/root/.cache/go-build
     networks:
@@ -31,6 +37,8 @@ services:
     command: >
       sh -c "
         apk add --no-cache ca-certificates tzdata git &&
+        cp /codex-certs/*.crt /usr/local/share/ca-certificates/ 2>/dev/null || true &&
+        update-ca-certificates &&
         go install github.com/air-verse/air@latest &&
         mkdir -p tmp &&
         CGO_ENABLED=0 go build -o ./tmp/canalgov cmd/*.go &&
@@ -45,6 +53,12 @@ services:
     container_name: canalgov_frontend_dev
     working_dir: /app/frontend
     environment:
+      HTTP_PROXY: ""
+      HTTPS_PROXY: ""
+      ALL_PROXY: ""
+      NO_PROXY: localhost,127.0.0.1,::1,db,redis,backend,frontend
+      NODE_TLS_REJECT_UNAUTHORIZED: "0"
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
       # Point Vite proxy to the backend container
       VITE_API_TARGET: http://backend:9000
       VITE_WS_TARGET: ws://backend:9000
@@ -54,6 +68,7 @@ services:
       - "8000:8000"
     volumes:
       - ./frontend:/app/frontend
+      - ./.codex-certs:/codex-certs:ro
       - frontend-node-modules:/app/frontend/node_modules
     networks:
       - canalgov
@@ -61,6 +76,9 @@ services:
       - backend
     command: >
       sh -c "
+        apk add --no-cache ca-certificates &&
+        cp /codex-certs/*.crt /usr/local/share/ca-certificates/ 2>/dev/null || true &&
+        update-ca-certificates &&
         corepack enable &&
         pnpm install --ignore-scripts &&
         pnpm dev --host 0.0.0.0 --port 8000

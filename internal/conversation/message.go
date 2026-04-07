@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/mail"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -18,6 +19,7 @@ import (
 	"github.com/fundacaobeta/base-canalgov-monorepo/internal/envelope"
 	"github.com/fundacaobeta/base-canalgov-monorepo/internal/image"
 	"github.com/fundacaobeta/base-canalgov-monorepo/internal/inbox"
+	imodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/inbox/models"
 	mmodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/media/models"
 	"github.com/fundacaobeta/base-canalgov-monorepo/internal/sla"
 	"github.com/fundacaobeta/base-canalgov-monorepo/internal/stringutil"
@@ -284,9 +286,12 @@ func (m *Manager) RenderMessageInTemplate(channel string, message *models.Messag
 			m.lo.Error("could not render email content using template", "id", message.ID, "error", err)
 			return fmt.Errorf("could not render email content using template: %w", err)
 		}
+	case inbox.ChannelWhatsApp, inbox.ChannelTelegram:
+		// Non-email channels should send the message body as-is.
+		return nil
 	default:
 		m.lo.Warn("unknown message channel", "channel", channel)
-		return fmt.Errorf("unknown message channel: %s", channel)
+		return nil
 	}
 	return nil
 }
@@ -448,9 +453,10 @@ func (m *Manager) QueueReply(media []mmodels.Media, inboxID, senderID int, conve
 	if err != nil {
 		return message, err
 	}
-	sourceID, err := stringutil.GenerateEmailMessageID(conversationUUID, inbox.From)
+	fromAddress := resolveInboxFromAddress(inbox)
+	sourceID, err := stringutil.GenerateEmailMessageID(conversationUUID, fromAddress)
 	if err != nil {
-		m.lo.Error("error generating source message id", "error", err)
+		m.lo.Error("error generating source message id", "error", err, "from", fromAddress, "inbox_id", inboxID)
 		return message, envelope.NewError(envelope.GeneralError, m.i18n.T("conversation.errorGeneratingMessageID"), nil)
 	}
 
@@ -532,6 +538,59 @@ func (m *Manager) InsertMessage(message *models.Message) error {
 	m.webhookStore.TriggerEvent(wmodels.EventMessageCreated, message)
 
 	return nil
+}
+
+func resolveInboxFromAddress(inboxRecord imodels.Inbox) string {
+	from := normalizeEmailAddress(strings.TrimSpace(inboxRecord.From))
+	if _, err := mail.ParseAddress(from); err == nil {
+		return from
+	}
+
+	if inboxRecord.Channel != inbox.ChannelEmail || len(inboxRecord.Config) == 0 {
+		return from
+	}
+
+	var cfg imodels.Config
+	if err := json.Unmarshal(inboxRecord.Config, &cfg); err != nil {
+		return from
+	}
+
+	managedAddress := normalizeEmailAddress(strings.TrimSpace(cfg.ManagedEmailAddress))
+	if _, err := mail.ParseAddress(managedAddress); err == nil {
+		return managedAddress
+	}
+
+	return from
+}
+
+func normalizeEmailAddress(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return raw
+	}
+
+	if _, err := mail.ParseAddress(raw); err == nil {
+		return raw
+	}
+
+	firstAt := strings.Index(raw, "@")
+	lastAt := strings.LastIndex(raw, "@")
+	if firstAt <= 0 || lastAt <= firstAt || lastAt >= len(raw)-1 {
+		return raw
+	}
+
+	localPart := strings.TrimSpace(raw[:firstAt])
+	domainPart := strings.TrimSpace(raw[lastAt+1:])
+	if localPart == "" || domainPart == "" {
+		return raw
+	}
+
+	candidate := localPart + "@" + domainPart
+	if _, err := mail.ParseAddress(candidate); err == nil {
+		return candidate
+	}
+
+	return raw
 }
 
 // RecordAssigneeUserChange records an activity for a user assignee change.

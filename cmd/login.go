@@ -8,6 +8,8 @@ import (
 	"github.com/zerodha/fastglue"
 )
 
+const loginPageURL = "/"
+
 type loginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
@@ -90,5 +92,5 @@ func handleLogout(r *fastglue.Request) error {
 		"no-store, no-cache, must-revalidate, post-check=0, pre-check=0")
 	r.RequestCtx.Response.Header.Add("Pragma", "no-cache")
 	r.RequestCtx.Response.Header.Add("Expires", "-1")
-	return r.RedirectURI("/", fasthttp.StatusFound, nil, "")
+	return r.RedirectURI(loginPageURL, fasthttp.StatusFound, nil, "")
 }

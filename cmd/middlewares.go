@@ -200,7 +200,7 @@ func authPage(handler fastglue.FastRequestHandler) fastglue.FastRequestHandler {
 		if len(nextURI) == 0 {
 			nextURI = r.RequestCtx.RequestURI()
 		}
-		return r.RedirectURI("/", fasthttp.StatusFound, map[string]any{
+		return r.RedirectURI(loginPageURL, fasthttp.StatusFound, map[string]any{
 			"next": string(nextURI),
 		}, "")
 	}

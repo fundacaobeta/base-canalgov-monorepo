@@ -109,18 +109,13 @@ func GenerateEmailMessageID(messageID string, fromAddress string) (string, error
 		return "", fmt.Errorf("messageID cannot be empty")
 	}
 
-	// Parse from address
-	addr, err := mail.ParseAddress(fromAddress)
-	if err != nil {
-		return "", fmt.Errorf("invalid from address: %w", err)
+	domain := "canalgov.local"
+	if addr, err := mail.ParseAddress(fromAddress); err == nil {
+		parts := strings.Split(addr.Address, "@")
+		if len(parts) == 2 && parts[1] != "" {
+			domain = parts[1]
+		}
 	}
-
-	// Extract domain with validation
-	parts := strings.Split(addr.Address, "@")
-	if len(parts) != 2 || parts[1] == "" {
-		return "", fmt.Errorf("invalid domain in from address")
-	}
-	domain := parts[1]
 
 	// Generate cryptographic random component
 	random := make([]byte, 8)

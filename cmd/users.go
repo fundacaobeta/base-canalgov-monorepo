@@ -149,6 +149,7 @@ func handleUpdateCurrentAgent(r *fastglue.Request) error {
 	var (
 		app   = r.Context.(*App)
 		auser = r.RequestCtx.UserValue("user").(amodels.User)
+		agent models.User
 	)
 	form, err := r.RequestCtx.MultipartForm()
 	if err != nil {
@@ -156,21 +157,49 @@ func handleUpdateCurrentAgent(r *fastglue.Request) error {
 		return r.SendErrorEnvelope(fasthttp.StatusInternalServerError, app.i18n.Ts("globals.messages.errorParsing", "name", "{globals.terms.request}"), nil, envelope.GeneralError)
 	}
 
+	agent, err = app.user.GetAgent(auser.ID, "")
+	if err != nil {
+		return sendErrorEnvelope(r, err)
+	}
+
+	getFormValue := func(key, fallback string) string {
+		values := form.Value[key]
+		if len(values) == 0 {
+			return fallback
+		}
+		return strings.TrimSpace(values[0])
+	}
+
+	req := agentReq{
+		FirstName:          getFormValue("first_name", agent.FirstName),
+		LastName:           getFormValue("last_name", agent.LastName),
+		Email:              getFormValue("email", agent.Email.String),
+		Roles:              []string(agent.Roles),
+		Enabled:            agent.Enabled,
+		AvailabilityStatus: agent.AvailabilityStatus,
+	}
+
+	if err := validateAgentRequest(r, &req); err != nil {
+		return err
+	}
+
+	if req.FirstName != agent.FirstName || req.LastName != agent.LastName || req.Email != agent.Email.String {
+		if err := app.user.UpdateAgent(agent.ID, req.FirstName, req.LastName, req.Email, req.Roles, req.Enabled, req.AvailabilityStatus, ""); err != nil {
+			return sendErrorEnvelope(r, err)
+		}
+	}
+
 	files, ok := form.File["files"]
 
 	// Upload avatar?
 	if ok && len(files) > 0 {
-		agent, err := app.user.GetAgent(auser.ID, "")
-		if err != nil {
-			return sendErrorEnvelope(r, err)
-		}
 		if err := uploadUserAvatar(r, agent, files); err != nil {
 			return sendErrorEnvelope(r, err)
 		}
 	}
 
 	// Fetch updated agent and return.
-	agent, err := app.user.GetAgent(auser.ID, "")
+	agent, err = app.user.GetAgent(auser.ID, "")
 	if err != nil {
 		return sendErrorEnvelope(r, err)
 	}

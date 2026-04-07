@@ -2,25 +2,13 @@
 SELECT
     json_build_object(
         'open',
-        COUNT(*),
-        'awaiting_response',
-        COUNT(
-            CASE
-                WHEN c.last_message_sender = 'contact' THEN 1
-            END
-        ),
-        'unassigned',
-        COUNT(
-            CASE
-                WHEN c.assigned_user_id IS NULL THEN 1
-            END
-        ),
-        'pending',
-        COUNT(
-            CASE
-                WHEN c.first_reply_at IS NULL THEN 1
-            END
-        ),
+        COUNT(*) FILTER (WHERE s.name = 'Open'),
+        'snoozed',
+        COUNT(*) FILTER (WHERE s.name = 'Snoozed'),
+        'resolved',
+        COUNT(*) FILTER (WHERE s.name = 'Resolved'),
+        'closed',
+        COUNT(*) FILTER (WHERE s.name = 'Closed'),
         'agents_online',
         (
             SELECT
@@ -68,9 +56,7 @@ SELECT
     )
 FROM
     conversations c
-    INNER JOIN conversation_statuses s ON c.status_id = s.id
-WHERE
-    s.name not in ('Resolved', 'Closed');
+    INNER JOIN conversation_statuses s ON c.status_id = s.id;
 
 -- name: get-overview-sla-counts
 WITH first_and_resolution AS (

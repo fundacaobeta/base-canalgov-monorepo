@@ -64,13 +64,14 @@ func handleCreateInbox(r *fastglue.Request) error {
 	if inbox.Channel != inboxpkg.ChannelEmail && len(inbox.Config) == 0 {
 		inbox.Config = []byte(`{}`)
 	}
+	normalizeManagedInboxFrom(&inbox)
 
-	createdInbox, err := app.inbox.Create(inbox)
-	if err != nil {
+	if err := validateInbox(app, inbox); err != nil {
 		return sendErrorEnvelope(r, err)
 	}
 
-	if err := validateInbox(app, createdInbox); err != nil {
+	createdInbox, err := app.inbox.Create(inbox)
+	if err != nil {
 		return sendErrorEnvelope(r, err)
 	}
 
@@ -110,6 +111,7 @@ func handleUpdateInbox(r *fastglue.Request) error {
 	if inbox.Channel != inboxpkg.ChannelEmail && len(inbox.Config) == 0 {
 		inbox.Config = []byte(`{}`)
 	}
+	normalizeManagedInboxFrom(&inbox)
 
 	if err := validateInbox(app, inbox); err != nil {
 		return sendErrorEnvelope(r, err)
@@ -186,6 +188,9 @@ func validateInbox(app *App, inb imodels.Inbox) error {
 	if inb.Channel == "" {
 		return envelope.NewError(envelope.InputError, app.i18n.Ts("globals.messages.empty", "name", "channel"), nil)
 	}
+	if !isSupportedInboxChannel(inb.Channel) {
+		return envelope.NewError(envelope.InputError, app.i18n.Ts("globals.messages.invalid", "name", "channel"), nil)
+	}
 
 	// Validate email channel config.
 	if inb.Channel == inboxpkg.ChannelEmail {
@@ -220,6 +225,41 @@ func validateInbox(app *App, inb imodels.Inbox) error {
 		inb.Config = []byte(`{}`)
 	}
 	return nil
+}
+
+func isSupportedInboxChannel(channel string) bool {
+	switch channel {
+	case inboxpkg.ChannelEmail:
+		return true
+	default:
+		return false
+	}
+}
+
+func normalizeManagedInboxFrom(inb *imodels.Inbox) {
+	if inb.Channel != inboxpkg.ChannelEmail || len(inb.Config) == 0 {
+		return
+	}
+
+	var cfg imodels.Config
+	if err := json.Unmarshal(inb.Config, &cfg); err != nil {
+		return
+	}
+
+	if cfg.ReceiveMode != "managed" {
+		return
+	}
+
+	managedAddress := strings.TrimSpace(cfg.ManagedEmailAddress)
+	if managedAddress == "" {
+		return
+	}
+
+	if _, err := mail.ParseAddress(strings.TrimSpace(inb.From)); err == nil {
+		return
+	}
+
+	inb.From = managedAddress
 }
 
 // validateEmailConfig validates the email inbox configuration.

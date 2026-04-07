@@ -370,12 +370,28 @@ func (c *Manager) GetConversation(id int, uuid, refNum string) (models.Conversat
 
 	// Strip name and extract plain email from "Name <email>"
 	var err error
-	conversation.InboxMail, err = stringutil.ExtractEmail(conversation.InboxMail)
+	conversation.InboxMail, err = normalizeConversationInboxMail(conversation.InboxMail)
 	if err != nil {
 		c.lo.Error("error extracting email from inbox mail", "inbox_mail", conversation.InboxMail, "error", err)
 	}
 
 	return conversation, nil
+}
+
+func normalizeConversationInboxMail(raw string) (string, error) {
+	if extracted, err := stringutil.ExtractEmail(raw); err == nil {
+		return extracted, nil
+	}
+
+	raw = strings.TrimSpace(raw)
+	firstAt := strings.Index(raw, "@")
+	lastAt := strings.LastIndex(raw, "@")
+	if firstAt <= 0 || lastAt <= firstAt || lastAt >= len(raw)-1 {
+		return "", fmt.Errorf("invalid inbox mail: %s", raw)
+	}
+
+	candidate := strings.TrimSpace(raw[:firstAt]) + "@" + strings.TrimSpace(raw[lastAt+1:])
+	return stringutil.ExtractEmail(candidate)
 }
 
 // GetContactPreviousConversations retrieves previous conversations for a contact with a configurable limit.
@@ -984,7 +1000,7 @@ func (m *Manager) NotifyAssignment(userIDs []int, conversation models.Conversati
 		return fmt.Errorf("fetching agent: %w", err)
 	}
 
-	// Render email template.
+	var emailNotification *notifier.EmailNotification
 	content, subject, err := m.template.RenderStoredEmailTemplate(template.TmplConversationAssigned,
 		map[string]any{
 			"Conversation": map[string]any{
@@ -1015,7 +1031,12 @@ func (m *Manager) NotifyAssignment(userIDs []int, conversation models.Conversati
 		})
 	if err != nil {
 		m.lo.Error("error rendering template", "template", template.TmplConversationAssigned, "conversation_uuid", conversation.UUID, "error", err)
-		return fmt.Errorf("rendering template: %w", err)
+	} else if agent.Email.String != "" {
+		emailNotification = &notifier.EmailNotification{
+			Recipients: []string{agent.Email.String},
+			Subject:    subject,
+			Content:    content,
+		}
 	}
 
 	// Send notification.
@@ -1026,12 +1047,7 @@ func (m *Manager) NotifyAssignment(userIDs []int, conversation models.Conversati
 		Body:             conversation.Subject,
 		ConversationID:   null.IntFrom(conversation.ID),
 		ConversationUUID: conversation.UUID,
-		// Parms required for email
-		Email: &notifier.EmailNotification{
-			Recipients: []string{agent.Email.String},
-			Subject:    subject,
-			Content:    content,
-		},
+		Email:            emailNotification,
 	})
 	return nil
 }
