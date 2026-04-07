@@ -268,7 +268,7 @@
                   <p class="font-bold text-sm uppercase tracking-wider">{{ report.name }}</p>
                   <p class="text-[10px] text-muted-foreground line-clamp-1" :title="report.description">{{ report.description }}</p>
                 </div>
-                <Badge variant="secondary" class="uppercase text-[9px] font-black tracking-tighter">{{ t('reports.custom.chartType.' + report.chart_type) }}</Badge>
+                <Badge variant="secondary" class="uppercase text-[9px] font-black tracking-tighter">{{ getCustomChartTypeLabel(report.chart_type) }}</Badge>
               </div>
 
               <!-- Metric type (KPI) -->
@@ -280,6 +280,67 @@
                   <div class="text-[10px] font-bold uppercase text-muted-foreground mt-2 tracking-widest">
                     {{ report.results?.[0]?.label || t('globals.terms.total') }}
                   </div>
+                </div>
+              </div>
+
+              <div v-else-if="report.chart_type === 'pie'" class="flex-1 flex flex-col gap-4 justify-center">
+                <div v-if="report.results?.length" class="flex items-center justify-center">
+                  <div
+                    class="h-32 w-32 rounded-full border border-border/60"
+                    :style="{ background: buildPieGradient(report.results, report.total) }"
+                  >
+                    <div class="m-auto mt-4 h-24 w-24 rounded-full bg-card flex items-center justify-center text-center">
+                      <div>
+                        <div class="text-2xl font-black">{{ report.total || 0 }}</div>
+                        <div class="text-[9px] uppercase tracking-widest text-muted-foreground">{{ t('globals.terms.total') }}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="space-y-2">
+                  <div v-for="(res, idx) in (report.results || []).slice(0, 5)" :key="idx" class="flex items-center justify-between gap-3 text-[11px] font-bold uppercase">
+                    <div class="flex items-center gap-2 min-w-0">
+                      <span class="h-2.5 w-2.5 rounded-full shrink-0" :style="{ backgroundColor: getChartColor(idx) }"></span>
+                      <span class="truncate text-muted-foreground">{{ res.label }}</span>
+                    </div>
+                    <span>{{ formatPercentValue(res.value, report.total) }}</span>
+                  </div>
+                </div>
+                <div v-if="!report.results?.length" class="flex-1 flex items-center justify-center italic text-muted-foreground text-xs">
+                  {{ t('globals.messages.noData') }}
+                </div>
+              </div>
+
+              <div v-else-if="report.chart_type === 'line'" class="flex-1 flex flex-col gap-4 justify-center">
+                <div v-if="report.results?.length" class="h-28 rounded-lg bg-muted/20 p-3">
+                  <svg viewBox="0 0 240 96" class="h-full w-full overflow-visible">
+                    <polyline
+                      :points="buildLinePoints(report.results)"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                      class="text-primary"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <circle
+                      v-for="(point, idx) in buildLineDots(report.results)"
+                      :key="idx"
+                      :cx="point.x"
+                      :cy="point.y"
+                      r="4"
+                      class="fill-primary"
+                    />
+                  </svg>
+                </div>
+                <div class="space-y-2">
+                  <div v-for="(res, idx) in (report.results || []).slice(0, 4)" :key="idx" class="flex justify-between text-[11px] font-bold uppercase">
+                    <span class="text-muted-foreground truncate mr-2">{{ res.label }}</span>
+                    <span>{{ res.value }}</span>
+                  </div>
+                </div>
+                <div v-if="!report.results?.length" class="flex-1 flex items-center justify-center italic text-muted-foreground text-xs">
+                  {{ t('globals.messages.noData') }}
                 </div>
               </div>
 
@@ -311,6 +372,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useDebounceFn } from '@vueuse/core'
 import { useEmitter } from '@/composables/useEmitter'
 import { EMITTER_EVENTS } from '@/constants/emitterEvents.js'
 import { handleHTTPError } from '@/utils/http'
@@ -324,6 +386,7 @@ import { Badge } from '@/components/ui/badge'
 import { Loader2, RefreshCw, Settings } from 'lucide-vue-next'
 import { useCustomReports } from '@/composables/useCustomReports'
 import { translateConversationStatus } from '@/utils/conversationStatus'
+import { translateConversationPriority } from '@/utils/conversationPriority'
 import api from '@/api'
 
 const emitter = useEmitter()
@@ -336,6 +399,9 @@ const cardCounts = ref({})
 const chartData = ref({ new_conversations: [], resolved_conversations: [] })
 const customReportsData = ref([])
 let updateInterval = null
+const debouncedRefreshDashboard = useDebounceFn(() => {
+  loadDashboardData()
+}, 800)
 
 const agentStatusCounts = ref({
   agents_online: 0,
@@ -373,6 +439,7 @@ const tagDistributionDays = ref(30)
 const formatRating = (v) => Number(v || 0).toFixed(1)
 const formatPercent = (v) => `${Math.round(v || 0)}%`
 const formatCompactNumber = (v) => new Intl.NumberFormat('pt-BR', { notation: 'compact' }).format(v || 0)
+const chartColors = ['#0f766e', '#2563eb', '#ea580c', '#7c3aed', '#ca8a04', '#db2777']
 
 const formattedSlaCounts = computed(() => ({
   avg_first_response_time_sec: formatDuration(slaCounts.value.avg_first_response_time_sec, false),
@@ -450,6 +517,73 @@ const handleCSATFilterChange = (d) => { csatDays.value = d; fetchCSATStats(d) }
 const handleMessageVolumeFilterChange = (d) => { messageVolumeDays.value = d; fetchMessageVolumeStats(d) }
 const handleTagDistributionFilterChange = (d) => { tagDistributionDays.value = d; fetchTagDistributionStats(d) }
 
+const getCustomChartTypeLabel = (chartType) => {
+  const labels = {
+    bar: 'Grafico de Barras',
+    pie: 'Grafico de Pizza',
+    line: 'Grafico de Linha',
+    metric: 'Metrica Unica (KPI)'
+  }
+
+  return labels[chartType] || chartType
+}
+
+const getChartColor = (index) => chartColors[index % chartColors.length]
+
+const formatPercentValue = (value, total) => {
+  if (!total) return '0%'
+  return `${Math.round((value / total) * 100)}%`
+}
+
+const buildPieGradient = (results, total) => {
+  if (!results?.length || !total) return 'conic-gradient(#e5e7eb 0 360deg)'
+
+  let current = 0
+  const stops = results.map((result, index) => {
+    const start = current
+    const slice = (result.value / total) * 360
+    current += slice
+    return `${getChartColor(index)} ${start}deg ${current}deg`
+  })
+
+  return `conic-gradient(${stops.join(', ')})`
+}
+
+const buildLineDots = (results) => {
+  if (!results?.length) return []
+
+  const values = results.map(item => Number(item.value) || 0)
+  const max = Math.max(...values, 1)
+  const min = Math.min(...values, 0)
+  const range = Math.max(max - min, 1)
+
+  return results.map((result, index) => {
+    const x = results.length === 1 ? 120 : 12 + (index * (216 / (results.length - 1)))
+    const y = 84 - (((Number(result.value) || 0) - min) / range) * 72
+    return { x, y }
+  })
+}
+
+const buildLinePoints = (results) => buildLineDots(results).map(point => `${point.x},${point.y}`).join(' ')
+
+const translateCustomReportLabel = (metricType, label) => {
+  if (!label) return label
+
+  const normalizedMetricType = metricType === 'conversations_count'
+    ? 'conversations_by_status'
+    : metricType
+
+  if (normalizedMetricType === 'conversations_by_status') {
+    return translateConversationStatus(label, t)
+  }
+
+  if (normalizedMetricType === 'conversations_by_priority') {
+    return translateConversationPriority(label)
+  }
+
+  return label
+}
+
 const loadDashboardData = async () => {
   isLoading.value = true
   try {
@@ -467,8 +601,12 @@ const loadDashboardData = async () => {
       const results = await Promise.all(
         customReports.value.map(async (r) => {
           const data = await executeReport(r.id)
-          const total = data.reduce((acc, curr) => acc + curr.value, 0)
-          return { ...r, results: data, total }
+          const translatedData = data.map(item => ({
+            ...item,
+            label: translateCustomReportLabel(r.metric_type, item.label)
+          }))
+          const total = translatedData.reduce((acc, curr) => acc + curr.value, 0)
+          return { ...r, results: translatedData, total }
         })
       )
       customReportsData.value = results
@@ -484,10 +622,12 @@ const loadDashboardData = async () => {
 onMounted(() => {
   loadDashboardData()
   updateInterval = setInterval(loadDashboardData, 60000)
+  window.addEventListener('reports-refresh', debouncedRefreshDashboard)
 })
 
 onUnmounted(() => {
   if (updateInterval) clearInterval(updateInterval)
+  window.removeEventListener('reports-refresh', debouncedRefreshDashboard)
 })
 </script>
 

@@ -64,7 +64,12 @@ export class WebSocketClient {
         },
         // Property updates for conversation and message.
         [WS_EVENT.MESSAGE_PROP_UPDATE]: () => this.convStore.updateMessageProp(data.data),
-        [WS_EVENT.CONVERSATION_PROP_UPDATE]: () => this.convStore.updateConversationProp(data.data),
+        [WS_EVENT.CONVERSATION_PROP_UPDATE]: () => {
+          this.convStore.updateConversationProp(data.data)
+          if (data.data?.prop === 'status') {
+            window.dispatchEvent(new CustomEvent('reports-refresh', { detail: data.data }))
+          }
+        },
         // New notification.
         [WS_EVENT.NEW_NOTIFICATION]: () => this.notificationStore.addNotification(data.data)
       }

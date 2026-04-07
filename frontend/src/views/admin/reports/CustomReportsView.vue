@@ -31,8 +31,8 @@
         </CardHeader>
         <CardContent class="flex-1 space-y-4">
           <div class="flex items-center gap-2">
-            <Badge variant="outline" class="capitalize">{{ t('reports.custom.chartType.' + report.chart_type) }}</Badge>
-            <Badge variant="secondary" class="capitalize">{{ report.metric_type?.replace(/_/g, ' ') }}</Badge>
+            <Badge variant="outline" class="capitalize">{{ getCustomChartTypeLabel(report.chart_type) }}</Badge>
+            <Badge variant="secondary" class="capitalize">{{ getMetricTypeLabel(report.metric_type) }}</Badge>
           </div>
           <div class="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">
             {{ report.filters?.length || 0 }} {{ t('globals.terms.filter', report.filters?.length || 0).toLowerCase() }} ativos
@@ -78,10 +78,10 @@
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="bar">{{ t('reports.custom.chartType.bar') }}</SelectItem>
-                  <SelectItem value="pie">{{ t('reports.custom.chartType.pie') }}</SelectItem>
-                  <SelectItem value="line">{{ t('reports.custom.chartType.line') }}</SelectItem>
-                  <SelectItem value="metric">{{ t('reports.custom.chartType.metric') }}</SelectItem>
+                  <SelectItem value="bar">{{ getCustomChartTypeLabel('bar') }}</SelectItem>
+                  <SelectItem value="pie">{{ getCustomChartTypeLabel('pie') }}</SelectItem>
+                  <SelectItem value="line">{{ getCustomChartTypeLabel('line') }}</SelectItem>
+                  <SelectItem value="metric">{{ getCustomChartTypeLabel('metric') }}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -90,6 +90,21 @@
           <div class="grid gap-2">
             <Label>{{ t('globals.terms.description') }}</Label>
             <Textarea v-model="form.description" class="resize-none h-20" />
+          </div>
+
+          <div class="grid gap-2">
+            <Label>O que voce quer analisar?</Label>
+            <Select v-model="form.metric_type">
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="option in metricOptions" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p class="text-xs text-muted-foreground">{{ selectedMetricOption?.description }}</p>
           </div>
 
           <div class="space-y-4 pt-4 border-t">
@@ -150,6 +165,57 @@ const editMode = ref(false)
 const selectedId = ref(null)
 const saving = ref(false)
 
+const metricOptions = [
+  {
+    value: 'conversations_by_status',
+    label: 'Atendimentos por status',
+    description: 'Mostra quantos atendimentos estao abertos, adiados, resolvidos ou fechados.'
+  },
+  {
+    value: 'conversations_by_priority',
+    label: 'Atendimentos por prioridade',
+    description: 'Ajuda a enxergar a distribuicao entre baixa, media, alta e urgente.'
+  },
+  {
+    value: 'conversations_by_inbox',
+    label: 'Atendimentos por caixa',
+    description: 'Compara o volume entre caixas de entrada e canais do sistema.'
+  },
+  {
+    value: 'conversations_by_team',
+    label: 'Atendimentos por equipe',
+    description: 'Mostra como os atendimentos estao distribuidos entre as equipes.'
+  },
+  {
+    value: 'conversations_by_agent',
+    label: 'Atendimentos por agente',
+    description: 'Permite acompanhar a distribuicao entre os agentes responsaveis.'
+  }
+]
+
+const getCustomChartTypeLabel = (chartType) => {
+  const labels = {
+    bar: 'Grafico de Barras',
+    pie: 'Grafico de Pizza',
+    line: 'Grafico de Linha',
+    metric: 'Metrica Unica (KPI)'
+  }
+
+  return labels[chartType] || chartType
+}
+
+const getMetricTypeLabel = (metricType) => {
+  const normalizedMetricType = metricType === 'conversations_count'
+    ? 'conversations_by_status'
+    : metricType
+
+  return metricOptions.find(option => option.value === normalizedMetricType)?.label || normalizedMetricType
+}
+
+const normalizeMetricType = (metricType) => (
+  metricType === 'conversations_count' ? 'conversations_by_status' : metricType
+)
+
 const filterFields = computed(() =>
   Object.entries(conversationsListFilters.value).map(([field, value]) => ({
     model: 'conversations',
@@ -161,19 +227,25 @@ const filterFields = computed(() =>
   }))
 )
 
+const selectedMetricOption = computed(() =>
+  metricOptions.find(option => option.value === form.metric_type) || metricOptions[0]
+)
+
 const form = reactive({
   name: '',
   description: '',
   chart_type: 'bar',
-  metric_type: 'conversations_count',
+  metric_type: 'conversations_by_status',
   filters: []
 })
 
 const openCreateDialog = () => {
   editMode.value = false
+  selectedId.value = null
   form.name = ''
   form.description = ''
   form.chart_type = 'bar'
+  form.metric_type = 'conversations_by_status'
   form.filters = []
   isDialogOpen.value = true
 }
@@ -184,6 +256,7 @@ const openEditDialog = (report) => {
   form.name = report.name
   form.description = report.description
   form.chart_type = report.chart_type
+  form.metric_type = normalizeMetricType(report.metric_type) || 'conversations_by_status'
   form.filters = Array.isArray(report.filters) ? report.filters : []
   isDialogOpen.value = true
 }

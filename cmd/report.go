@@ -3,6 +3,7 @@ package main
 import (
 	"strconv"
 
+	amodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/auth/models"
 	rmodels "github.com/fundacaobeta/base-canalgov-monorepo/internal/report/models"
 	"github.com/zerodha/fastglue"
 )
@@ -108,10 +109,12 @@ func handleGetCustomReport(r *fastglue.Request) error {
 // handleCreateCustomReport creates a new custom report.
 func handleCreateCustomReport(r *fastglue.Request) error {
 	app := r.Context.(*App)
+	auser := r.RequestCtx.UserValue("user").(amodels.User)
 	var req rmodels.CustomReport
 	if err := r.Decode(&req, "json"); err != nil {
 		return sendErrorEnvelope(r, err)
 	}
+	req.CreatedByID = &auser.ID
 	report, err := app.report.CreateCustomReport(req)
 	if err != nil {
 		return sendErrorEnvelope(r, err)

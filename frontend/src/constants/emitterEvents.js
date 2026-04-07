@@ -1,6 +1,7 @@
 export const EMITTER_EVENTS = {
     EDIT_MODEL: 'edit-model',
     REFRESH_LIST: 'refresh-list',
+    REPORTS_REFRESH: 'reports-refresh',
     SHOW_TOAST: 'show-toast',
     SHOW_SOONER: 'show-sooner',
     NEW_MESSAGE: 'new-message',

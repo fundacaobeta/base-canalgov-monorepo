@@ -7,6 +7,8 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/fundacaobeta/base-canalgov-monorepo/internal/dbutil"
 	"github.com/fundacaobeta/base-canalgov-monorepo/internal/envelope"
@@ -50,6 +52,12 @@ type queries struct {
 	InsertCustomReport *sqlx.Stmt `query:"insert-custom-report"`
 	UpdateCustomReport *sqlx.Stmt `query:"update-custom-report"`
 	DeleteCustomReport *sqlx.Stmt `query:"delete-custom-report"`
+}
+
+type customReportFilter struct {
+	Field    string          `json:"field"`
+	Operator string          `json:"operator"`
+	Value    json.RawMessage `json:"value"`
 }
 
 // New creates and returns a new instance of the Manager.
@@ -255,25 +263,233 @@ func (m *Manager) DeleteCustomReport(id int) error {
 
 // ExecuteCustomReport runs the custom report and returns the aggregated data.
 func (m *Manager) ExecuteCustomReport(id int) ([]models.CustomReportResult, error) {
-	_, err := m.GetCustomReport(id)
+	report, err := m.GetCustomReport(id)
 	if err != nil {
 		return nil, err
 	}
 
-	// Dynamic aggregation based on filters.
-	// For now, grouping by status as a baseline.
-	query := `
-		SELECT cs.name AS label, COUNT(c.id)::float8 AS value
-		FROM conversations c
-		JOIN conversation_statuses cs ON cs.id = c.status_id
-		WHERE c.deleted_at IS NULL
-		GROUP BY cs.name`
+	query, args, err := buildCustomReportQuery(report)
+	if err != nil {
+		return nil, err
+	}
 
 	var results []models.CustomReportResult
-	if err := m.db.Select(&results, query); err != nil {
+	if err := m.db.Select(&results, query, args...); err != nil {
 		m.lo.Error("error executing custom report", "error", err)
 		return nil, envelope.NewError(envelope.GeneralError, m.i18n.Ts("globals.messages.errorFetching", "name", "{globals.terms.report}"), nil)
 	}
 
 	return results, nil
+}
+
+func buildCustomReportQuery(report models.CustomReport) (string, []any, error) {
+	selectClause := "COUNT(c.id)::float8 AS value"
+	groupClause := ""
+	orderClause := " ORDER BY value DESC, label ASC"
+	joins := []string{}
+	where := []string{"1=1"}
+	args := []any{}
+
+	switch report.MetricType {
+	case "", "conversations_count":
+		report.MetricType = "conversations_by_status"
+		fallthrough
+	case "conversations_by_status":
+		selectClause = "COALESCE(cs.name, 'Sem status') AS label, COUNT(c.id)::float8 AS value"
+		joins = append(joins, "LEFT JOIN conversation_statuses cs ON cs.id = c.status_id")
+		groupClause = " GROUP BY cs.name"
+	case "conversations_by_priority":
+		selectClause = "COALESCE(cp.name, 'Sem prioridade') AS label, COUNT(c.id)::float8 AS value"
+		joins = append(joins, "LEFT JOIN conversation_priorities cp ON cp.id = c.priority_id")
+		groupClause = " GROUP BY cp.name"
+	case "conversations_by_inbox":
+		selectClause = "COALESCE(i.name, 'Sem caixa') AS label, COUNT(c.id)::float8 AS value"
+		joins = append(joins, "LEFT JOIN inboxes i ON i.id = c.inbox_id")
+		groupClause = " GROUP BY i.name"
+	case "conversations_by_team":
+		selectClause = "COALESCE(t.name, 'Sem equipe') AS label, COUNT(c.id)::float8 AS value"
+		joins = append(joins, "LEFT JOIN teams t ON t.id = c.assigned_team_id")
+		groupClause = " GROUP BY t.name"
+	case "conversations_by_agent":
+		selectClause = "COALESCE(NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), ''), u.email, 'Sem agente') AS label, COUNT(c.id)::float8 AS value"
+		joins = append(joins, "LEFT JOIN users u ON u.id = c.assigned_user_id")
+		groupClause = " GROUP BY TRIM(CONCAT(u.first_name, ' ', u.last_name)), u.email"
+	default:
+		return "", nil, envelope.NewError(envelope.InputError, "Tipo de metrica de relatorio customizado invalido.", nil)
+	}
+
+	if len(report.Filters) > 0 && string(report.Filters) != "null" {
+		filterClauses, filterArgs, err := buildCustomReportFilters(report.Filters, len(args)+1)
+		if err != nil {
+			return "", nil, err
+		}
+		where = append(where, filterClauses...)
+		args = append(args, filterArgs...)
+	}
+
+	if report.ChartType == "metric" {
+		selectClause = "'Total' AS label, COUNT(c.id)::float8 AS value"
+		groupClause = ""
+		orderClause = ""
+	}
+
+	query := fmt.Sprintf(
+		"SELECT %s FROM conversations c %s WHERE %s%s%s",
+		selectClause,
+		strings.Join(joins, " "),
+		strings.Join(where, " AND "),
+		groupClause,
+		orderClause,
+	)
+
+	return query, args, nil
+}
+
+func buildCustomReportFilters(raw json.RawMessage, startIndex int) ([]string, []any, error) {
+	var filters []customReportFilter
+	if err := json.Unmarshal(raw, &filters); err != nil {
+		return nil, nil, envelope.NewError(envelope.InputError, "Filtros do relatorio customizado sao invalidos.", nil)
+	}
+
+	allowedFields := map[string]string{
+		"status_id":        "c.status_id",
+		"priority_id":      "c.priority_id",
+		"assigned_team_id": "c.assigned_team_id",
+		"assigned_user_id": "c.assigned_user_id",
+		"inbox_id":         "c.inbox_id",
+	}
+
+	clauses := []string{}
+	args := []any{}
+	argIndex := startIndex
+
+	for _, filter := range filters {
+		if filter.Field == "" || filter.Operator == "" {
+			continue
+		}
+
+		if filter.Field == "tags" {
+			tagClauses, tagArgs, nextIndex, err := buildTagFilterClause(filter, argIndex)
+			if err != nil {
+				return nil, nil, err
+			}
+			if tagClauses != "" {
+				clauses = append(clauses, tagClauses)
+				args = append(args, tagArgs...)
+				argIndex = nextIndex
+			}
+			continue
+		}
+
+		column, ok := allowedFields[filter.Field]
+		if !ok {
+			continue
+		}
+
+		clause, filterArgs, nextIndex, err := buildScalarFilterClause(column, filter, argIndex)
+		if err != nil {
+			return nil, nil, err
+		}
+		if clause == "" {
+			continue
+		}
+
+		clauses = append(clauses, clause)
+		args = append(args, filterArgs...)
+		argIndex = nextIndex
+	}
+
+	return clauses, args, nil
+}
+
+func buildScalarFilterClause(column string, filter customReportFilter, argIndex int) (string, []any, int, error) {
+	switch filter.Operator {
+	case "set":
+		return fmt.Sprintf("%s IS NOT NULL", column), nil, argIndex, nil
+	case "not set":
+		return fmt.Sprintf("%s IS NULL", column), nil, argIndex, nil
+	}
+
+	value, err := normalizeFilterValue(filter.Value)
+	if err != nil {
+		return "", nil, argIndex, err
+	}
+
+	switch filter.Operator {
+	case "equals":
+		return fmt.Sprintf("%s = $%d", column, argIndex), []any{value}, argIndex + 1, nil
+	case "not equals":
+		return fmt.Sprintf("%s <> $%d", column, argIndex), []any{value}, argIndex + 1, nil
+	default:
+		return "", nil, argIndex, nil
+	}
+}
+
+func buildTagFilterClause(filter customReportFilter, argIndex int) (string, []any, int, error) {
+	switch filter.Operator {
+	case "set":
+		return "EXISTS (SELECT 1 FROM conversation_tags ct WHERE ct.conversation_id = c.id)", nil, argIndex, nil
+	case "not set":
+		return "NOT EXISTS (SELECT 1 FROM conversation_tags ct WHERE ct.conversation_id = c.id)", nil, argIndex, nil
+	}
+
+	var rawValues []any
+	if err := json.Unmarshal(filter.Value, &rawValues); err != nil {
+		return "", nil, argIndex, envelope.NewError(envelope.InputError, "Filtro de tags invalido no relatorio customizado.", nil)
+	}
+
+	values := make([]any, 0, len(rawValues))
+	placeholders := make([]string, 0, len(rawValues))
+	for _, raw := range rawValues {
+		switch v := raw.(type) {
+		case string:
+			if v == "" {
+				continue
+			}
+			values = append(values, v)
+			placeholders = append(placeholders, fmt.Sprintf("$%d", argIndex))
+			argIndex++
+		case float64:
+			values = append(values, int(v))
+			placeholders = append(placeholders, fmt.Sprintf("$%d", argIndex))
+			argIndex++
+		}
+	}
+
+	if len(placeholders) == 0 {
+		return "", nil, argIndex, nil
+	}
+
+	subquery := fmt.Sprintf(
+		"SELECT 1 FROM conversation_tags ct WHERE ct.conversation_id = c.id AND ct.tag_id IN (%s)",
+		strings.Join(placeholders, ", "),
+	)
+
+	switch filter.Operator {
+	case "contains":
+		return fmt.Sprintf("EXISTS (%s)", subquery), values, argIndex, nil
+	case "not contains":
+		return fmt.Sprintf("NOT EXISTS (%s)", subquery), values, argIndex, nil
+	default:
+		return "", nil, argIndex, nil
+	}
+}
+
+func normalizeFilterValue(raw json.RawMessage) (any, error) {
+	var value any
+	if err := json.Unmarshal(raw, &value); err != nil {
+		return nil, envelope.NewError(envelope.InputError, "Valor de filtro invalido no relatorio customizado.", nil)
+	}
+
+	switch v := value.(type) {
+	case string:
+		if parsed, err := strconv.Atoi(v); err == nil {
+			return parsed, nil
+		}
+		return v, nil
+	case float64:
+		return int(v), nil
+	default:
+		return v, nil
+	}
 }
